@@ -28,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
         <button 
+          type="button"
           onClick={onMenuClick}
           className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
         >
@@ -38,6 +39,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       <div className="flex items-center gap-4">
         {user.role === 'ADMIN' && (
           <button 
+            type="button"
             onClick={() => navigate('/admin/employees/new')}
             className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
           >
@@ -47,13 +49,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         )}
         
         <button 
+          type="button"
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
         >
           Logout
         </button>
 
-        <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+        <button type="button" className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
           <Bell className="w-6 h-6" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
         </button>

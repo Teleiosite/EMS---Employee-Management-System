@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Printer, MoreVertical, Edit, Trash2, Plus, CreditCard, CheckSquare, Square } from 'lucide-react';
+import { Download, Printer, MoreVertical, Edit, Trash2, Plus, CreditCard } from 'lucide-react';
 import { payrolls } from '../services/mockData';
 import { useToast } from '../context/ToastContext';
 
@@ -16,17 +16,17 @@ const Payroll: React.FC = () => {
   };
 
   const handleCreate = () => {
-    navigate('/payroll/new');
+    navigate('/admin/payroll/new');
   };
 
   const handleEdit = (id: string) => {
     setActiveActionId(null);
-    navigate(`/payroll/edit/${id}`);
+    navigate(`/admin/payroll/edit/${id}`);
   };
 
   const handleDelete = (id: string) => {
-    setActiveActionId(null);
     if (window.confirm("Are you sure you want to delete this payroll record?")) {
+      setActiveActionId(null);
       setPayrollData(prev => prev.filter(p => p.id !== id));
       setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
       
@@ -95,6 +95,7 @@ const Payroll: React.FC = () => {
         <div className="flex gap-3">
           {selectedIds.length > 0 && (
             <button 
+              type="button"
               onClick={handleProcessPayment}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2 transition-colors animate-fade-in"
             >
@@ -103,6 +104,7 @@ const Payroll: React.FC = () => {
             </button>
           )}
           <button 
+            type="button"
             onClick={handleCreate}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2 transition-colors"
           >
@@ -170,15 +172,16 @@ const Payroll: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-center relative">
                       <div className="flex justify-center items-center gap-3">
-                         <button className="text-gray-500 hover:text-blue-600 tooltip transition-colors" title="Download PDF">
+                         <button type="button" className="text-gray-500 hover:text-blue-600 tooltip transition-colors" title="Download PDF">
                             <Download className="w-5 h-5" />
                          </button>
-                         <button className="text-gray-500 hover:text-gray-800 tooltip transition-colors" title="Print Payslip">
+                         <button type="button" className="text-gray-500 hover:text-gray-800 tooltip transition-colors" title="Print Payslip">
                             <Printer className="w-5 h-5" />
                          </button>
                          
                          <div className="relative">
                             <button 
+                              type="button"
                               onClick={() => toggleActionMenu(record.id)}
                               className={`p-1 rounded-full transition-colors ${activeActionId === record.id ? 'bg-orange-100 text-orange-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
                             >
@@ -190,6 +193,7 @@ const Payroll: React.FC = () => {
                                 <div className="fixed inset-0 z-10" onClick={() => setActiveActionId(null)}></div>
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-20 border border-gray-100 transform origin-top-right text-left">
                                   <button 
+                                    type="button"
                                     onClick={() => handleEdit(record.id)}
                                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 flex items-center gap-2 transition-colors"
                                   >
@@ -197,7 +201,11 @@ const Payroll: React.FC = () => {
                                   </button>
                                   <div className="h-px bg-gray-100 my-1"></div>
                                   <button 
-                                    onClick={() => handleDelete(record.id)}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(record.id);
+                                    }}
                                     className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                                   >
                                     <Trash2 className="w-4 h-4" /> Delete

@@ -29,7 +29,8 @@ const Departments: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800">View Departments</h1>
         </div>
         <button 
-          onClick={() => navigate('/departments/new')}
+          type="button"
+          onClick={() => navigate('/admin/departments/new')}
           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> Add Department
@@ -67,12 +68,14 @@ const Departments: React.FC = () => {
                   <td className="py-4 text-right">
                     <div className="flex justify-end gap-4 text-sm font-medium">
                       <button 
-                        onClick={() => navigate(`/departments/edit/${dept.id}`)}
+                        type="button"
+                        onClick={() => navigate(`/admin/departments/edit/${dept.id}`)}
                         className="text-blue-500 hover:text-blue-700 transition-colors"
                       >
                         Edit
                       </button>
                       <button 
+                        type="button"
                         onClick={() => handleDelete(dept.id)}
                         className="text-red-500 hover:text-red-700 transition-colors"
                       >

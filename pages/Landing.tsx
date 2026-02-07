@@ -5,6 +5,10 @@ import { Building, ArrowRight, CheckCircle } from 'lucide-react';
 const Landing: React.FC = () => {
   const navigate = useNavigate();
 
+  const handlePlaceholderClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       {/* Navbar */}
@@ -19,9 +23,9 @@ const Landing: React.FC = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Home</a>
-              <a href="#" className="text-gray-500 hover:text-orange-600 font-medium transition-colors">About Us</a>
-              <a href="#" className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Contact Us</a>
+              <a href="#" onClick={handlePlaceholderClick} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Home</a>
+              <a href="#" onClick={handlePlaceholderClick} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">About Us</a>
+              <a href="#" onClick={handlePlaceholderClick} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Contact Us</a>
             </div>
 
             <div className="flex items-center gap-4">
@@ -31,7 +35,10 @@ const Landing: React.FC = () => {
               >
                 Login
               </button>
-              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-orange-500/30">
+              <button 
+                onClick={() => navigate('/login')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-orange-500/30"
+              >
                 Sign Up
               </button>
             </div>

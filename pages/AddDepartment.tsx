@@ -47,7 +47,7 @@ const AddDepartment: React.FC = () => {
         });
         alert("Department added successfully!");
       }
-      navigate('/departments');
+      navigate('/admin/departments');
     }, 500);
   };
 

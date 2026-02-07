@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
@@ -5,6 +6,7 @@ import { ToastProvider } from './context/ToastContext';
 // Layouts
 import Layout from './components/Layout'; // Admin Layout
 import EmployeeLayout from './components/EmployeeLayout'; // Employee Layout
+import ApplicantLayout from './components/ApplicantLayout'; // Applicant Layout
 
 // Public Pages
 import Landing from './pages/Landing';
@@ -23,6 +25,16 @@ import AdminLeaves from './pages/AdminLeaves';
 import Announcements from './pages/Announcements';
 import AddAnnouncement from './pages/AddAnnouncement';
 
+// Recruitment Pages (Admin)
+import CandidateList from './pages/recruitment/CandidateList';
+import UploadResume from './pages/recruitment/UploadResume';
+import CandidateDetail from './pages/recruitment/CandidateDetail';
+
+// Applicant Pages
+import ApplicantDashboard from './pages/applicant/ApplicantDashboard';
+import JobBoard from './pages/applicant/JobBoard';
+import ApplicantProfile from './pages/applicant/ApplicantProfile';
+
 // Employee Pages
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import Attendance from './pages/Attendance'; // Employee Attendance View
@@ -37,6 +49,13 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Applicant Routes */}
+          <Route path="/applicant" element={<ApplicantLayout />}>
+            <Route index element={<ApplicantDashboard />} />
+            <Route path="jobs" element={<JobBoard />} />
+            <Route path="profile" element={<ApplicantProfile />} />
+          </Route>
 
           {/* Admin Routes */}
           <Route path="/admin" element={<Layout />}>
@@ -57,6 +76,10 @@ const App: React.FC = () => {
             <Route path="payroll/edit/:id" element={<AddPayroll />} />
             
             <Route path="leaves" element={<AdminLeaves />} />
+            
+            <Route path="recruitment/candidates" element={<CandidateList />} />
+            <Route path="recruitment/candidates/:id" element={<CandidateDetail />} />
+            <Route path="recruitment/upload" element={<UploadResume />} />
             
             <Route path="announcements" element={<Announcements />} />
             <Route path="announcements/new" element={<AddAnnouncement />} />

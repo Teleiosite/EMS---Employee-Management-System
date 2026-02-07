@@ -102,7 +102,7 @@ const AddPayroll: React.FC = () => {
         });
         alert("Payroll record created!");
       }
-      navigate('/payroll');
+      navigate('/admin/payroll');
     }, 500);
   };
 

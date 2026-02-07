@@ -83,7 +83,7 @@ const AddEmployee: React.FC = () => {
         employees.push(newEmployee);
         alert("Employee added successfully!");
       }
-      navigate('/employees');
+      navigate('/admin/employees');
     }, 500);
   };
 

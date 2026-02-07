@@ -19,12 +19,14 @@ const Employees: React.FC = () => {
 
   const handleEdit = (id: string) => {
     setActiveActionId(null);
-    navigate(`/employees/edit/${id}`);
+    navigate(`/admin/employees/edit/${id}`);
   };
 
   const handleDelete = (id: string) => {
-    setActiveActionId(null);
+    // Keep menu open while confirming
     if (window.confirm("Are you sure you want to delete this employee?")) {
+      setActiveActionId(null); // Close menu on confirmation
+      
       // Update local state
       setEmployeeList(prev => prev.filter(emp => emp.id !== id));
       
@@ -44,11 +46,12 @@ const Employees: React.FC = () => {
           <p className="text-gray-500">Manage your team members and their roles.</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button type="button" className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
             <Filter className="w-4 h-4" /> Filter
           </button>
           <button 
-            onClick={() => navigate('/employees/new')}
+            type="button"
+            onClick={() => navigate('/admin/employees/new')}
             className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
             + Add Employee
@@ -112,10 +115,11 @@ const Employees: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-right relative">
                     <div className="flex justify-end gap-2 items-center">
-                       <button className="p-1 text-gray-400 hover:text-blue-600"><Mail className="w-4 h-4"/></button>
+                       <button type="button" className="p-1 text-gray-400 hover:text-blue-600"><Mail className="w-4 h-4"/></button>
                        
                        <div className="relative">
                          <button 
+                           type="button"
                            onClick={() => toggleActionMenu(emp.id)}
                            className={`p-1 rounded-full transition-colors ${activeActionId === emp.id ? 'bg-orange-100 text-orange-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                          >
@@ -127,6 +131,7 @@ const Employees: React.FC = () => {
                              <div className="fixed inset-0 z-10" onClick={() => setActiveActionId(null)}></div>
                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-20 border border-gray-100 transform origin-top-right">
                                <button 
+                                 type="button"
                                  onClick={() => handleEdit(emp.id)}
                                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 flex items-center gap-2 transition-colors"
                                >
@@ -134,7 +139,11 @@ const Employees: React.FC = () => {
                                </button>
                                <div className="h-px bg-gray-100 my-1"></div>
                                <button 
-                                 onClick={() => handleDelete(emp.id)}
+                                 type="button"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   handleDelete(emp.id);
+                                 }}
                                  className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                                >
                                  <Trash2 className="w-4 h-4" /> Delete Employee

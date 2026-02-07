@@ -1,30 +1,57 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Mail, Lock } from 'lucide-react';
+import { Building, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { mockCredentials } from '../services/mockData';
+import { UserRole } from '../types';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // For Signup
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     setTimeout(() => {
-      // Logic to check credentials
-      if (email === mockCredentials.admin.email && password === mockCredentials.admin.password) {
-        localStorage.setItem('user', JSON.stringify(mockCredentials.admin.user));
-        navigate('/admin');
-      } else if (email === mockCredentials.employee.email && password === mockCredentials.employee.password) {
-        localStorage.setItem('user', JSON.stringify(mockCredentials.employee.user));
-        navigate('/employee');
+      if (isLogin) {
+        // --- LOGIN LOGIC ---
+        if (email === mockCredentials.admin.email && password === mockCredentials.admin.password) {
+          localStorage.setItem('user', JSON.stringify(mockCredentials.admin.user));
+          navigate('/admin');
+        } else if (email === mockCredentials.employee.email && password === mockCredentials.employee.password) {
+          localStorage.setItem('user', JSON.stringify(mockCredentials.employee.user));
+          navigate('/employee');
+        } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
+          localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
+          navigate('/applicant');
+        } else {
+          setError('Invalid email or password.');
+        }
       } else {
-        setError('Invalid email or password. Try admin@ems.com / admin');
+        // --- SIGN UP LOGIC (Simulation) ---
+        // In a real app, this would POST to backend
+        const names = name.split(' ');
+        const newUser = {
+          id: `u${Date.now()}`,
+          email: email,
+          firstName: names[0] || 'User',
+          lastName: names.slice(1).join(' ') || '',
+          role: UserRole.APPLICANT,
+          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff`,
+          phone: '',
+          bio: ''
+        };
+        
+        localStorage.setItem('user', JSON.stringify(newUser));
+        // We'll also implicitly allow this user to 'login' for this session by redirecting
+        navigate('/applicant');
       }
       setLoading(false);
     }, 800);
@@ -41,8 +68,12 @@ const Login: React.FC = () => {
 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-           <h2 className="text-2xl font-bold text-gray-800">Sign in to your account</h2>
-           <p className="text-gray-500 mt-2 text-sm">Or start your journey with us</p>
+           <h2 className="text-2xl font-bold text-gray-800">
+             {isLogin ? 'Sign in to your account' : 'Create an Applicant Account'}
+           </h2>
+           <p className="text-gray-500 mt-2 text-sm">
+             {isLogin ? 'Or start your journey with us' : 'Join us to find your dream job'}
+           </p>
         </div>
 
         {error && (
@@ -51,7 +82,24 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleAuth} className="space-y-6">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input 
+                  type="text" 
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  placeholder="John Doe"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <div className="relative">
@@ -61,7 +109,7 @@ const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 placeholder="name@company.com"
               />
             </div>
@@ -76,18 +124,10 @@ const Login: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 placeholder="••••••••"
               />
             </div>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center text-gray-600">
-              <input type="checkbox" className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 mr-2" />
-              Remember me
-            </label>
-            <a href="#" className="text-orange-600 font-medium hover:text-orange-700">Forgot password?</a>
           </div>
 
           <button 
@@ -95,15 +135,27 @@ const Login: React.FC = () => {
             disabled={loading}
             className={`w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg font-bold text-lg transition-all shadow-md ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 
-        <div className="mt-8 text-center text-xs text-gray-400">
-           <p>Demo Credentials:</p>
-           <p>Admin: admin@ems.com / admin</p>
-           <p>Employee: john.doe@ems.com / 123</p>
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+            className="text-orange-600 hover:text-orange-800 text-sm font-medium hover:underline"
+          >
+            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+          </button>
         </div>
+
+        {isLogin && (
+          <div className="mt-8 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
+             <p className="mb-2 font-semibold">Demo Credentials:</p>
+             <p>Admin: <span className="font-mono">admin@ems.com</span> / admin</p>
+             <p>Employee: <span className="font-mono">john.doe@ems.com</span> / 123</p>
+             <p>Applicant: <span className="font-mono">alice.j@example.com</span> / 123</p>
+          </div>
+        )}
       </div>
     </div>
   );

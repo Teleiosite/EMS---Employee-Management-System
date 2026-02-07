@@ -2,7 +2,8 @@
 export enum UserRole {
   ADMIN = 'ADMIN',
   HR_MANAGER = 'HR_MANAGER',
-  EMPLOYEE = 'EMPLOYEE'
+  EMPLOYEE = 'EMPLOYEE',
+  APPLICANT = 'APPLICANT'
 }
 
 export interface User {
@@ -12,6 +13,8 @@ export interface User {
   lastName: string;
   role: UserRole;
   avatarUrl?: string;
+  phone?: string; // Added for profile
+  bio?: string;   // Added for profile
 }
 
 export interface Department {
@@ -93,4 +96,52 @@ export interface DashboardStats {
   totalAnnouncements: number;
   approvedLeave: number;
   pendingPayrolls: number;
+}
+
+// --- RECRUITMENT MODULE TYPES ---
+
+export interface ParsedResume {
+  name: string;
+  email: string;
+  phone: string;
+  skills: string[];
+  education: Array<{
+    degree: string;
+    school: string;
+    year?: string;
+  }>;
+  experience: Array<{
+    title: string;
+    company: string;
+    duration?: string;
+    description?: string;
+  }>;
+  summary?: string;
+}
+
+export interface JobRequirement {
+  id: string;
+  role_name: string;
+  department: string;
+  required_skills: string[];
+  minimum_years_experience: number;
+  education_level?: string;
+  status: 'OPEN' | 'CLOSED';
+}
+
+export interface Candidate {
+  id: string;
+  userId?: string; // Link to the Applicant User
+  full_name: string;
+  email: string;
+  phone: string;
+  skills: string[];
+  years_of_experience: number;
+  resume_file_name: string;
+  parsed_resume: ParsedResume;
+  applied_role_id: string; // Links to JobRequirement
+  applied_role_name: string;
+  fit_score: number; // Hidden from applicant
+  status: 'APPLIED' | 'SHORTLISTED' | 'REJECTED' | 'INTERVIEWING' | 'HIRED';
+  created_at: string;
 }

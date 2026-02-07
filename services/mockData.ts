@@ -1,4 +1,5 @@
-import { DashboardStats, User, UserRole, EmployeeProfile, Announcement, AttendanceLog, Department, PayrollRecord, LeaveRequest } from '../types';
+
+import { DashboardStats, User, UserRole, EmployeeProfile, Announcement, AttendanceLog, Department, PayrollRecord, LeaveRequest, JobRequirement, Candidate } from '../types';
 
 export const currentUser: User = {
   id: 'u1',
@@ -33,6 +34,20 @@ export const mockCredentials = {
       lastName: 'Doe',
       role: UserRole.EMPLOYEE,
       avatarUrl: 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff'
+    }
+  },
+  applicant: {
+    email: 'alice.j@example.com',
+    password: '123',
+    user: {
+      id: 'u3_app',
+      email: 'alice.j@example.com',
+      firstName: 'Alice',
+      lastName: 'Johnson',
+      role: UserRole.APPLICANT,
+      avatarUrl: 'https://ui-avatars.com/api/?name=Alice+Johnson&background=8b5cf6&color=fff',
+      phone: '+1 555-0123',
+      bio: 'Frontend enthusiast with 4 years of React experience.'
     }
   }
 };
@@ -164,5 +179,84 @@ export const leaves: LeaveRequest[] = [
     reason: 'Medical checkup',
     status: 'APPROVED',
     appliedOn: '2025-08-25'
+  }
+];
+
+// --- RECRUITMENT MOCK DATA ---
+
+export const jobRequirements: JobRequirement[] = [
+  {
+    id: 'job1',
+    role_name: 'Senior React Developer',
+    department: 'Engineering',
+    required_skills: ['React', 'TypeScript', 'Node.js', 'Tailwind CSS'],
+    minimum_years_experience: 5,
+    education_level: 'Bachelors',
+    status: 'OPEN'
+  },
+  {
+    id: 'job2',
+    role_name: 'Marketing Specialist',
+    department: 'Marketing',
+    required_skills: ['SEO', 'Content Writing', 'Social Media', 'Analytics'],
+    minimum_years_experience: 2,
+    education_level: 'Bachelors',
+    status: 'OPEN'
+  },
+  {
+    id: 'job3',
+    role_name: 'UX Designer',
+    department: 'Design',
+    required_skills: ['Figma', 'Prototyping', 'User Research', 'Wireframing'],
+    minimum_years_experience: 3,
+    status: 'OPEN'
+  }
+];
+
+export const candidates: Candidate[] = [
+  {
+    id: 'c1',
+    userId: 'u3_app', // Linked to Alice's login
+    full_name: 'Alice Johnson',
+    email: 'alice.j@example.com',
+    phone: '+1 555-0123',
+    skills: ['React', 'JavaScript', 'CSS', 'HTML', 'Redux'],
+    years_of_experience: 4,
+    resume_file_name: 'alice_resume.pdf',
+    parsed_resume: {
+      name: 'Alice Johnson',
+      email: 'alice.j@example.com',
+      phone: '+1 555-0123',
+      skills: ['React', 'JavaScript', 'CSS', 'HTML', 'Redux'],
+      education: [{ degree: 'BS Computer Science', school: 'Tech University', year: '2019' }],
+      experience: [{ title: 'Frontend Dev', company: 'WebSolutions', duration: '3 years' }]
+    },
+    applied_role_id: 'job1',
+    applied_role_name: 'Senior React Developer',
+    fit_score: 75,
+    status: 'APPLIED',
+    created_at: '2025-08-20'
+  },
+  {
+    id: 'c2',
+    full_name: 'Bob Williams',
+    email: 'bob.w@example.com',
+    phone: '+1 555-9876',
+    skills: ['SEO', 'Google Analytics', 'Copywriting'],
+    years_of_experience: 3,
+    resume_file_name: 'bob_marketing.docx',
+    parsed_resume: {
+      name: 'Bob Williams',
+      email: 'bob.w@example.com',
+      phone: '+1 555-9876',
+      skills: ['SEO', 'Google Analytics', 'Copywriting'],
+      education: [{ degree: 'BA Marketing', school: 'State College', year: '2021' }],
+      experience: [{ title: 'Marketing Intern', company: 'AdCorp', duration: '1 year' }]
+    },
+    applied_role_id: 'job2',
+    applied_role_name: 'Marketing Specialist',
+    fit_score: 85,
+    status: 'SHORTLISTED',
+    created_at: '2025-08-22'
   }
 ];

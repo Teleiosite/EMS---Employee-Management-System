@@ -10,7 +10,8 @@ import {
   Megaphone,
   Briefcase,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -20,7 +21,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const location = useLocation();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment']);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus(prev => 
@@ -48,6 +49,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
     { name: 'Leave Management', icon: Briefcase, path: '/admin/leaves' },
     { name: 'Payroll', icon: DollarSign, path: '/admin/payroll' },
     { name: 'Attendance', icon: Clock, path: '/admin/attendance' },
+    { 
+      name: 'Recruitment', 
+      icon: FileText, 
+      subItems: [
+        { name: 'Candidate Dashboard', path: '/admin/recruitment/candidates' },
+        { name: 'Upload Resume', path: '/admin/recruitment/upload' }
+      ]
+    },
     { 
       name: 'Announcements', 
       icon: Megaphone, 

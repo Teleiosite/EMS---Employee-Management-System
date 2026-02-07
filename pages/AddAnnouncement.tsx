@@ -57,7 +57,7 @@ const AddAnnouncement: React.FC = () => {
         showToast("Announcement published successfully!", 'success');
         showToast("Email notification sent to all active employees.", 'email');
       }
-      navigate('/announcements');
+      navigate('/admin/announcements');
     }, 500);
   };
 
@@ -132,7 +132,7 @@ const AddAnnouncement: React.FC = () => {
             </button>
             <button 
               type="button" 
-              onClick={() => navigate('/announcements')}
+              onClick={() => navigate('/admin/announcements')}
               className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium transition-colors"
             >
               Cancel

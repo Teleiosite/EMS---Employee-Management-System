@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Megaphone, Calendar, AlertCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Plus, Megaphone, Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { announcements as initialAnnouncements } from '../services/mockData';
 
 const Announcements: React.FC = () => {
@@ -14,12 +14,12 @@ const Announcements: React.FC = () => {
 
   const handleEdit = (id: string) => {
     setActiveActionId(null);
-    navigate(`/announcements/edit/${id}`);
+    navigate(`/admin/announcements/edit/${id}`);
   };
 
   const handleDelete = (id: string) => {
-    setActiveActionId(null);
     if (window.confirm("Are you sure you want to delete this announcement?")) {
+      setActiveActionId(null);
       setAnnouncements(prev => prev.filter(item => item.id !== id));
       const index = initialAnnouncements.findIndex(item => item.id === id);
       if (index > -1) initialAnnouncements.splice(index, 1);
@@ -43,7 +43,8 @@ const Announcements: React.FC = () => {
           <p className="text-gray-500">View and manage company-wide updates.</p>
         </div>
         <button 
-          onClick={() => navigate('/announcements/new')}
+          type="button"
+          onClick={() => navigate('/admin/announcements/new')}
           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> Add Announcement
@@ -84,6 +85,7 @@ const Announcements: React.FC = () => {
 
                 <div className="relative">
                   <button 
+                    type="button"
                     onClick={() => toggleActionMenu(item.id)}
                     className={`p-2 rounded-full transition-colors ${activeActionId === item.id ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                   >
@@ -95,6 +97,7 @@ const Announcements: React.FC = () => {
                       <div className="fixed inset-0 z-10" onClick={() => setActiveActionId(null)}></div>
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-20 border border-gray-100 transform origin-top-right">
                         <button 
+                          type="button"
                           onClick={() => handleEdit(item.id)}
                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 flex items-center gap-2 transition-colors"
                         >
@@ -102,7 +105,11 @@ const Announcements: React.FC = () => {
                         </button>
                         <div className="h-px bg-gray-100 my-1"></div>
                         <button 
-                          onClick={() => handleDelete(item.id)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
                           className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" /> Delete
