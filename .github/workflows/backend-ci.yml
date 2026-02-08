@@ -31,4 +31,6 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
+          DB_ENGINE: django.db.backends.sqlite3
+          DB_NAME: /tmp/ems-ci.sqlite3
         run: pytest -q
