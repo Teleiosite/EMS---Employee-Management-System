@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { mockCredentials } from '../services/mockData';
+import { loginWithBackend, registerApplicantWithBackend } from '../services/authApi';
 import { UserRole } from '../types';
 
 const Login: React.FC = () => {
@@ -17,14 +18,28 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
+    try {
       if (isLogin) {
-        // --- LOGIN LOGIC ---
+        const user = await loginWithBackend(email, password);
+        if (user.role === UserRole.ADMIN || user.role === UserRole.HR_MANAGER) {
+          navigate('/admin');
+        } else if (user.role === UserRole.EMPLOYEE) {
+          navigate('/employee');
+        } else {
+          navigate(redirectUrl || '/applicant');
+        }
+      } else {
+        await registerApplicantWithBackend(name, email, password);
+        await loginWithBackend(email, password);
+        navigate(redirectUrl || '/applicant');
+      }
+    } catch (backendError) {
+      if (isLogin) {
         if (email === mockCredentials.admin.email && password === mockCredentials.admin.password) {
           localStorage.setItem('user', JSON.stringify(mockCredentials.admin.user));
           navigate('/admin');
@@ -33,42 +48,16 @@ const Login: React.FC = () => {
           navigate('/employee');
         } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
           localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
-          // Check for redirect param
-          if (redirectUrl) {
-            navigate(redirectUrl);
-          } else {
-            navigate('/applicant');
-          }
+          navigate(redirectUrl || '/applicant');
         } else {
-          setError('Invalid email or password.');
+          setError(backendError instanceof Error ? backendError.message : 'Invalid email or password.');
         }
       } else {
-        // --- SIGN UP LOGIC (Simulation) ---
-        // In a real app, this would POST to backend
-        const names = name.split(' ');
-        const newUser = {
-          id: `u${Date.now()}`,
-          email: email,
-          firstName: names[0] || 'User',
-          lastName: names.slice(1).join(' ') || '',
-          role: UserRole.APPLICANT,
-          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff`,
-          phone: '',
-          bio: ''
-        };
-        
-        localStorage.setItem('user', JSON.stringify(newUser));
-        // We'll also implicitly allow this user to 'login' for this session by redirecting
-        
-        // Check for redirect param (e.g. if they clicked Apply on landing page)
-        if (redirectUrl) {
-          navigate(redirectUrl);
-        } else {
-          navigate('/applicant');
-        }
+        setError(backendError instanceof Error ? backendError.message : 'Sign up failed.');
       }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

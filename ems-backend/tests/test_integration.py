@@ -21,6 +21,7 @@ def test_calculate_payroll_returns_net_values():
     assert totals == {
         'gross': Decimal('1500.00'),
         'deductions': Decimal('200.00'),
+        'tax': Decimal('0.00'),
         'net': Decimal('1300.00'),
     }
 

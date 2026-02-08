@@ -17,6 +17,8 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', 'ADMIN')
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('email_verified', True)
         return self.create_user(email, password, **extra_fields)
 
 
@@ -31,12 +33,19 @@ class CustomUser(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = None
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE', db_index=True)
     is_active = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
+    email_verification_token = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+
     mfa_enabled = models.BooleanField(default=False)
     mfa_secret = models.CharField(max_length=255, blank=True, null=True)
     backup_codes = models.JSONField(default=list, blank=True)
-    password_reset_token = models.CharField(max_length=255, blank=True, null=True)
+
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    locked_until = models.DateTimeField(blank=True, null=True)
+
+    password_reset_token = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     password_reset_expires = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -53,14 +62,20 @@ class LoginAttempt(models.Model):
         ('SUCCESS', 'Successful Login'),
         ('FAILED', 'Failed Login'),
         ('MFA_PENDING', 'MFA Verification Pending'),
+        ('LOCKED', 'Account Locked'),
     )
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    email = models.EmailField()
+    email = models.EmailField(db_index=True)
     ip_address = models.GenericIPAddressField()
     user_agent = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['email', 'timestamp']),
+        ]
 
 
 class AuditLog(models.Model):
@@ -71,5 +86,11 @@ class AuditLog(models.Model):
     old_values = models.JSONField(null=True, blank=True)
     new_values = models.JSONField(null=True, blank=True)
     ip_address = models.GenericIPAddressField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     description = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['resource_type', 'resource_id']),
+            models.Index(fields=['action', 'timestamp']),
+        ]
