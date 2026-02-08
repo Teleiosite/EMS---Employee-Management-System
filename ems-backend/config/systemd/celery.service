@@ -1,0 +1,10 @@
+[Unit]
+Description=EMS Celery Worker
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/ems-backend
+ExecStart=/opt/ems-backend/venv/bin/celery -A ems_core worker -l INFO
+
+[Install]
+WantedBy=multi-user.target

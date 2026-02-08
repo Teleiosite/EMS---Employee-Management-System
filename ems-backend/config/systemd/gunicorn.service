@@ -1,0 +1,10 @@
+[Unit]
+Description=EMS Gunicorn
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/ems-backend
+ExecStart=/opt/ems-backend/venv/bin/gunicorn ems_core.wsgi:application -c config/gunicorn.conf.py
+
+[Install]
+WantedBy=multi-user.target

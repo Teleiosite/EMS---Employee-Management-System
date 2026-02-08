@@ -1,182 +1,269 @@
+# 🏢 EMS — Employee Management System (Frontend + Django Backend)
 
-# 🏢 EMS - Employee Management System & AI Recruitment Platform
+![React](https://img.shields.io/badge/React-19.0-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Django](https://img.shields.io/badge/Django-4.2-green)
+![DRF](https://img.shields.io/badge/DRF-3.14-red)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
 
-![React](https://img.shields.io/badge/React-19.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue) ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-3.3-38bdf8) ![Status](https://img.shields.io/badge/Status-Production_Ready-green)
-
-A comprehensive, production-grade Human Resource Management System (HRMS) built with modern web technologies. This application serves as a centralized platform for managing employees, departments, payroll, and attendance, featuring a cutting-edge **AI-Powered Recruitment Module** that connects Applicants directly with HR.
-
----
-
-## 📑 Table of Contents
-
-- [Features](#-features)
-  - [Admin Portal](#-admin-portal)
-  - [Employee Portal](#-employee-portal)
-  - [Applicant Portal & Recruitment](#-applicant-portal--recruitment)
-- [Technical Stack](#-technical-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Authentication & Roles](#-authentication--roles)
-- [Mock Data & Services](#-mock-data--services)
-- [Roadmap](#-roadmap)
+A full-stack HRMS platform with:
+- A modern **React + TypeScript frontend** for Admin, Employee, and Applicant experiences.
+- A modular **Django + DRF backend** (`ems-backend/`) with JWT auth, role-based permissions, and production-oriented configuration.
 
 ---
 
-## 🚀 Features
+## 📌 Table of Contents
 
-The application is divided into three distinct portals protected by Role-Based Access Control (RBAC).
-
-### 🔐 Admin Portal
-The command center for HR Administrators and Managers.
-
-*   **Dashboard Analytics**: Visual summary of total employees, daily attendance, leave requests, and pending payrolls.
-*   **Employee Management**:
-    *   Full CRUD (Create, Read, Update, Delete) capabilities for employee records.
-    *   Detailed profiles including designation, salary, and experience.
-    *   Search and filter functionality.
-*   **Department Management**: Organize the company hierarchy with manageable departments.
-*   **Payroll Processing**:
-    *   Generate monthly payroll records.
-    *   Automatic calculation of Net Salary based on Base Salary and Deductions.
-    *   Process payments and generate status updates (Pending -> Paid).
-*   **Attendance Monitoring**: View real-time logs of employee check-ins/outs with IP address tracking.
-*   **Leave Management**: Review, Approve, or Reject employee leave requests with email notification simulation.
-*   **Announcements**: Broadcast company-wide updates with priority levels (Low, Normal, High).
-
-### 👤 Employee Portal
-A self-service dashboard for staff members.
-
-*   **Attendance Tracker**:
-    *   One-click Check-In/Check-Out.
-    *   Real-time clock with session duration tracking.
-    *   View personal attendance history.
-*   **Leave Application**:
-    *   Apply for various types of leaves (Sick, Casual, etc.).
-    *   Track status of submitted requests.
-*   **Payslips**: View and download monthly salary slips.
-*   **Personal Profile**: View and update personal contact information.
-*   **Dashboard**: Quick view of remaining leave balance and recent announcements.
-
-### 🤖 Applicant Portal & Recruitment
-A next-gen hiring platform integrated directly into the EMS.
-
-**For Admins (Recruiters):**
-*   **Job Posting Management**: Create detailed job listings with requirements, skills, and responsibilities.
-*   **AI Candidate Screening**:
-    *   Automatically parses uploaded resumes (PDF/DOCX).
-    *   **Fit Score Algorithm**: Ranks candidates (0-100%) based on skill matching and experience overlap.
-*   **Candidate Pipeline**: Move candidates through stages (Applied -> Shortlisted -> Interviewing -> Hired/Rejected).
-
-**For Applicants:**
-*   **Job Board**: Browse and search for open positions.
-*   **One-Click Apply**: Seamless application process with resume upload.
-*   **Application Tracking**: Real-time status updates on all submitted applications.
-*   **Feedback System**: Automated, friendly messages explaining the current status of an application.
+- [1) Product Overview](#1-product-overview)
+- [2) Core Features](#2-core-features)
+- [3) Architecture Overview](#3-architecture-overview)
+- [4) Tech Stack](#4-tech-stack)
+- [5) Repository Structure](#5-repository-structure)
+- [6) Local Development Setup](#6-local-development-setup)
+- [7) Environment Variables](#7-environment-variables)
+- [8) Test & Quality Commands](#8-test--quality-commands)
+- [9) Deployment Notes](#9-deployment-notes)
+- [10) Recommended Next Steps (Vibe Coding Roadmap)](#10-recommended-next-steps-vibe-coding-roadmap)
 
 ---
 
-## 🛠 Technical Stack
+## 1) Product Overview
 
-This project leverages the latest ecosystem tools for performance and developer experience.
-
-*   **Frontend Framework**: [React 19](https://react.dev/)
-*   **Language**: [TypeScript](https://www.typescriptlang.org/) (Strict Mode enabled)
-*   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-*   **Routing**: [React Router v7](https://reactrouter.com/)
-*   **Icons**: [Lucide React](https://lucide.dev/)
-*   **Build Tool**: [Vite](https://vitejs.dev/)
-*   **State Management**: React Context API & Custom Hooks
-*   **Notifications**: Custom Toast Context System
+EMS is designed as a practical HR system covering:
+- **People Operations**: employees, departments, attendance, leave, payroll.
+- **Recruitment Operations**: jobs, candidates, and resume handling.
+- **Role-Based Workflows**:
+  - **Admin / HR Manager**: management and approval actions.
+  - **Employee**: self-service profile, attendance, leave, payroll visibility.
+  - **Applicant**: job browsing and application lifecycle.
 
 ---
 
-## 📂 Project Structure
+## 2) Core Features
+
+### Admin & HR
+- Employee and department management
+- Attendance monitoring and review
+- Leave approval workflows
+- Payroll run management (scaffolded backend APIs)
+- Recruitment pipeline management
+
+### Employees
+- Attendance tracking
+- Leave request submission and status
+- Personal profile visibility
+
+### Applicants
+- Job browsing
+- Application submission and tracking
+
+---
+
+## 3) Architecture Overview
+
+### Frontend
+- React 19 SPA with route-based role separation
+- Mock/service layer for domain data handling in UI flows
+
+### Backend (`ems-backend/`)
+- Django project split into apps:
+  - `authentication`, `employees`, `attendance`, `leaves`, `payroll`, `recruitment`, `core`
+- DRF API endpoints with JWT authentication
+- Role-based permission layer for Admin/HR and self-service boundaries
+- Docker + Celery + Redis + PostgreSQL ready runtime templates
+
+---
+
+## 4) Tech Stack
+
+### Frontend
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+
+### Backend
+- Django 4.2
+- Django REST Framework
+- SimpleJWT
+- Celery + Redis
+- PostgreSQL
+- drf-spectacular (OpenAPI docs)
+
+### DevOps / Ops
+- Docker / docker-compose
+- Gunicorn + Nginx templates
+- GitHub Actions backend CI workflow
+
+---
+
+## 5) Repository Structure
 
 ```text
-ems-dashboard/
-├── src/
-│   ├── components/         # Reusable UI components (Layouts, Sidebar, Header)
-│   ├── context/            # Global state (ToastProvider)
-│   ├── pages/
-│   │   ├── applicant/      # Applicant-specific pages (JobBoard, Profile)
-│   │   ├── recruitment/    # Admin Recruitment pages (CandidateList, AddJob)
-│   │   ├── ...             # Admin & Employee pages (Dashboard, Payroll, etc.)
-│   ├── services/           # Mock API services (resumeService, mockData)
-│   ├── types/              # TypeScript interfaces and enums
-│   ├── App.tsx             # Main routing configuration
-│   └── main.tsx            # Entry point
-├── public/                 # Static assets
-└── package.json            # Dependencies
+EMS---Employee-Management-System/
+├── App.tsx
+├── pages/
+├── components/
+├── services/
+├── context/
+├── types.ts
+├── package.json
+├── ems-backend/
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── ems_core/
+│   ├── apps/
+│   ├── config/
+│   ├── scripts/
+│   └── tests/
+└── .github/workflows/backend-ci.yml
 ```
 
 ---
 
-## 🏁 Getting Started
+## 6) Local Development Setup
 
-Follow these steps to run the project locally.
+### A) Frontend
 
-### Prerequisites
-*   Node.js (v16 or higher)
-*   npm or yarn
+1. Install dependencies
+```bash
+npm install
+```
 
-### Installation
+2. Start frontend
+```bash
+npm run dev
+```
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/your-username/ems-dashboard.git
-    cd ems-dashboard
-    ```
+3. Open app
+- `http://localhost:5173`
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+### B) Backend
 
-3.  **Start Development Server**
-    ```bash
-    npm run dev
-    ```
+1. Enter backend folder
+```bash
+cd ems-backend
+```
 
-4.  Open your browser and navigate to `http://localhost:5173` (or the port shown in your terminal).
+2. Create env file
+```bash
+cp .env.example .env
+```
 
----
+3. Start backend stack
+```bash
+docker compose up --build
+```
 
-## 🔐 Authentication & Roles
+4. Run migrations
+```bash
+docker compose exec web python manage.py makemigrations
+docker compose exec web python manage.py migrate
+```
 
-The system uses a mock authentication service. Use the following credentials to explore different roles:
-
-| Role | Email | Password | Access Level |
-|------|-------|----------|--------------|
-| **Admin** | `admin@ems.com` | `admin` | **Full System Access** (HR, Recruitment, Settings) |
-| **Employee** | `john.doe@ems.com` | `123` | **Restricted** (Attendance, Leaves, Personal Payroll) |
-| **Applicant** | `alice.j@example.com` | `123` | **External** (Job Board, Application Status) |
-
-> **Note**: You can also sign up as a new Applicant from the login screen.
-
----
-
-## 🧩 Mock Data & Services
-
-Since this is a frontend-focused project, backend services are simulated:
-
-1.  **`services/mockData.ts`**: Acts as an in-memory database. All changes (adding employees, applying for jobs) persist **only for the duration of the session** (until page refresh), although some state is managed to simulate persistence during navigation.
-2.  **`services/resumeService.ts`**: Simulates an AI Resume Parser. It artificially analyzes uploaded files to generate skills and experience data for demonstration purposes.
+5. Optional: API docs
+- `http://localhost:8000/api/docs/`
 
 ---
 
-## 🚧 Roadmap
+## 7) Environment Variables
 
-Future enhancements planned for the EMS:
+Backend variables live in `ems-backend/.env` (template in `.env.example`).
 
-- [ ] **Backend Integration**: Connect to Node.js/Express & PostgreSQL for persistent data.
-- [ ] **Real AI Integration**: Replace mock parsing with OpenAI or CVParserPro API.
-- [ ] **Email Service**: Integrate SendGrid/AWS SES for real-time email notifications.
-- [ ] **Advanced Analytics**: Chart.js integration for retention rates and hiring metrics.
-- [ ] **Calendar View**: Visual calendar for team leaves and holidays.
-- [ ] **Dark Mode**: System-wide dark theme support.
+Key groups:
+- **Security**: `SECRET_KEY`, `ALLOWED_HOSTS`, CORS/CSRF settings
+- **Database**: `DB_*`
+- **Celery**: broker/result backend
+- **API Behavior**: throttle limits, page size
+- **IP Control**: whitelist toggle and values
+
+---
+
+## 8) Test & Quality Commands
+
+### Frontend
+```bash
+npm run build
+```
+
+### Backend
+```bash
+cd ems-backend
+PYTHONPATH=. python -m compileall .
+PYTHONPATH=. pytest -q
+```
+
+---
+
+## 9) Deployment Notes
+
+For production rollout, use:
+- `ems-backend/Dockerfile`
+- `ems-backend/docker-compose.yml`
+- `ems-backend/config/nginx.conf`
+- `ems-backend/config/gunicorn.conf.py`
+- `ems-backend/config/systemd/*.service`
+
+Recommended environment strategy:
+1. Keep `.env` secret in deployment platform vault.
+2. Use separate values for staging and production.
+3. Enforce branch protection + required CI checks.
+
+---
+
+## 10) Recommended Next Steps (Vibe Coding Roadmap)
+
+Use this sequence to keep momentum and avoid rework.
+
+### Step 1 — Finalize Data Layer (High Priority)
+- Generate and commit real Django migrations for all apps.
+- Validate constraints and indexes.
+- Add seed scripts for realistic staging test data.
+
+### Step 2 — Lock Security & Auth Flows
+- Add MFA/TOTP flows (if required by your policy).
+- Add login attempt throttling + lockout logic.
+- Add password reset + email verification flow.
+
+### Step 3 — Complete Business Logic
+- Payroll calculation rules (allowances/deductions/tax slabs).
+- Leave balances and policy windows.
+- Attendance corrections approval lifecycle.
+
+### Step 4 — Add Serious Tests
+- API tests for each role (Admin/HR/Employee/Applicant).
+- Object-level permission tests.
+- End-to-end smoke tests for critical journeys.
+
+### Step 5 — Observability & Reliability
+- Add structured logging standards.
+- Add error monitoring (e.g., Sentry) and health dashboards.
+- Add backup/restore drill for DB.
+
+### Step 6 — Release Workflow (Production)
+1. Feature branch -> PR
+2. CI green -> code review
+3. Merge -> deploy to staging
+4. Staging QA signoff
+5. Production deploy + post-deploy smoke checks
+
+### Step 7 — Vibe Coding Rhythm (Weekly)
+- **Mon**: Pick 1 domain and define acceptance criteria.
+- **Tue-Wed**: Implement APIs + UI integration.
+- **Thu**: Test hardening + edge cases.
+- **Fri**: Demo, retro, and backlog grooming.
+
+---
+
+## 🤝 Contribution Guidance
+
+- Keep PRs focused by domain (auth, attendance, leaves, etc.)
+- Add or update tests with each behavior change
+- Update docs when API contracts change
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT (or your preferred project license).
