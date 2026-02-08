@@ -37,8 +37,8 @@ export interface EmployeeProfile {
 
 export interface AttendanceLog {
   id: string;
-  employeeId: string; 
-  employeeName: string; 
+  employeeId: string;
+  employeeName: string;
   date: string;
   clockInTime?: string;
   clockOutTime?: string;

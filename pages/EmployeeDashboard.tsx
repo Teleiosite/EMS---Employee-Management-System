@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  FileText, 
-  CheckSquare, 
-  Clock, 
-  Megaphone 
+import {
+  FileText,
+  CheckSquare,
+  Clock,
+  Megaphone
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -56,31 +56,31 @@ const EmployeeDashboard: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard 
-          title="Pending Leave Requests" 
-          value="0" 
-          icon={FileText} 
+        <DashboardCard
+          title="Pending Leave Requests"
+          value="0"
+          icon={FileText}
           colorClass="bg-yellow-400"
           iconBgClass="bg-yellow-500"
         />
-        <DashboardCard 
-          title="Approved Leaves (This Month)" 
-          value="0" 
-          icon={CheckSquare} 
+        <DashboardCard
+          title="Approved Leaves (This Month)"
+          value="0"
+          icon={CheckSquare}
           colorClass="bg-green-500"
           iconBgClass="bg-green-600"
         />
-        <DashboardCard 
-          title="Attendance (This Month)" 
-          value="2 Days" 
-          icon={Clock} 
+        <DashboardCard
+          title="Attendance (This Month)"
+          value="2 Days"
+          icon={Clock}
           colorClass="bg-blue-500"
           iconBgClass="bg-blue-600"
         />
-        <DashboardCard 
-          title="Announcements" 
-          value="1" 
-          icon={Megaphone} 
+        <DashboardCard
+          title="Announcements"
+          value="1"
+          icon={Megaphone}
           colorClass="bg-purple-500"
           iconBgClass="bg-purple-600"
         />
@@ -89,12 +89,12 @@ const EmployeeDashboard: React.FC = () => {
       {/* Recent Activity / Quick Actions Placeholder */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] flex items-center justify-center text-gray-400 flex-col gap-3">
-           <Megaphone className="w-12 h-12 text-gray-200" />
-           <p>No new announcements</p>
+          <Megaphone className="w-12 h-12 text-gray-200" />
+          <p>No new announcements</p>
         </div>
-         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] flex items-center justify-center text-gray-400 flex-col gap-3">
-           <Clock className="w-12 h-12 text-gray-200" />
-           <p>Attendance Overview Graph (Coming Soon)</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] flex items-center justify-center text-gray-400 flex-col gap-3">
+          <Clock className="w-12 h-12 text-gray-200" />
+          <p>Attendance Overview Graph (Coming Soon)</p>
         </div>
       </div>
     </div>

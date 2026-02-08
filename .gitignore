@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend database
+db.sqlite3
+.agent/
+__pycache__/
+*.py[cod]
+media/
+venv/
+env/
+.env
