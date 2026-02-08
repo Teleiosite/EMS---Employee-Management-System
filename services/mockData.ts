@@ -191,7 +191,12 @@ export const jobRequirements: JobRequirement[] = [
     department: 'Engineering',
     required_skills: ['React', 'TypeScript', 'Node.js', 'Tailwind CSS'],
     minimum_years_experience: 5,
-    education_level: 'Bachelors',
+    education_level: 'Bachelors in Computer Science, Engineering, or related field',
+    responsibilities: [
+        'Develop and maintain high-quality React applications.',
+        'Collaborate with cross-functional teams to define, design, and ship new features.',
+        'Optimize applications for maximum speed and scalability.'
+    ],
     status: 'OPEN'
   },
   {
@@ -200,7 +205,12 @@ export const jobRequirements: JobRequirement[] = [
     department: 'Marketing',
     required_skills: ['SEO', 'Content Writing', 'Social Media', 'Analytics'],
     minimum_years_experience: 2,
-    education_level: 'Bachelors',
+    education_level: 'Bachelors degree in Marketing, Communications, or Business',
+    responsibilities: [
+        'Plan and execute marketing campaigns across various channels.',
+        'Create engaging content for social media and the company blog.',
+        'Analyze campaign performance metrics and generate reports.'
+    ],
     status: 'OPEN'
   },
   {
@@ -209,6 +219,12 @@ export const jobRequirements: JobRequirement[] = [
     department: 'Design',
     required_skills: ['Figma', 'Prototyping', 'User Research', 'Wireframing'],
     minimum_years_experience: 3,
+    education_level: 'Bachelors in Design, HCI, or equivalent portfolio experience',
+    responsibilities: [
+        'Conduct user research and usability testing.',
+        'Create wireframes, prototypes, and high-fidelity mockups.',
+        'Work closely with developers to ensure design fidelity.'
+    ],
     status: 'OPEN'
   }
 ];

@@ -126,6 +126,7 @@ export interface JobRequirement {
   required_skills: string[];
   minimum_years_experience: number;
   education_level?: string;
+  responsibilities: string[]; // Added field for Key Responsibilities
   status: 'OPEN' | 'CLOSED';
 }
 

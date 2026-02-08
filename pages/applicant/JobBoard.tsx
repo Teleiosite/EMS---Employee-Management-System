@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Briefcase, MapPin, Clock, Upload, Loader2, CheckCircle, FileText } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Upload, Loader2, CheckCircle, FileText, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
 import { jobRequirements, candidates } from '../../services/mockData';
 import { saveCandidate, parseResumeFile } from '../../services/resumeService';
 import { JobRequirement, User } from '../../types';
@@ -13,6 +13,7 @@ const JobBoard: React.FC = () => {
   
   // Application State
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   
@@ -36,7 +37,8 @@ const JobBoard: React.FC = () => {
     }
   }, []);
 
-  const handleApplyClick = (jobId: string) => {
+  const handleApplyClick = (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setApplyingJobId(jobId);
     setResumeFile(null);
   };
@@ -45,6 +47,14 @@ const JobBoard: React.FC = () => {
     setApplyingJobId(null);
     setResumeFile(null);
     setIsProcessing(false);
+  };
+
+  const toggleDetails = (jobId: string) => {
+    if (expandedJobId === jobId) {
+      setExpandedJobId(null);
+    } else {
+      setExpandedJobId(jobId);
+    }
   };
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
@@ -56,15 +66,10 @@ const JobBoard: React.FC = () => {
       // 1. Parse Resume
       const parsedData = await parseResumeFile(resumeFile);
       
-      // 2. Overwrite parsed name/email with authenticated user info to ensure consistency
-      // (Optional logic: keeping parsed data allows for updated info on resume)
-      // parsedData.name = `${currentUser.firstName} ${currentUser.lastName}`;
-      // parsedData.email = currentUser.email;
-
-      // 3. Save Candidate (linked to User ID)
+      // 2. Save Candidate (linked to User ID)
       await saveCandidate(resumeFile, parsedData, applyingJobId, currentUser.id);
 
-      // 4. Update UI
+      // 3. Update UI
       setAppliedJobIds(prev => [...prev, applyingJobId]);
       showToast("Application submitted successfully!", "success");
       setApplyingJobId(null);
@@ -93,10 +98,14 @@ const JobBoard: React.FC = () => {
           jobs.map(job => {
             const isApplied = appliedJobIds.includes(job.id);
             const isApplying = applyingJobId === job.id;
+            const isExpanded = expandedJobId === job.id;
 
             return (
               <div key={job.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all ${isApplying ? 'ring-2 ring-purple-500' : ''}`}>
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div 
+                  className="flex flex-col md:flex-row md:items-start justify-between gap-4 cursor-pointer"
+                  onClick={() => toggleDetails(job.id)}
+                >
                   <div className="flex-1">
                      <div className="flex items-center gap-2 mb-1">
                         <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide">
@@ -108,7 +117,10 @@ const JobBoard: React.FC = () => {
                           </span>
                         )}
                      </div>
-                     <h3 className="text-xl font-bold text-gray-900">{job.role_name}</h3>
+                     <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                       {job.role_name}
+                       {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                     </h3>
                      <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" /> Remote / Hybrid
@@ -131,13 +143,42 @@ const JobBoard: React.FC = () => {
                          ))}
                        </div>
                      </div>
+
+                     {/* Expanded Details: Responsibilities & Education */}
+                     {isExpanded && (
+                        <div className="mt-6 pt-4 border-t border-gray-100 animate-fade-in space-y-6">
+                            {job.responsibilities && job.responsibilities.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-purple-500" /> Key Responsibilities
+                                    </h4>
+                                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-1">
+                                        {job.responsibilities.map((resp, idx) => (
+                                            <li key={idx} className="leading-relaxed">{resp}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {job.education_level && (
+                                <div>
+                                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                        <GraduationCap className="w-4 h-4 text-purple-500" /> Education Requirements
+                                    </h4>
+                                    <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        {job.education_level}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                     )}
                   </div>
 
                   <div className="mt-4 md:mt-0 flex flex-col items-end gap-3 min-w-[150px]">
                      {!isApplied && !isApplying && (
                        <button 
-                         onClick={() => handleApplyClick(job.id)}
-                         className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm"
+                         onClick={(e) => handleApplyClick(job.id, e)}
+                         className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm z-10 relative"
                        >
                          Apply Now
                        </button>

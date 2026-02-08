@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
@@ -53,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
       name: 'Recruitment', 
       icon: FileText, 
       subItems: [
+        { name: 'Job Postings', path: '/admin/recruitment/jobs' },
         { name: 'Candidate Dashboard', path: '/admin/recruitment/candidates' },
         { name: 'Upload Resume', path: '/admin/recruitment/upload' }
       ]

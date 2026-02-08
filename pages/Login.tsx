@@ -1,12 +1,15 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { mockCredentials } from '../services/mockData';
 import { UserRole } from '../types';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +33,12 @@ const Login: React.FC = () => {
           navigate('/employee');
         } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
           localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
-          navigate('/applicant');
+          // Check for redirect param
+          if (redirectUrl) {
+            navigate(redirectUrl);
+          } else {
+            navigate('/applicant');
+          }
         } else {
           setError('Invalid email or password.');
         }
@@ -51,7 +59,13 @@ const Login: React.FC = () => {
         
         localStorage.setItem('user', JSON.stringify(newUser));
         // We'll also implicitly allow this user to 'login' for this session by redirecting
-        navigate('/applicant');
+        
+        // Check for redirect param (e.g. if they clicked Apply on landing page)
+        if (redirectUrl) {
+          navigate(redirectUrl);
+        } else {
+          navigate('/applicant');
+        }
       }
       setLoading(false);
     }, 800);
@@ -59,7 +73,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
-      <div className="mb-8 text-center">
+      <div className="mb-8 text-center cursor-pointer" onClick={() => navigate('/')}>
         <div className="bg-orange-100 p-3 rounded-xl inline-flex mb-4">
           <Building className="w-8 h-8 text-orange-600" />
         </div>

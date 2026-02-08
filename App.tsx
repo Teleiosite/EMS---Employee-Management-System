@@ -29,6 +29,8 @@ import AddAnnouncement from './pages/AddAnnouncement';
 import CandidateList from './pages/recruitment/CandidateList';
 import UploadResume from './pages/recruitment/UploadResume';
 import CandidateDetail from './pages/recruitment/CandidateDetail';
+import JobList from './pages/recruitment/JobList';
+import AddJob from './pages/recruitment/AddJob';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/applicant/ApplicantDashboard';
@@ -77,6 +79,10 @@ const App: React.FC = () => {
             
             <Route path="leaves" element={<AdminLeaves />} />
             
+            <Route path="recruitment/jobs" element={<JobList />} />
+            <Route path="recruitment/jobs/new" element={<AddJob />} />
+            <Route path="recruitment/jobs/edit/:id" element={<AddJob />} />
+
             <Route path="recruitment/candidates" element={<CandidateList />} />
             <Route path="recruitment/candidates/:id" element={<CandidateDetail />} />
             <Route path="recruitment/upload" element={<UploadResume />} />
