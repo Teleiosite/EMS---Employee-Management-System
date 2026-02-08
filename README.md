@@ -1,84 +1,105 @@
-# 🏢 EMS — Employee Management System (Frontend + Django Backend)
+# EMS — Employee Management System
 
-![React](https://img.shields.io/badge/React-19.0-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Django](https://img.shields.io/badge/Django-4.2-green)
-![DRF](https://img.shields.io/badge/DRF-3.14-red)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
+[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-61DAFB)](#frontend)
+[![Backend](https://img.shields.io/badge/backend-Django%20%2B%20DRF-0C4B33)](#backend)
+[![Auth](https://img.shields.io/badge/auth-JWT%20%2B%20MFA-orange)](#authentication--security)
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF)](#ci--quality-gates)
 
-A full-stack HRMS platform with:
-- A modern **React + TypeScript frontend** for Admin, Employee, and Applicant experiences.
-- A modular **Django + DRF backend** (`ems-backend/`) with JWT auth, role-based permissions, and production-oriented configuration.
+A production-oriented, full-stack HR platform with dedicated role experiences for **Admin/HR**, **Employee**, and **Applicant** users.
 
 ---
 
-## 📌 Table of Contents
+## Table of Contents
 
-- [1) Product Overview](#1-product-overview)
-- [2) Core Features](#2-core-features)
-- [3) Architecture Overview](#3-architecture-overview)
-- [4) Tech Stack](#4-tech-stack)
-- [5) Repository Structure](#5-repository-structure)
-- [6) Local Development Setup](#6-local-development-setup)
-- [7) Environment Variables](#7-environment-variables)
-- [8) Test & Quality Commands](#8-test--quality-commands)
-- [9) Deployment Notes](#9-deployment-notes)
-- [10) Recommended Next Steps (Vibe Coding Roadmap)](#10-recommended-next-steps-vibe-coding-roadmap)
-
----
-
-## 1) Product Overview
-
-EMS is designed as a practical HR system covering:
-- **People Operations**: employees, departments, attendance, leave, payroll.
-- **Recruitment Operations**: jobs, candidates, and resume handling.
-- **Role-Based Workflows**:
-  - **Admin / HR Manager**: management and approval actions.
-  - **Employee**: self-service profile, attendance, leave, payroll visibility.
-  - **Applicant**: job browsing and application lifecycle.
+- [1. Product Overview](#1-product-overview)
+- [2. Capabilities by Domain](#2-capabilities-by-domain)
+- [3. System Architecture](#3-system-architecture)
+- [4. Tech Stack](#4-tech-stack)
+- [5. Repository Layout](#5-repository-layout)
+- [6. Quick Start](#6-quick-start)
+- [7. Detailed Local Setup](#7-detailed-local-setup)
+- [8. Environment Variables](#8-environment-variables)
+- [9. Authentication & Security](#9-authentication--security)
+- [10. Backend API Modules](#10-backend-api-modules)
+- [11. Testing Strategy](#11-testing-strategy)
+- [12. CI & Quality Gates](#12-ci--quality-gates)
+- [13. Operations & Deployment](#13-operations--deployment)
+- [14. Data & Seeding](#14-data--seeding)
+- [15. Roadmap & Delivery Rhythm](#15-roadmap--delivery-rhythm)
+- [16. Contribution Guidelines](#16-contribution-guidelines)
+- [17. License](#17-license)
 
 ---
 
-## 2) Core Features
+## 1. Product Overview
 
-### Admin & HR
-- Employee and department management
-- Attendance monitoring and review
-- Leave approval workflows
-- Payroll run management (scaffolded backend APIs)
-- Recruitment pipeline management
+EMS is designed to cover core HR and recruitment workflows in one system:
 
-### Employees
-- Attendance tracking
-- Leave request submission and status
-- Personal profile visibility
+- **People Operations**: departments, employee profiles, attendance, leave, payroll.
+- **Recruitment**: job postings, candidate applications, resume processing.
+- **Role-sensitive UX**:
+  - **Admin/HR Manager**: approvals, governance, and management actions.
+  - **Employee**: self-service attendance, leave requests, payroll visibility.
+  - **Applicant**: job browsing, profile and application journey.
 
-### Applicants
-- Job browsing
-- Application submission and tracking
+The repository contains both:
+- A **React + TypeScript frontend** (root)
+- A **Django + DRF backend** (`ems-backend/`)
 
 ---
 
-## 3) Architecture Overview
+## 2. Capabilities by Domain
+
+### Admin / HR
+- Employee and department lifecycle management.
+- Attendance monitoring and correction review lifecycle.
+- Leave policy, leave balance, and request approval workflows.
+- Payroll runs, salary structures/components, tax slab configuration, payslips.
+- Recruitment management for jobs and candidate pipeline.
+
+### Employee
+- View and track personal attendance records.
+- Submit leave requests against policy windows.
+- Access personal payslip/payroll records.
+
+### Applicant
+- Register/login and browse open job opportunities.
+- Track application progress.
+
+---
+
+## 3. System Architecture
 
 ### Frontend
-- React 19 SPA with route-based role separation
-- Mock/service layer for domain data handling in UI flows
+- React SPA with role-based routes and layouts.
+- Service layer supports backend integration and controlled fallback behavior.
+- Built via Vite for fast local development and optimized production builds.
 
-### Backend (`ems-backend/`)
-- Django project split into apps:
-  - `authentication`, `employees`, `attendance`, `leaves`, `payroll`, `recruitment`, `core`
-- DRF API endpoints with JWT authentication
-- Role-based permission layer for Admin/HR and self-service boundaries
-- Docker + Celery + Redis + PostgreSQL ready runtime templates
+### Backend
+- Django project with modular apps:
+  - `authentication`
+  - `employees`
+  - `attendance`
+  - `leaves`
+  - `payroll`
+  - `recruitment`
+  - `core`
+- DRF APIs with JWT auth (SimpleJWT).
+- Role and object-level permission controls.
+- Migration-driven schema management.
+
+### Runtime & Platform Components
+- Docker / docker-compose assets.
+- Gunicorn + Nginx templates.
+- Celery + Redis scaffolding for async/background work.
 
 ---
 
-## 4) Tech Stack
+## 4. Tech Stack
 
 ### Frontend
 - React 19
-- TypeScript
+- TypeScript 5
 - Vite
 - Tailwind CSS
 - React Router
@@ -86,184 +107,301 @@ EMS is designed as a practical HR system covering:
 ### Backend
 - Django 4.2
 - Django REST Framework
+- django-filter
 - SimpleJWT
-- Celery + Redis
-- PostgreSQL
 - drf-spectacular (OpenAPI docs)
+- PostgreSQL (primary production target)
+- SQLite (fast CI/test fallback profile)
 
-### DevOps / Ops
-- Docker / docker-compose
-- Gunicorn + Nginx templates
-- GitHub Actions backend CI workflow
+### Ops / Reliability
+- Docker & Compose
+- Celery + Redis
+- python-json-logger / structlog (available)
+- sentry-sdk (available)
+- GitHub Actions
 
 ---
 
-## 5) Repository Structure
+## 5. Repository Layout
 
 ```text
 EMS---Employee-Management-System/
 ├── App.tsx
-├── pages/
 ├── components/
-├── services/
 ├── context/
+├── pages/
+├── services/
 ├── types.ts
 ├── package.json
-├── ems-backend/
-│   ├── manage.py
-│   ├── requirements.txt
-│   ├── ems_core/
-│   ├── apps/
-│   ├── config/
-│   ├── scripts/
-│   └── tests/
-└── .github/workflows/backend-ci.yml
+├── README.md
+├── .github/
+│   └── workflows/
+│       └── backend-ci.yml
+└── ems-backend/
+    ├── manage.py
+    ├── requirements.txt
+    ├── apps/
+    ├── ems_core/
+    ├── scripts/
+    ├── tests/
+    ├── docker-compose.yml
+    └── Dockerfile
 ```
 
 ---
 
-## 6) Local Development Setup
+## 6. Quick Start
 
-### A) Frontend
+### Prerequisites
+- Node.js 18+
+- npm 9+
+- Python 3.10+
+- (Optional) Docker Desktop
 
-1. Install dependencies
+### Fastest local start
+
 ```bash
+# 1) frontend
 npm install
+npm run dev
+
+# 2) backend (new terminal)
+cd ems-backend
+pip install -r requirements.txt
+cp .env.example .env  # if available
+python manage.py migrate
+python manage.py runserver
 ```
 
-2. Start frontend
+Frontend default: `http://localhost:5173`  
+Backend default: `http://localhost:8000`
+
+---
+
+## 7. Detailed Local Setup
+
+### A. Frontend
+
 ```bash
+npm install
 npm run dev
 ```
 
-3. Open app
-- `http://localhost:5173`
+Production build check:
 
-### B) Backend
-
-1. Enter backend folder
-```bash
-cd ems-backend
-```
-
-2. Create env file
-```bash
-cp .env.example .env
-```
-
-3. Start backend stack
-```bash
-docker compose up --build
-```
-
-4. Run migrations
-```bash
-docker compose exec web python manage.py makemigrations
-docker compose exec web python manage.py migrate
-```
-
-5. Optional: API docs
-- `http://localhost:8000/api/docs/`
-
----
-
-## 7) Environment Variables
-
-Backend variables live in `ems-backend/.env` (template in `.env.example`).
-
-Key groups:
-- **Security**: `SECRET_KEY`, `ALLOWED_HOSTS`, CORS/CSRF settings
-- **Database**: `DB_*`
-- **Celery**: broker/result backend
-- **API Behavior**: throttle limits, page size
-- **IP Control**: whitelist toggle and values
-
----
-
-## 8) Test & Quality Commands
-
-### Frontend
 ```bash
 npm run build
 ```
 
-### Backend
+### B. Backend (native Python)
+
+```bash
+cd ems-backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+### C. Backend (Docker)
+
+```bash
+cd ems-backend
+docker compose up --build
+```
+
+Then apply migrations (inside container):
+
+```bash
+docker compose exec web python manage.py migrate
+```
+
+### D. API Docs
+
+- OpenAPI schema: `http://localhost:8000/api/schema/`
+- Swagger UI: `http://localhost:8000/api/docs/`
+
+---
+
+## 8. Environment Variables
+
+Backend config is env-driven. Typical variable groups:
+
+### Core
+- `SECRET_KEY`
+- `DEBUG`
+- `ALLOWED_HOSTS`
+
+### Database
+- `DB_ENGINE`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_CONN_MAX_AGE`
+
+### API / DRF
+- `PAGE_SIZE`
+- `THROTTLE_USER`
+- `THROTTLE_ANON`
+
+### CORS / CSRF
+- `CORS_ALLOW_ALL_ORIGINS`
+- `CORS_ALLOWED_ORIGINS`
+- `CSRF_TRUSTED_ORIGINS`
+
+### Celery / Redis
+- `CELERY_BROKER_URL`
+- `CELERY_RESULT_BACKEND`
+
+### Network Guardrails
+- `IP_WHITELIST_ENABLED`
+- `IP_WHITELIST`
+
+---
+
+## 9. Authentication & Security
+
+Current backend security implementation includes:
+
+- JWT login/refresh flows.
+- Role-aware registration constraints.
+- Login attempt auditing.
+- Failed login lockout window.
+- MFA/TOTP setup + verification endpoints.
+- Password reset request/confirm token flows.
+- Email verification token flows.
+- Object-level permissions for self-service boundaries.
+
+> Note: verify policy requirements before enforcing MFA as mandatory for all roles.
+
+---
+
+## 10. Backend API Modules
+
+### `authentication`
+User model, JWT login/refresh, MFA, password reset, email verification, login attempt logs.
+
+### `employees`
+Department and employee profile models/API.
+
+### `attendance`
+Attendance logs plus correction request lifecycle.
+
+### `leaves`
+Leave types, policy windows, balances, and requests.
+
+### `payroll`
+Salary components/structures, payroll runs, tax slabs, payslips.
+
+### `recruitment`
+Job postings and candidate entities.
+
+---
+
+## 11. Testing Strategy
+
+### Backend checks
+
 ```bash
 cd ems-backend
 PYTHONPATH=. python -m compileall .
 PYTHONPATH=. pytest -q
 ```
 
----
+### Frontend checks
 
-## 9) Deployment Notes
+```bash
+npm run build
+```
 
-For production rollout, use:
-- `ems-backend/Dockerfile`
-- `ems-backend/docker-compose.yml`
-- `ems-backend/config/nginx.conf`
-- `ems-backend/config/gunicorn.conf.py`
-- `ems-backend/config/systemd/*.service`
-
-Recommended environment strategy:
-1. Keep `.env` secret in deployment platform vault.
-2. Use separate values for staging and production.
-3. Enforce branch protection + required CI checks.
+### Notes
+- CI is configured to run backend tests with SQLite defaults for reliability.
+- Domain-level tests include integration utilities and API flow coverage.
 
 ---
 
-## 10) Recommended Next Steps (Vibe Coding Roadmap)
+## 12. CI & Quality Gates
 
-Use this sequence to keep momentum and avoid rework.
+Backend CI workflow (`.github/workflows/backend-ci.yml`) runs:
 
-### Step 1 — Finalize Data Layer (High Priority)
-- Generate and commit real Django migrations for all apps.
-- Validate constraints and indexes.
-- Add seed scripts for realistic staging test data.
+1. Dependency install
+2. Python compile validation
+3. Pytest suite
 
-### Step 2 — Lock Security & Auth Flows
-- Add MFA/TOTP flows (if required by your policy).
-- Add login attempt throttling + lockout logic.
-- Add password reset + email verification flow.
+Recommended branch policy:
+- Require CI success before merge.
+- Require at least one code review approval.
+- Squash merge for linear history (optional but recommended).
 
-### Step 3 — Complete Business Logic
-- Payroll calculation rules (allowances/deductions/tax slabs).
-- Leave balances and policy windows.
-- Attendance corrections approval lifecycle.
+---
 
-### Step 4 — Add Serious Tests
-- API tests for each role (Admin/HR/Employee/Applicant).
-- Object-level permission tests.
-- End-to-end smoke tests for critical journeys.
+## 13. Operations & Deployment
 
-### Step 5 — Observability & Reliability
-- Add structured logging standards.
-- Add error monitoring (e.g., Sentry) and health dashboards.
-- Add backup/restore drill for DB.
+Deployment assets available under `ems-backend/`:
 
-### Step 6 — Release Workflow (Production)
+- `Dockerfile`
+- `docker-compose.yml`
+- `config/nginx.conf`
+- `config/gunicorn.conf.py`
+- `config/systemd/*.service`
+
+Recommended promotion flow:
 1. Feature branch -> PR
-2. CI green -> code review
-3. Merge -> deploy to staging
-4. Staging QA signoff
-5. Production deploy + post-deploy smoke checks
-
-### Step 7 — Vibe Coding Rhythm (Weekly)
-- **Mon**: Pick 1 domain and define acceptance criteria.
-- **Tue-Wed**: Implement APIs + UI integration.
-- **Thu**: Test hardening + edge cases.
-- **Fri**: Demo, retro, and backlog grooming.
+2. CI green + review
+3. Merge to main
+4. Deploy to staging
+5. QA signoff
+6. Production deploy
+7. Post-deploy smoke checks
 
 ---
 
-## 🤝 Contribution Guidance
+## 14. Data & Seeding
 
-- Keep PRs focused by domain (auth, attendance, leaves, etc.)
-- Add or update tests with each behavior change
-- Update docs when API contracts change
+The backend includes a seed utility for realistic staging baselines (admin/HR/employee records, leave/policy structures, attendance, salary/tax and payslip entities).
+
+Run from Django shell:
+
+```bash
+cd ems-backend
+python manage.py shell -c "from scripts.seed_data import run; run()"
+```
+
+Use seeded data only in local/staging, never in production.
 
 ---
 
-## 📄 License
+## 15. Roadmap & Delivery Rhythm
 
-MIT (or your preferred project license).
+### Priority sequence
+1. Finalize data layer and migration hygiene.
+2. Harden security and auth flows.
+3. Complete business logic depth.
+4. Expand role-based API and permission tests.
+5. Improve observability/reliability (monitoring + backup drills).
+6. Enforce production-grade release workflow.
+
+### Weekly rhythm
+- **Mon**: pick one domain and define acceptance criteria.
+- **Tue-Wed**: implement API + UI integration.
+- **Thu**: edge cases + hardening tests.
+- **Fri**: demo, retro, backlog refinement.
+
+---
+
+## 16. Contribution Guidelines
+
+- Keep changes domain-focused and small when possible.
+- Update tests with behavior changes.
+- Update docs when routes/contracts/config change.
+- Favor explicit migrations over implicit schema drift.
+
+---
+
+## 17. License
+
+MIT (or your preferred organization license policy).
