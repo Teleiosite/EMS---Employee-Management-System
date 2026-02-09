@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,46 +6,39 @@ import {
   Clock,
   XCircle,
   Briefcase,
-  Calendar
+  Calendar,
+  User as UserIcon,
+  Upload,
+  Bell,
+  Loader2
 } from 'lucide-react';
-import { candidates } from '../../services/mockData';
-import { Candidate, User } from '../../types';
+import { applicantApi, Application, ApplicantProfile } from '../../services/applicantApi';
+import { User } from '../../types';
 
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  let color = 'bg-gray-100 text-gray-600';
-  let icon = <Clock className="w-3 h-3" />;
-  let label = 'Under Review';
+const StatusBadge: React.FC<{ status: Application['status'] }> = ({ status }) => {
+  const color = applicantApi.getStatusColor(status);
+  const label = applicantApi.getStatusLabel(status);
 
-  switch (status) {
-    case 'APPLIED':
-      color = 'bg-blue-100 text-blue-700';
-      label = 'Submitted';
-      break;
-    case 'SHORTLISTED':
-      color = 'bg-yellow-100 text-yellow-700';
-      icon = <CheckCircle className="w-3 h-3" />;
-      label = 'Shortlisted';
-      break;
-    case 'INTERVIEWING':
-      color = 'bg-purple-100 text-purple-700';
-      icon = <Calendar className="w-3 h-3" />;
-      label = 'Interview Scheduled';
-      break;
-    case 'HIRED':
-      color = 'bg-green-100 text-green-700';
-      icon = <CheckCircle className="w-3 h-3" />;
-      label = 'Hired';
-      break;
-    case 'REJECTED':
-      color = 'bg-red-50 text-red-600';
-      icon = <XCircle className="w-3 h-3" />;
-      label = 'Not Selected';
-      break;
-  }
+  const getIcon = () => {
+    switch (status) {
+      case 'APPLIED':
+      case 'UNDER_REVIEW':
+        return <Clock className="w-3 h-3" />;
+      case 'SHORTLISTED':
+      case 'HIRED':
+        return <CheckCircle className="w-3 h-3" />;
+      case 'INTERVIEWING':
+        return <Calendar className="w-3 h-3" />;
+      case 'REJECTED':
+        return <XCircle className="w-3 h-3" />;
+      default:
+        return <Clock className="w-3 h-3" />;
+    }
+  };
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-      {icon} {label}
+      {getIcon()} {label}
     </span>
   );
 };
@@ -54,40 +46,135 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 const ApplicantDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [applications, setApplications] = useState<Candidate[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [profile, setProfile] = useState<ApplicantProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const u: User = JSON.parse(storedUser);
-      setUser(u);
+    const loadData = async () => {
+      // Get user from localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
 
-      // Filter candidates mock data for entries belonging to this user
-      const userApps = candidates.filter(c => c.userId === u.id);
-      // Sort by newest first
-      userApps.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      try {
+        // Fetch applications and profile in parallel
+        const [appsData, profileData] = await Promise.all([
+          applicantApi.getMyApplications(),
+          applicantApi.getProfile()
+        ]);
 
-      setApplications(userApps);
-    }
+        setApplications(appsData);
+        setProfile(profileData);
+      } catch (err: any) {
+        console.error('Failed to load applicant data:', err);
+        setError(err.message || 'Failed to load data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  // Friendly feedback messages based on status
-  const getFeedbackMessage = (status: string) => {
-    switch (status) {
-      case 'APPLIED': return "Your application has been received and is waiting for HR review.";
-      case 'SHORTLISTED': return "Great news! Your profile has been flagged for further review.";
-      case 'INTERVIEWING': return "We'd like to meet you! Check your email for interview details.";
-      case 'HIRED': return "Congratulations! We're excited to have you join the team.";
-      case 'REJECTED': return "Thank you for your interest. We've decided to move forward with other candidates.";
-      default: return "Application status updated.";
-    }
+  // Count applications by status
+  const statusCounts = {
+    total: applications.length,
+    pending: applications.filter(a => ['APPLIED', 'UNDER_REVIEW'].includes(a.status)).length,
+    interviews: applications.filter(a => a.status === 'INTERVIEWING').length,
+    shortlisted: applications.filter(a => a.status === 'SHORTLISTED').length,
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Welcome Section */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-800">Hello, {user?.firstName}!</h1>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Hello, {user?.firstName || profile?.first_name || 'Applicant'}!
+        </h1>
         <p className="text-gray-500 mt-1">Track your job applications and stay updated.</p>
+
+        {profile && profile.profile_completeness < 100 && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-yellow-800">
+                  Complete your profile ({profile.profile_completeness}%)
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  A complete profile increases your chances of getting noticed.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/applicant/profile')}
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Complete Profile
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Briefcase className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{statusCounts.total}</p>
+              <p className="text-xs text-gray-500">Total Applications</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{statusCounts.pending}</p>
+              <p className="text-xs text-gray-500">In Progress</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Calendar className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{statusCounts.interviews}</p>
+              <p className="text-xs text-gray-500">Interviews</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{statusCounts.shortlisted}</p>
+              <p className="text-xs text-gray-500">Shortlisted</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -102,6 +189,12 @@ const ApplicantDashboard: React.FC = () => {
               Browse Jobs
             </button>
           </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
           {applications.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
@@ -123,8 +216,10 @@ const ApplicantDashboard: React.FC = () => {
                 <div key={app.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{app.applied_role_name}</h3>
-                      <p className="text-sm text-gray-500">Applied on {app.created_at}</p>
+                      <h3 className="text-lg font-bold text-gray-900">{app.job_title}</h3>
+                      <p className="text-sm text-gray-500">
+                        {app.job_department} • Applied on {new Date(app.applied_at).toLocaleDateString()}
+                      </p>
                     </div>
                     <StatusBadge status={app.status} />
                   </div>
@@ -132,9 +227,22 @@ const ApplicantDashboard: React.FC = () => {
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <p className="text-sm text-gray-700 flex items-start gap-2">
                       <span className="mt-0.5 text-purple-500"><FileText className="w-4 h-4" /></span>
-                      {getFeedbackMessage(app.status)}
+                      {app.status_message}
                     </p>
                   </div>
+
+                  {app.status === 'INTERVIEWING' && app.interview_scheduled_at && (
+                    <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <p className="text-sm font-medium text-indigo-800 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Interview Scheduled
+                      </p>
+                      <p className="text-sm text-indigo-700 mt-1">
+                        {new Date(app.interview_scheduled_at).toLocaleString()}
+                        {app.interview_location && ` • ${app.interview_location}`}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -145,13 +253,53 @@ const ApplicantDashboard: React.FC = () => {
         <div className="md:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 sticky top-6">
             <h2 className="text-lg font-bold text-gray-800 mb-4">My Profile</h2>
+
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
-                <img src={user?.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 border border-purple-200 flex items-center justify-center">
+                <UserIcon className="w-8 h-8 text-purple-500" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">{user?.firstName} {user?.lastName}</h3>
-                <p className="text-sm text-gray-500 truncate max-w-[150px]">{user?.email}</p>
+                <h3 className="font-bold text-gray-900">
+                  {profile?.first_name || user?.firstName} {profile?.last_name || user?.lastName}
+                </h3>
+                <p className="text-sm text-gray-500 truncate max-w-[150px]">{profile?.email || user?.email}</p>
+              </div>
+            </div>
+
+            {profile?.headline && (
+              <p className="text-sm text-gray-600 mb-4">{profile.headline}</p>
+            )}
+
+            {/* Profile Completeness */}
+            {profile && (
+              <div className="mb-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Profile Completeness</span>
+                  <span className="font-medium text-gray-800">{profile.profile_completeness}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-purple-600 h-2 rounded-full transition-all"
+                    style={{ width: `${profile.profile_completeness}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Resume Status */}
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 mb-4">
+              <div className="flex items-center gap-2 text-sm">
+                {profile?.current_resume ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Resume Uploaded</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 text-yellow-500" />
+                    <span className="text-gray-700">No Resume Yet</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -161,6 +309,12 @@ const ApplicantDashboard: React.FC = () => {
                 className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Edit Profile
+              </button>
+              <button
+                onClick={() => navigate('/applicant/jobs')}
+                className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Find Jobs
               </button>
             </div>
           </div>

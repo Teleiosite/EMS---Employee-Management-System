@@ -13,18 +13,18 @@ const getAuthToken = (): string | null => {
 // Get headers with optional authentication
 const getHeaders = (authenticated: boolean = true, isFormData: boolean = false): HeadersInit => {
   const headers: HeadersInit = {};
-  
+
   if (!isFormData) {
     headers['Content-Type'] = 'application/json';
   }
-  
+
   if (authenticated) {
     const token = getAuthToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
   }
-  
+
   return headers;
 };
 
@@ -32,7 +32,7 @@ const getHeaders = (authenticated: boolean = true, isFormData: boolean = false):
 export class ApiError extends Error {
   status: number;
   data: any;
-  
+
   constructor(message: string, status: number, data?: any) {
     super(message);
     this.name = 'ApiError';
@@ -46,14 +46,14 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   if (response.status === 204) {
     return {} as T; // No content
   }
-  
+
   const data = await response.json().catch(() => ({}));
-  
+
   if (!response.ok) {
     const message = data.detail || data.message || data.error || 'An error occurred';
     throw new ApiError(message, response.status, data);
   }
-  
+
   return data as T;
 };
 
@@ -66,7 +66,7 @@ export const api = {
     });
     return handleResponse<T>(response);
   },
-  
+
   post: async <T>(endpoint: string, data?: any, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
@@ -75,7 +75,7 @@ export const api = {
     });
     return handleResponse<T>(response);
   },
-  
+
   put: async <T>(endpoint: string, data: any, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
@@ -84,7 +84,7 @@ export const api = {
     });
     return handleResponse<T>(response);
   },
-  
+
   patch: async <T>(endpoint: string, data: any, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PATCH',
@@ -93,7 +93,7 @@ export const api = {
     });
     return handleResponse<T>(response);
   },
-  
+
   delete: async <T>(endpoint: string, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
@@ -101,11 +101,41 @@ export const api = {
     });
     return handleResponse<T>(response);
   },
-  
+
   // For file uploads
   upload: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
+      headers: getHeaders(authenticated, true),
+      body: formData,
+    });
+    return handleResponse<T>(response);
+  },
+
+  // POST with FormData
+  postFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: getHeaders(authenticated, true),
+      body: formData,
+    });
+    return handleResponse<T>(response);
+  },
+
+  // PUT with FormData
+  putFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: getHeaders(authenticated, true),
+      body: formData,
+    });
+    return handleResponse<T>(response);
+  },
+
+  // PATCH with FormData
+  patchFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PATCH',
       headers: getHeaders(authenticated, true),
       body: formData,
     });

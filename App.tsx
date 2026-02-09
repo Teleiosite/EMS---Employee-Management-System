@@ -1,7 +1,8 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
+import { UserRole } from './types';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Layouts
 import Layout from './components/Layout'; // Admin Layout
@@ -25,7 +26,7 @@ import AdminLeaves from './pages/AdminLeaves';
 import Announcements from './pages/Announcements';
 import AddAnnouncement from './pages/AddAnnouncement';
 
-// Recruitment Pages (Admin)
+// Recruitment Pages (Admin Only)
 import CandidateList from './pages/recruitment/CandidateList';
 import UploadResume from './pages/recruitment/UploadResume';
 import CandidateDetail from './pages/recruitment/CandidateDetail';
@@ -48,52 +49,91 @@ const App: React.FC = () => {
     <ToastProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
+          {/* ============================================ */}
+          {/* PUBLIC ROUTES - No authentication required */}
+          {/* ============================================ */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Applicant Routes */}
-          <Route path="/applicant" element={<ApplicantLayout />}>
+          {/* ============================================ */}
+          {/* APPLICANT ROUTES - Only APPLICANT role */}
+          {/* ============================================ */}
+          <Route
+            path="/applicant"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
+                <ApplicantLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<ApplicantDashboard />} />
             <Route path="jobs" element={<JobBoard />} />
             <Route path="profile" element={<ApplicantProfile />} />
           </Route>
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<Layout />}>
+          {/* ============================================ */}
+          {/* ADMIN ROUTES - ADMIN and HR_MANAGER only */}
+          {/* Full access to all features including recruitment */}
+          {/* ============================================ */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.HR_MANAGER]}>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<Dashboard />} />
-            
+
+            {/* Employee Management */}
             <Route path="employees" element={<Employees />} />
             <Route path="employees/new" element={<AddEmployee />} />
             <Route path="employees/edit/:id" element={<AddEmployee />} />
-            
+
+            {/* Department Management */}
             <Route path="departments" element={<Departments />} />
             <Route path="departments/new" element={<AddDepartment />} />
             <Route path="departments/edit/:id" element={<AddDepartment />} />
-            
+
+            {/* Attendance Management */}
             <Route path="attendance" element={<AdminAttendance />} />
-            
+
+            {/* Payroll Management */}
             <Route path="payroll" element={<Payroll />} />
             <Route path="payroll/new" element={<AddPayroll />} />
             <Route path="payroll/edit/:id" element={<AddPayroll />} />
-            
-            <Route path="leaves" element={<AdminLeaves />} />
-            
-            <Route path="recruitment/jobs" element={<JobList />} />
-            <Route path="recruitment/jobs/new" element={<AddJob />} />
-            <Route path="recruitment/jobs/edit/:id" element={<AddJob />} />
 
-            <Route path="recruitment/candidates" element={<CandidateList />} />
-            <Route path="recruitment/candidates/:id" element={<CandidateDetail />} />
-            <Route path="recruitment/upload" element={<UploadResume />} />
-            
+            {/* Leave Management */}
+            <Route path="leaves" element={<AdminLeaves />} />
+
+            {/* RECRUITMENT - Admin/HR Only (Employees cannot access) */}
+            <Route path="recruitment">
+              <Route path="jobs" element={<JobList />} />
+              <Route path="jobs/new" element={<AddJob />} />
+              <Route path="jobs/edit/:id" element={<AddJob />} />
+              <Route path="candidates" element={<CandidateList />} />
+              <Route path="candidates/:id" element={<CandidateDetail />} />
+              <Route path="upload" element={<UploadResume />} />
+            </Route>
+
+            {/* Announcements */}
             <Route path="announcements" element={<Announcements />} />
             <Route path="announcements/new" element={<AddAnnouncement />} />
             <Route path="announcements/edit/:id" element={<AddAnnouncement />} />
           </Route>
 
-          {/* Employee Routes */}
-          <Route path="/employee" element={<EmployeeLayout />}>
+          {/* ============================================ */}
+          {/* EMPLOYEE ROUTES - EMPLOYEE role only */}
+          {/* NO access to recruitment features */}
+          {/* ============================================ */}
+          <Route
+            path="/employee"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE]}>
+                <EmployeeLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<EmployeeDashboard />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="leaves" element={<EmployeeLeaves />} />
@@ -102,7 +142,9 @@ const App: React.FC = () => {
             <Route path="profile" element={<div className="p-6">Profile Page Coming Soon</div>} />
           </Route>
 
-          {/* Catch all */}
+          {/* ============================================ */}
+          {/* CATCH ALL - Redirect to landing */}
+          {/* ============================================ */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
