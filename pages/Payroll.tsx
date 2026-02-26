@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Printer, MoreVertical, Edit, Trash2, Plus, CreditCard, Loader2 } from 'lucide-react';
 import { payrollApi } from '../services/payrollApi';
-import { payrolls as mockPayrolls } from '../services/mockData';
 import { PayrollRecord } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -23,9 +22,9 @@ const Payroll: React.FC = () => {
         const data = await payrollApi.listPayslips();
         setPayrollData(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setPayrollData([...mockPayrolls]);
-        setError('Using offline data');
+        console.error('Failed to fetch payroll data:', err);
+        setPayrollData([]);
+        setError('Failed to load payroll data');
       } finally {
         setLoading(false);
       }

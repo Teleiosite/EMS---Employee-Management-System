@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Clock, MapPin, Loader2 } from 'lucide-react';
 import { attendanceApi } from '../services/attendanceApi';
-import { recentAttendance as mockAttendance } from '../services/mockData';
 import { AttendanceLog } from '../types';
 
 const AdminAttendance: React.FC = () => {
@@ -18,9 +17,9 @@ const AdminAttendance: React.FC = () => {
         const data = await attendanceApi.list();
         setLogs(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setLogs([...mockAttendance]);
-        setError('Using offline data');
+        console.error('Failed to fetch attendance logs:', err);
+        setLogs([]);
+        setError('Failed to load attendance logs');
       } finally {
         setLoading(false);
       }
