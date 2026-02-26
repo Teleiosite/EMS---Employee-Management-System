@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Menu, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { currentUser as defaultUser } from '../services/mockData';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
+
+const defaultUser: User = {
+  id: 'unknown',
+  email: '',
+  firstName: 'User',
+  lastName: '',
+  role: UserRole.EMPLOYEE,
+};
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
@@ -21,6 +28,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     navigate('/login');
   };
 

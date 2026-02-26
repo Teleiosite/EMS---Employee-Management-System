@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Eye, Upload, Loader2 } from 'lucide-react';
 import { recruitmentApi } from '../../services/recruitmentApi';
-import { candidates as mockCandidates, jobRequirements as mockJobs } from '../../services/mockData';
 import { Candidate, JobRequirement } from '../../types';
 
 const CandidateList: React.FC = () => {
@@ -30,11 +29,10 @@ const CandidateList: React.FC = () => {
         setCandidates(sorted);
         setJobs(jobsData);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        const sorted = [...mockCandidates].sort((a, b) => b.fit_score - a.fit_score);
-        setCandidates(sorted);
-        setJobs([...mockJobs]);
-        setError('Using offline data');
+        console.error('Failed to fetch recruitment data:', err);
+        setCandidates([]);
+        setJobs([]);
+        setError('Failed to load candidate data');
       } finally {
         setLoading(false);
       }

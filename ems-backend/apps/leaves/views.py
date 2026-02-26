@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
 from .models import LeaveBalance, LeavePolicyWindow, LeaveRequest, LeaveType
@@ -42,3 +43,15 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         if self.action in {'update', 'partial_update', 'destroy'}:
             return [IsAdminOrHRManager()]
         return [IsSelfOrAdminOrHR()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if getattr(user, 'role', None) in {'ADMIN', 'HR_MANAGER'}:
+            serializer.save()
+            return
+
+        employee = getattr(user, 'employee_profile', None)
+        if employee is None:
+            raise PermissionDenied('Employee profile is required to submit a leave request.')
+
+        serializer.save(employee=employee, status='PENDING')

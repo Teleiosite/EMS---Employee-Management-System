@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Loader2 } from 'lucide-react';
 import { departmentsApi, ApiError } from '../services/employeesApi';
-import { departments as mockDepartments } from '../services/mockData';
 import { Department } from '../types';
 
 const Departments: React.FC = () => {
@@ -22,11 +21,12 @@ const Departments: React.FC = () => {
         const data = await departmentsApi.list();
         setDepartments(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        // Fallback to mock data
-        setDepartments(mockDepartments);
-        if (err instanceof ApiError && err.status !== 401) {
-          setError('Using offline data. Backend may not be running.');
+        console.error('Failed to fetch departments:', err);
+        setDepartments([]);
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError('Failed to load departments.');
         }
       } finally {
         setLoading(false);
@@ -47,8 +47,7 @@ const Departments: React.FC = () => {
       setDepartments(prev => prev.filter(dept => dept.id !== id));
     } catch (err) {
       console.error('Failed to delete department:', err);
-      // Still remove from local state for demo purposes
-      setDepartments(prev => prev.filter(dept => dept.id !== id));
+      setError('Failed to delete department.');
     } finally {
       setDeleting(null);
     }
