@@ -43,6 +43,7 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import Attendance from './pages/Attendance'; // Employee Attendance View
 import EmployeeLeaves from './pages/EmployeeLeaves';
 import EmployeePayroll from './pages/EmployeePayroll';
+import EmployeeProfile from './pages/EmployeeProfile';
 
 const App: React.FC = () => {
   return (
@@ -139,7 +140,7 @@ const App: React.FC = () => {
             <Route path="leaves" element={<EmployeeLeaves />} />
             <Route path="payroll" element={<EmployeePayroll />} />
             <Route path="announcements" element={<Announcements />} />
-            <Route path="profile" element={<div className="p-6">Profile Page Coming Soon</div>} />
+            <Route path="profile" element={<EmployeeProfile />} />
           </Route>
 
           {/* ============================================ */}

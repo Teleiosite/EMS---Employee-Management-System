@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2, Building2 } from 'lucide-react';
 import { departmentsApi, ApiError } from '../services/employeesApi';
-import { departments as mockDepartments } from '../services/mockData';
 import { Department } from '../types';
 
 const Departments: React.FC = () => {
@@ -22,11 +21,15 @@ const Departments: React.FC = () => {
         const data = await departmentsApi.list();
         setDepartments(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        // Fallback to mock data
-        setDepartments(mockDepartments);
-        if (err instanceof ApiError && err.status !== 401) {
-          setError('Using offline data. Backend may not be running.');
+        console.error('Failed to fetch departments:', err);
+        if (err instanceof ApiError) {
+          if (err.status === 401) {
+            setError('Please log in to view departments.');
+          } else {
+            setError(`Failed to load departments: ${err.message}`);
+          }
+        } else {
+          setError('Failed to connect to server. Please check if the backend is running.');
         }
       } finally {
         setLoading(false);
@@ -134,10 +137,26 @@ const Departments: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {filteredDepartments.length === 0 && (
+                {filteredDepartments.length === 0 && !error && (
                   <tr>
-                    <td colSpan={3} className="py-8 text-center text-gray-500">
-                      No departments found.
+                    <td colSpan={3} className="py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <Building2 className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 mb-4">
+                          {searchTerm ? 'No departments found matching your search.' : 'No departments added yet.'}
+                        </p>
+                        {!searchTerm && (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/admin/departments/new')}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            + Add Your First Department
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}

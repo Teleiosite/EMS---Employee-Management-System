@@ -123,11 +123,16 @@ export interface JobRequirement {
   id: string;
   role_name: string;
   department: string;
+  location?: string;
+  employment_type?: string;
+  description?: string;
+  responsibilities: string[]; // Added field for Key Responsibilities
   required_skills: string[];
   minimum_years_experience: number;
   education_level?: string;
-  responsibilities: string[]; // Added field for Key Responsibilities
-  status: 'OPEN' | 'CLOSED';
+  salary_range?: string;
+  status: 'OPEN' | 'CLOSED' | 'DRAFT';
+  created_at?: string;
 }
 
 export interface Candidate {
@@ -143,6 +148,12 @@ export interface Candidate {
   applied_role_id: string; // Links to JobRequirement
   applied_role_name: string;
   fit_score: number; // Hidden from applicant
-  status: 'APPLIED' | 'SHORTLISTED' | 'REJECTED' | 'INTERVIEWING' | 'HIRED';
+  ai_analysis?: {
+    summary?: string;
+    strengths?: string[];
+    missing_skills?: string[];
+    experience_check?: string;
+  };
+  status: 'APPLIED' | 'SHORTLISTED' | 'REJECTED' | 'INTERVIEWING' | 'HIRED' | 'UNDER_REVIEW';
   created_at: string;
 }

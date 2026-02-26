@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { employeesApi, ApiError } from '../services/employeesApi';
-import { employees as mockEmployees } from '../services/mockData';
 import { EmployeeProfile } from '../types';
 
 type Employee = EmployeeProfile & { name: string; email: string };
@@ -25,10 +24,15 @@ const Employees: React.FC = () => {
         const data = await employeesApi.list();
         setEmployeeList(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setEmployeeList(mockEmployees);
-        if (err instanceof ApiError && err.status !== 401) {
-          setError('Using offline data. Backend may not be running.');
+        console.error('Failed to fetch employees:', err);
+        if (err instanceof ApiError) {
+          if (err.status === 401) {
+            setError('Please log in to view employees.');
+          } else {
+            setError(`Failed to load employees: ${err.message}`);
+          }
+        } else {
+          setError('Failed to connect to server. Please check if the backend is running.');
         }
       } finally {
         setLoading(false);
@@ -201,10 +205,26 @@ const Employees: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {filteredEmployees.length === 0 && (
+                {filteredEmployees.length === 0 && !error && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                      No employees found.
+                    <td colSpan={8} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <UserPlus className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 mb-4">
+                          {searchTerm ? 'No employees found matching your search.' : 'No employees added yet.'}
+                        </p>
+                        {!searchTerm && (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/admin/employees/new')}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            + Add Your First Employee
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}

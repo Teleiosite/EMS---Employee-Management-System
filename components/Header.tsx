@@ -21,13 +21,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     navigate('/login');
   };
 
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           type="button"
           onClick={onMenuClick}
           className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
@@ -38,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
       <div className="flex items-center gap-4">
         {user.role === 'ADMIN' && (
-          <button 
+          <button
             type="button"
             onClick={() => navigate('/admin/employees/new')}
             className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
@@ -47,8 +49,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             Add New Employee
           </button>
         )}
-        
-        <button 
+
+        <button
           type="button"
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
@@ -65,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {user.avatarUrl ? (
             <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            user.firstName[0]
+            user.firstName?.[0] || user.email?.[0] || '?'
           )}
         </div>
       </div>

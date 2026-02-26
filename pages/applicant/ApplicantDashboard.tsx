@@ -60,17 +60,21 @@ const ApplicantDashboard: React.FC = () => {
       }
 
       try {
-        // Fetch applications and profile in parallel
-        const [appsData, profileData] = await Promise.all([
-          applicantApi.getMyApplications(),
-          applicantApi.getProfile()
-        ]);
-
+        // Fetch applications — this is the critical one
+        const appsData = await applicantApi.getMyApplications();
         setApplications(appsData);
+      } catch (err: any) {
+        console.error('Failed to load applications:', err);
+        setError(err.message || 'Failed to load applications');
+      }
+
+      try {
+        // Profile may not exist yet for newly-registered applicants
+        const profileData = await applicantApi.getProfile();
         setProfile(profileData);
       } catch (err: any) {
-        console.error('Failed to load applicant data:', err);
-        setError(err.message || 'Failed to load data');
+        // Profile not found is expected for new users — don't crash
+        console.warn('Profile not found (expected for new users):', err?.message);
       } finally {
         setIsLoading(false);
       }
@@ -80,11 +84,12 @@ const ApplicantDashboard: React.FC = () => {
   }, []);
 
   // Count applications by status
+  const safeApplications = Array.isArray(applications) ? applications : [];
   const statusCounts = {
-    total: applications.length,
-    pending: applications.filter(a => ['APPLIED', 'UNDER_REVIEW'].includes(a.status)).length,
-    interviews: applications.filter(a => a.status === 'INTERVIEWING').length,
-    shortlisted: applications.filter(a => a.status === 'SHORTLISTED').length,
+    total: safeApplications.length,
+    pending: safeApplications.filter(a => ['APPLIED', 'UNDER_REVIEW'].includes(a.status)).length,
+    interviews: safeApplications.filter(a => a.status === 'INTERVIEWING').length,
+    shortlisted: safeApplications.filter(a => a.status === 'SHORTLISTED').length,
   };
 
   if (isLoading) {
@@ -104,7 +109,7 @@ const ApplicantDashboard: React.FC = () => {
         </h1>
         <p className="text-gray-500 mt-1">Track your job applications and stay updated.</p>
 
-        {profile && profile.profile_completeness < 100 && (
+        {profile?.profile_completeness !== undefined && profile.profile_completeness < 100 && (
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -196,7 +201,7 @@ const ApplicantDashboard: React.FC = () => {
             </div>
           )}
 
-          {applications.length === 0 ? (
+          {safeApplications.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Briefcase className="w-8 h-8 text-gray-300" />
@@ -212,7 +217,7 @@ const ApplicantDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {applications.map(app => (
+              {safeApplications.map(app => (
                 <div key={app.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -271,7 +276,7 @@ const ApplicantDashboard: React.FC = () => {
             )}
 
             {/* Profile Completeness */}
-            {profile && (
+            {profile?.profile_completeness !== undefined && (
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600">Profile Completeness</span>
@@ -325,3 +330,4 @@ const ApplicantDashboard: React.FC = () => {
 };
 
 export default ApplicantDashboard;
+

@@ -11,8 +11,19 @@ import {
   Loader2
 } from 'lucide-react';
 import { dashboardApi } from '../services/dashboardApi';
-import { dashboardStats as mockStats } from '../services/mockData';
 import { DashboardStats } from '../types';
+
+// Default empty stats
+const emptyStats: DashboardStats = {
+  totalEmployees: 0,
+  onLeaveToday: 0,
+  totalDepartments: 0,
+  pendingApprovals: 0,
+  presentToday: 0,
+  totalAnnouncements: 0,
+  approvedLeave: 0,
+  pendingPayrolls: 0,
+};
 
 const StatCard: React.FC<{
   title: string;
@@ -82,7 +93,7 @@ const InfoCard: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats>(mockStats);
+  const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,10 +104,15 @@ const Dashboard: React.FC = () => {
         const data = await dashboardApi.getStats();
         setStats(data);
         setError(null);
-      } catch (err) {
-        console.warn('Failed to fetch dashboard stats, using mock data:', err);
-        setStats(mockStats);
-        setError('Using offline data');
+      } catch (err: any) {
+        console.error('Failed to fetch dashboard stats:', err);
+        // Keep showing zeros, don't use mock data
+        setStats(emptyStats);
+        if (err?.status === 401) {
+          setError('Please log in to view dashboard data.');
+        } else {
+          setError('Failed to connect to server. Showing empty data.');
+        }
       } finally {
         setLoading(false);
       }

@@ -18,6 +18,7 @@ from .serializers import (
     ApplicantApplicationSerializer,
     ApplicantProfileSerializer,
 )
+from .utils import parse_resume, analyze_candidate
 
 
 # ============================================
@@ -117,6 +118,27 @@ class CandidateViewSet(viewsets.ModelViewSet):
         candidate.save()
         return Response(CandidateSerializer(candidate).data)
 
+    @action(detail=True, methods=['post'])
+    def parse_resume(self, request, pk=None):
+        """Manually trigger resume parsing"""
+        candidate = self.get_object()
+        if not candidate.resume:
+            return Response({'error': 'No resume file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+             parsed_data = parse_resume(candidate.resume)
+             candidate.parsed_resume_data = parsed_data
+             
+             # Calculate Fit Score
+             analysis_results = analyze_candidate(candidate, candidate.job)
+             candidate.ai_fit_score = analysis_results['ai_fit_score']
+             candidate.ai_analysis = analysis_results['ai_analysis']
+             candidate.ai_skill_match = analysis_results['ai_skill_match']
+             candidate.save()
+             return Response(CandidateSerializer(candidate).data)
+        except Exception as e:
+             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # ============================================
 # APPLICANT VIEWS - Limited access
@@ -167,8 +189,20 @@ class ApplicantApplyView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         candidate = serializer.save()
         
-        # TODO: Trigger AI resume parsing here
-        # parse_resume_task.delay(candidate.id)
+        # Trigger AI resume parsing
+        if candidate.resume:
+             try:
+                 parsed_data = parse_resume(candidate.resume)
+                 candidate.parsed_resume_data = parsed_data
+                 
+                 # Calculate Fit Score
+                 analysis_results = analyze_candidate(candidate, candidate.job)
+                 candidate.ai_fit_score = analysis_results['ai_fit_score']
+                 candidate.ai_analysis = analysis_results['ai_analysis']
+                 candidate.ai_skill_match = analysis_results['ai_skill_match']
+                 candidate.save()
+             except Exception as e:
+                 print(f"Error parsing resume: {e}")
         
         return Response(
             ApplicantCandidateSerializer(candidate).data,
@@ -198,8 +232,20 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
         # If resume uploaded, update timestamp
         if 'current_resume' in request.FILES:
             instance.resume_uploaded_at = timezone.now()
-            # TODO: Trigger AI parsing
-            # parse_profile_resume_task.delay(instance.id)
+            # Trigger AI parsing
+            try:
+                parsed_data = parse_resume(instance.current_resume)
+                instance.resume_parsed_data = parsed_data
+                
+                # Update Applicant Profile fields based on resume
+                instance.skills = parsed_data.get('skills', [])
+                instance.education = parsed_data.get('education', [])
+                instance.experience = parsed_data.get('experience', [])
+                instance.years_of_experience = parsed_data.get('experience_years', 0)
+                instance.headline = parsed_data.get('headline', '')
+                instance.save()
+            except Exception as e:
+                 print(f"Error parsing profile resume: {e}")
         
         self.perform_update(serializer)
         return Response(serializer.data)
@@ -230,7 +276,19 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
         instance.resume_uploaded_at = timezone.now()
         instance.save()
         
-        # TODO: Trigger AI parsing
-        # parse_profile_resume_task.delay(instance.id)
+        # Trigger AI parsing
+        try:
+            parsed_data = parse_resume(instance.current_resume)
+            instance.resume_parsed_data = parsed_data
+            
+            # Update Applicant Profile fields based on resume
+            instance.skills = parsed_data.get('skills', [])
+            instance.education = parsed_data.get('education', [])
+            instance.experience = parsed_data.get('experience', [])
+            instance.years_of_experience = parsed_data.get('experience_years', 0)
+            instance.headline = parsed_data.get('headline', '')
+            instance.save()
+        except Exception as e:
+                print(f"Error parsing profile resume: {e}")
         
         return Response(ApplicantProfileSerializer(instance).data)

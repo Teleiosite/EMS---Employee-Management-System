@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { announcements } from '../services/mockData';
+import { Loader2 } from 'lucide-react';
+import { announcementsApi } from '../services/announcementsApi';
 import { useToast } from '../context/ToastContext';
 
 const AddAnnouncement: React.FC = () => {
@@ -15,18 +16,27 @@ const AddAnnouncement: React.FC = () => {
     date: new Date().toISOString().split('T')[0],
     priority: 'NORMAL' as 'LOW' | 'NORMAL' | 'HIGH'
   });
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
     if (isEditMode && id) {
-      const item = announcements.find(a => a.id === id);
-      if (item) {
-        setFormData({
-          title: item.title,
-          content: item.content,
-          date: item.date,
-          priority: item.priority
-        });
-      }
+      setFetching(true);
+      announcementsApi.get(id)
+        .then((item) => {
+          setFormData({
+            title: item.title,
+            content: item.content,
+            date: item.date,
+            priority: item.priority,
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to fetch announcement:', err);
+          showToast('Failed to load announcement for editing.', 'error');
+          navigate('/admin/announcements');
+        })
+        .finally(() => setFetching(false));
     }
   }, [isEditMode, id]);
 
@@ -35,31 +45,35 @@ const AddAnnouncement: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    setTimeout(() => {
+    setLoading(true);
+
+    try {
       if (isEditMode && id) {
-        const index = announcements.findIndex(a => a.id === id);
-        if (index !== -1) {
-          announcements[index] = {
-            ...announcements[index],
-            ...formData
-          };
-        }
+        await announcementsApi.update(id, formData);
         showToast("Announcement updated successfully!", 'success');
-        showToast("Update email sent to all employees.", 'email');
       } else {
-        announcements.unshift({
-          id: `a${Date.now()}`,
-          ...formData
-        });
+        await announcementsApi.create(formData);
         showToast("Announcement published successfully!", 'success');
-        showToast("Email notification sent to all active employees.", 'email');
       }
       navigate('/admin/announcements');
-    }, 500);
+    } catch (err: any) {
+      console.error('Failed to save announcement:', err);
+      showToast(err?.message || 'Failed to save announcement.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (fetching) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+        Loading announcement...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -71,33 +85,33 @@ const AddAnnouncement: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Title</label>
-            <input 
+            <input
               name="title"
               value={formData.title}
               onChange={handleChange}
-              required 
-              type="text" 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-              placeholder="Enter announcement title" 
+              required
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              placeholder="Enter announcement title"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Date</label>
-              <input 
+              <input
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                required 
-                type="date" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-gray-600" 
+                required
+                type="date"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-gray-600"
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Priority</label>
-              <select 
+              <select
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
@@ -112,26 +126,28 @@ const AddAnnouncement: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Content</label>
-            <textarea 
+            <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
-              required 
+              required
               rows={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none" 
-              placeholder="Write your announcement content here..." 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none"
+              placeholder="Write your announcement content here..."
             />
           </div>
 
           <div className="pt-4 flex gap-3">
-            <button 
-              type="submit" 
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+            <button
+              type="submit"
+              disabled={loading}
+              className={`bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {isEditMode ? 'Update Announcement' : 'Publish Announcement'}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => navigate('/admin/announcements')}
               className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium transition-colors"
             >

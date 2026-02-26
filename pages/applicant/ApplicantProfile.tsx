@@ -77,9 +77,10 @@ const ApplicantProfile: React.FC = () => {
           bio: data.bio || '',
           years_of_experience: data.years_of_experience || 0,
         });
-        setSkills(data.skills || []);
-        setEducation(data.education || []);
-        setExperience(data.experience || []);
+        // Add safe array fallbacks here
+        setSkills(Array.isArray(data.skills) ? data.skills : []);
+        setEducation(Array.isArray(data.education) ? data.education : []);
+        setExperience(Array.isArray(data.experience) ? data.experience : []);
       } catch (err: any) {
         console.error('Failed to load profile:', err);
         setError(err.message || 'Failed to load profile');
