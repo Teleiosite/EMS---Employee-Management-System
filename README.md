@@ -72,7 +72,7 @@ The repository contains both:
 
 ### Frontend
 - React SPA with role-based routes and layouts.
-- Service layer supports backend integration and controlled fallback behavior.
+- Service layer is backend-first for integrated modules and surfaces API failures explicitly in the UI.
 - Built via Vite for fast local development and optimized production builds.
 
 ### Backend
@@ -376,6 +376,32 @@ Use seeded data only in local/staging, never in production.
 ---
 
 ## 15. Roadmap & Delivery Rhythm
+
+### What has been achieved (latest integration pass)
+- Removed mock credential login shortcuts; authentication now depends on backend responses.
+- Removed mock-data fallbacks from key API-backed modules (dashboard, employees, departments, payroll, admin attendance, admin leaves, recruitment job/candidate list views).
+- Improved frontend failure behavior to show explicit errors instead of silently swapping to local mock state.
+- Hardened leave creation rules in backend:
+  - non-admin users cannot submit leave requests for other employees,
+  - employee-created requests are bound server-side to their own employee profile and forced to `PENDING`.
+- Improved logout hygiene by clearing user and JWT tokens from local storage.
+- Verified current checks pass locally:
+  - frontend production build,
+  - TypeScript compile check,
+  - backend pytest suite,
+  - Django system checks.
+
+### What remains to be done
+- ✅ Completed: removed `services/mockData` dependencies from application pages and wired remaining modules to API services or persisted local storage where backend module is not yet available (announcements).
+- Add/expand frontend automated tests (unit/integration) and wire them into CI (frontend currently has no `npm test` script).
+- Add robust API contract validation and shared schema typing to reduce mapping drift between backend and frontend DTOs.
+- Improve production observability for frontend and backend (structured logs, error tracking, request tracing dashboards).
+- Finalize deployment hardening:
+  - production env templates,
+  - static/media strategy,
+  - HTTPS and security headers validation,
+  - backup/restore and rollback playbooks.
+- Expand full E2E regression coverage for role-based critical flows (Admin/HR, Employee, Applicant).
 
 ### Priority sequence
 1. Finalize data layer and migration hygiene.

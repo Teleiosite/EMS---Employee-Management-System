@@ -1,241 +1,176 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { employees } from '../services/mockData';
+import { registerStaffWithBackend } from '../services/authApi';
+import { departmentsApi, designationsApi, employeesApi } from '../services/employeesApi';
+import { UserRole } from '../types';
 
 const AddEmployee: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEditMode = !!id;
+  const isEditMode = Boolean(id);
+
+  const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
+  const [designations, setDesignations] = useState<Array<{ id: number; title: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    username: '',
+    employeeId: '',
     firstName: '',
     lastName: '',
     email: '',
-    department: '',
+    departmentId: '',
+    designationId: '',
     salary: '',
-    experience: '',
     password: '',
     confirmPassword: '',
-    joiningDate: ''
+    joiningDate: '',
+    phone: '',
+    address: '',
+    status: 'ACTIVE',
   });
 
   useEffect(() => {
-    if (isEditMode && id) {
-      const employee = employees.find(e => e.id === id);
-      if (employee) {
-        const [first, ...last] = employee.name.split(' ');
-        setFormData({
-          username: employee.employeeId, // Using EmployeeID as username for mock
-          firstName: first || '',
-          lastName: last.join(' ') || '',
-          email: employee.email,
-          department: employee.department.toLowerCase(),
-          salary: employee.baseSalary.toString(),
-          experience: employee.experience.toString(),
-          password: 'mockpassword', // Placeholder
-          confirmPassword: 'mockpassword',
-          joiningDate: employee.joiningDate
-        });
+    const loadOptions = async () => {
+      try {
+        const [deps, desigs] = await Promise.all([departmentsApi.list(), designationsApi.list()]);
+        setDepartments(deps.map((d) => ({ id: d.id, name: d.name })));
+        setDesignations(desigs.map((d) => ({ id: d.id, title: d.title })));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load form options');
       }
+    };
+    loadOptions();
+  }, []);
+
+  useEffect(() => {
+    const loadEmployee = async () => {
+      if (!isEditMode || !id) return;
+      setLoading(true);
+      try {
+        const employee = await employeesApi.get(id);
+        setFormData((prev) => ({
+          ...prev,
+          employeeId: employee.employeeId,
+          firstName: employee.name.split(' ')[0] || '',
+          lastName: employee.name.split(' ').slice(1).join(' '),
+          email: employee.email,
+          salary: String(employee.baseSalary),
+          joiningDate: employee.joiningDate,
+          status: employee.status,
+          password: '',
+          confirmPassword: '',
+        }));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load employee');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEmployee();
+  }, [id, isEditMode]);
+
+  const canSubmit = useMemo(() => {
+    if (!isEditMode) {
+      return formData.password.length >= 8 && formData.password === formData.confirmPassword;
     }
-  }, [isEditMode, id]);
+    return true;
+  }, [formData.confirmPassword, formData.password, isEditMode]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simulate API call and Data Update
-    setTimeout(() => {
+    setLoading(true);
+    setError(null);
+
+    try {
       if (isEditMode && id) {
-        // Update existing employee in mock data
-        const index = employees.findIndex(e => e.id === id);
-        if (index !== -1) {
-          employees[index] = {
-            ...employees[index],
-            name: `${formData.firstName} ${formData.lastName}`,
-            email: formData.email,
-            department: formData.department.charAt(0).toUpperCase() + formData.department.slice(1),
-            baseSalary: Number(formData.salary),
-            experience: Number(formData.experience)
-          };
-        }
-        alert("Employee updated successfully!");
+        await employeesApi.update(id, {
+          department: formData.departmentId ? Number(formData.departmentId) : null,
+          designation: formData.designationId ? Number(formData.designationId) : null,
+          base_salary: Number(formData.salary),
+          phone_number: formData.phone,
+          address: formData.address,
+          status: formData.status,
+        });
       } else {
-        // Add new employee to mock data
-        const newEmployee = {
-          id: `e${Date.now()}`,
-          userId: `u${Date.now()}`,
-          name: `${formData.firstName} ${formData.lastName}`,
+        const user = await registerStaffWithBackend({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
-          employeeId: `EMP${Math.floor(Math.random() * 1000)}`,
-          department: formData.department.charAt(0).toUpperCase() + formData.department.slice(1) || 'Engineering',
-          designation: 'Employee', // Default
-          joiningDate: new Date().toISOString().split('T')[0],
-          status: 'ACTIVE' as const,
-          baseSalary: Number(formData.salary),
-          experience: Number(formData.experience)
-        };
-        employees.push(newEmployee);
-        alert("Employee added successfully!");
+          password: formData.password,
+          role: UserRole.EMPLOYEE,
+        });
+
+        await employeesApi.create({
+          user_id: user.id,
+          employee_id: formData.employeeId,
+          department: formData.departmentId ? Number(formData.departmentId) : null,
+          designation: formData.designationId ? Number(formData.designationId) : null,
+          base_salary: Number(formData.salary),
+          joining_date: formData.joiningDate,
+          phone_number: formData.phone,
+          address: formData.address,
+          status: formData.status,
+        });
       }
+
       navigate('/admin/employees');
-    }, 500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save employee');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">{isEditMode ? 'Edit Employee' : 'Add New Employee'}</h1>
+        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-3xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Username */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Username</label>
-              <input 
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required 
-                type="text" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter username" 
-              />
-            </div>
-
-            {/* First Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">First name</label>
-              <input 
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required 
-                type="text" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter first name" 
-              />
-            </div>
-
-            {/* Last Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Last name</label>
-              <input 
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required 
-                type="text" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter last name" 
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Email address</label>
-              <input 
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required 
-                type="email" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter email address" 
-              />
-            </div>
-
-            {/* Department */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Department</label>
-              <select 
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-gray-600"
-              >
-                <option value="">Select Department (Optional)</option>
-                <option value="engineering">Engineering</option>
-                <option value="hr">Human Resources</option>
-                <option value="sales">Sales</option>
-                <option value="marketing">Marketing</option>
-                <option value="finance">Finance</option>
-              </select>
-            </div>
-
-            {/* Salary */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Salary</label>
-              <input 
-                name="salary"
-                value={formData.salary}
-                onChange={handleChange}
-                type="number" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter salary" 
-              />
-            </div>
-
-            {/* Birthday */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Birthday</label>
-              <input type="date" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-gray-500" />
-            </div>
-
-            {/* Experience */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Experience (Years)</label>
-              <input 
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                type="number" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter experience in years" 
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Password</label>
-              <input 
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required={!isEditMode}
-                type="password" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Enter password" 
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Confirm Password</label>
-              <input 
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required={!isEditMode}
-                type="password" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" 
-                placeholder="Confirm password" 
-              />
-            </div>
+            <input name="employeeId" required value={formData.employeeId} onChange={handleChange} placeholder="Employee ID" className="w-full px-4 py-2 border rounded-lg" disabled={isEditMode} />
+            <input name="email" required value={formData.email} onChange={handleChange} type="email" placeholder="Email" className="w-full px-4 py-2 border rounded-lg" disabled={isEditMode} />
+            <input name="firstName" required value={formData.firstName} onChange={handleChange} placeholder="First Name" className="w-full px-4 py-2 border rounded-lg" disabled={isEditMode} />
+            <input name="lastName" required value={formData.lastName} onChange={handleChange} placeholder="Last Name" className="w-full px-4 py-2 border rounded-lg" disabled={isEditMode} />
+            <select name="departmentId" value={formData.departmentId} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg bg-white">
+              <option value="">Select Department</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <select name="designationId" value={formData.designationId} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg bg-white">
+              <option value="">Select Designation</option>
+              {designations.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+            </select>
+            <input name="salary" required value={formData.salary} onChange={handleChange} type="number" placeholder="Base Salary" className="w-full px-4 py-2 border rounded-lg" />
+            <input name="joiningDate" required value={formData.joiningDate} onChange={handleChange} type="date" className="w-full px-4 py-2 border rounded-lg" />
+            <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" className="w-full px-4 py-2 border rounded-lg" />
+            <input name="address" value={formData.address} onChange={handleChange} placeholder="Address" className="w-full px-4 py-2 border rounded-lg" />
+            <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg bg-white">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="ON_LEAVE">ON_LEAVE</option>
+              <option value="TERMINATED">TERMINATED</option>
+            </select>
           </div>
 
-          <div className="pt-4">
-            <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
-              {isEditMode ? 'Update Employee' : 'Submit'}
-            </button>
-          </div>
+          {!isEditMode && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <input name="password" required value={formData.password} onChange={handleChange} type="password" placeholder="Temporary Password" className="w-full px-4 py-2 border rounded-lg" />
+              <input name="confirmPassword" required value={formData.confirmPassword} onChange={handleChange} type="password" placeholder="Confirm Password" className="w-full px-4 py-2 border rounded-lg" />
+            </div>
+          )}
+
+          <button disabled={loading || !canSubmit} type="submit" className="bg-orange-500 hover:bg-orange-600 disabled:opacity-70 text-white px-8 py-2.5 rounded-lg font-medium">
+            {loading ? 'Saving...' : isEditMode ? 'Update Employee' : 'Create Employee'}
+          </button>
         </form>
       </div>
     </div>

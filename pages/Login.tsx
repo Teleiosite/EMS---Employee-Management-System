@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building, Mail, Lock, User as UserIcon } from 'lucide-react';
-import { mockCredentials } from '../services/mockData';
 import { loginWithBackend, registerApplicantWithBackend } from '../services/authApi';
 import { UserRole } from '../types';
 
@@ -40,18 +39,7 @@ const Login: React.FC = () => {
       }
     } catch (backendError) {
       if (isLogin) {
-        if (email === mockCredentials.admin.email && password === mockCredentials.admin.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.admin.user));
-          navigate('/admin');
-        } else if (email === mockCredentials.employee.email && password === mockCredentials.employee.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.employee.user));
-          navigate('/employee');
-        } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
-          navigate(redirectUrl || '/applicant');
-        } else {
-          setError(backendError instanceof Error ? backendError.message : 'Invalid email or password.');
-        }
+        setError(backendError instanceof Error ? backendError.message : 'Invalid email or password.');
       } else {
         setError(backendError instanceof Error ? backendError.message : 'Sign up failed.');
       }

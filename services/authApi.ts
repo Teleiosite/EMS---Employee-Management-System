@@ -57,3 +57,31 @@ export const registerApplicantWithBackend = async (name: string, email: string, 
 
   return data;
 };
+
+
+export const registerStaffWithBackend = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: UserRole.EMPLOYEE | UserRole.HR_MANAGER;
+}) => {
+  const response = await fetch(`${API_BASE_URL}/auth/register/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: data.email,
+      password: data.password,
+      first_name: data.firstName,
+      last_name: data.lastName,
+      role: data.role,
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || JSON.stringify(payload));
+  }
+
+  return payload;
+};

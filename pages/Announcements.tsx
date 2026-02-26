@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Megaphone, Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { announcements as initialAnnouncements } from '../services/mockData';
+import { announcementsApi } from '../services/announcementsApi';
 
 const Announcements: React.FC = () => {
   const navigate = useNavigate();
-  const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    announcementsApi.list().then(setAnnouncements).catch(() => setAnnouncements([]));
+  }, []);
 
   const toggleActionMenu = (id: string) => {
     setActiveActionId(activeActionId === id ? null : id);
@@ -21,8 +25,7 @@ const Announcements: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
       setActiveActionId(null);
       setAnnouncements(prev => prev.filter(item => item.id !== id));
-      const index = initialAnnouncements.findIndex(item => item.id === id);
-      if (index > -1) initialAnnouncements.splice(index, 1);
+      announcementsApi.delete(id).catch(() => undefined);
     }
   };
 

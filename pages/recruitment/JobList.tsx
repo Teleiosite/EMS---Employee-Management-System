@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, Briefcase, MapPin, Loader2 } from 'lucide-react';
 import { recruitmentApi } from '../../services/recruitmentApi';
-import { jobRequirements as mockJobs } from '../../services/mockData';
 import { JobRequirement } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
@@ -24,9 +23,9 @@ const JobList: React.FC = () => {
         const data = await recruitmentApi.listJobs();
         setJobs(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setJobs([...mockJobs]);
-        setError('Using offline data');
+        console.error('Failed to fetch jobs:', err);
+        setJobs([]);
+        setError('Failed to load jobs');
       } finally {
         setLoading(false);
       }
@@ -47,9 +46,7 @@ const JobList: React.FC = () => {
       showToast('Job posting deleted.', 'info');
     } catch (err) {
       console.error('Failed to delete job:', err);
-      // Update locally for demo
-      setJobs(prev => prev.filter(job => job.id !== id));
-      showToast('Job posting deleted.', 'info');
+      showToast('Failed to delete job posting.', 'error');
     } finally {
       setDeleting(null);
     }

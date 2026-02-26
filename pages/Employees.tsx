@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2 } from 'lucide-react';
 import { employeesApi, ApiError } from '../services/employeesApi';
-import { employees as mockEmployees } from '../services/mockData';
 import { EmployeeProfile } from '../types';
 
 type Employee = EmployeeProfile & { name: string; email: string };
@@ -25,10 +24,12 @@ const Employees: React.FC = () => {
         const data = await employeesApi.list();
         setEmployeeList(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setEmployeeList(mockEmployees);
-        if (err instanceof ApiError && err.status !== 401) {
-          setError('Using offline data. Backend may not be running.');
+        console.error('Failed to fetch employees:', err);
+        setEmployeeList([]);
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError('Failed to load employees.');
         }
       } finally {
         setLoading(false);
@@ -60,8 +61,7 @@ const Employees: React.FC = () => {
       setEmployeeList(prev => prev.filter(emp => emp.id !== id));
     } catch (err) {
       console.error('Failed to delete employee:', err);
-      // Still remove from local state for demo
-      setEmployeeList(prev => prev.filter(emp => emp.id !== id));
+      setError('Failed to delete employee.');
     } finally {
       setDeleting(null);
     }

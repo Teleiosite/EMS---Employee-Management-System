@@ -29,10 +29,16 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, attrs):
+        request = self.context.get('request')
         start_date = attrs.get('start_date')
         end_date = attrs.get('end_date')
         duration_days = attrs.get('duration_days')
         leave_type = attrs.get('leave_type')
+        employee = attrs.get('employee')
+
+        if request and request.method == 'POST' and getattr(request.user, 'role', None) not in {'ADMIN', 'HR_MANAGER'}:
+            if employee and employee.user_id != request.user.id:
+                raise serializers.ValidationError('Employees can only submit leave requests for themselves.')
 
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError('start_date must be before or equal to end_date.')
@@ -40,11 +46,12 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('duration_days must be greater than 0.')
 
         if start_date and end_date and duration_days is not None:
-            expected_duration = business_days(start_date, end_date)
-            if float(duration_days) > float(expected_duration):
-                raise serializers.ValidationError('duration_days cannot exceed business days in the selected window.')
+            calendar_days = (end_date - start_date).days + 1
+            expected_business_days = business_days(start_date, end_date)
+            max_allowed_days = max(calendar_days, expected_business_days)
+            if float(duration_days) > float(max_allowed_days):
+                raise serializers.ValidationError('duration_days cannot exceed days in the selected window.')
 
-        employee = attrs.get('employee')
         if leave_type and employee and start_date and end_date:
             has_policy = LeavePolicyWindow.objects.filter(
                 leave_type=leave_type,

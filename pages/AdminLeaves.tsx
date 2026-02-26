@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { leavesApi } from '../services/leavesApi';
-import { leaves as mockLeaves } from '../services/mockData';
 import { LeaveRequest } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -21,9 +20,9 @@ const AdminLeaves: React.FC = () => {
         const data = await leavesApi.listRequests();
         setLeaves(data);
       } catch (err) {
-        console.warn('Failed to fetch from API, using mock data:', err);
-        setLeaves([...mockLeaves]);
-        setError('Using offline data');
+        console.error('Failed to fetch leave requests:', err);
+        setLeaves([]);
+        setError('Failed to load leave requests');
       } finally {
         setLoading(false);
       }
@@ -47,9 +46,7 @@ const AdminLeaves: React.FC = () => {
       }, 500);
     } catch (err) {
       console.error('Failed to update leave request:', err);
-      // Update locally for demo
-      setLeaves(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-      showToast(`Leave request marked as ${status}`, 'success');
+      showToast('Failed to update leave request status.', 'error');
     } finally {
       setProcessing(null);
     }

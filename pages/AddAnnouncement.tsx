@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { announcements } from '../services/mockData';
+import { announcementsApi } from '../services/announcementsApi';
 import { useToast } from '../context/ToastContext';
 
 const AddAnnouncement: React.FC = () => {
@@ -18,15 +18,15 @@ const AddAnnouncement: React.FC = () => {
 
   useEffect(() => {
     if (isEditMode && id) {
-      const item = announcements.find(a => a.id === id);
-      if (item) {
+      announcementsApi.get(id).then((item) => {
+        if (!item) return;
         setFormData({
           title: item.title,
           content: item.content,
           date: item.date,
           priority: item.priority
         });
-      }
+      });
     }
   }, [isEditMode, id]);
 
@@ -35,30 +35,19 @@ const AddAnnouncement: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    setTimeout(() => {
-      if (isEditMode && id) {
-        const index = announcements.findIndex(a => a.id === id);
-        if (index !== -1) {
-          announcements[index] = {
-            ...announcements[index],
-            ...formData
-          };
-        }
-        showToast("Announcement updated successfully!", 'success');
-        showToast("Update email sent to all employees.", 'email');
-      } else {
-        announcements.unshift({
-          id: `a${Date.now()}`,
-          ...formData
-        });
-        showToast("Announcement published successfully!", 'success');
-        showToast("Email notification sent to all active employees.", 'email');
-      }
-      navigate('/admin/announcements');
-    }, 500);
+
+    if (isEditMode && id) {
+      await announcementsApi.update(id, formData);
+      showToast('Announcement updated successfully!', 'success');
+      showToast('Update email sent to all employees.', 'email');
+    } else {
+      await announcementsApi.create(formData);
+      showToast('Announcement published successfully!', 'success');
+      showToast('Email notification sent to all active employees.', 'email');
+    }
+    navigate('/admin/announcements');
   };
 
   return (

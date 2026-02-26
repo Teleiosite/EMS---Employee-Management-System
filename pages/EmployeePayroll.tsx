@@ -1,103 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { Download, FileText, AlertCircle } from 'lucide-react';
-import { payrolls, employees } from '../services/mockData';
+import React, { useEffect, useState } from 'react';
+import { Download, CreditCard } from 'lucide-react';
 import { PayrollRecord, User } from '../types';
+import { employeesApi } from '../services/employeesApi';
+import { payrollApi } from '../services/payrollApi';
 
 const EmployeePayroll: React.FC = () => {
-  const [myPayrolls, setMyPayrolls] = useState<PayrollRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [records, setRecords] = useState<PayrollRecord[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const load = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) return;
       const user: User = JSON.parse(storedUser);
-      // Find the employee profile associated with this user account
-      const employeeProfile = employees.find(e => e.userId === user.id);
-      
-      if (employeeProfile) {
-        // Filter payrolls for this employee
-        const userPayrolls = payrolls.filter(p => p.employeeId === employeeProfile.id);
-        setMyPayrolls(userPayrolls);
+      try {
+        const profiles = await employeesApi.list();
+        const profile = profiles.find((p) => p.userId === user.id);
+        if (!profile) {
+          setError('Employee profile not found.');
+          return;
+        }
+        const payslips = await payrollApi.listPayslips({ employee: profile.id });
+        setRecords(payslips);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load payroll records');
       }
-    }
-    setLoading(false);
+    };
+    load();
   }, []);
-
-  const getPayPeriodString = (month: string, year: number) => {
-    // Simple mapping for demo purposes. 
-    // In a real app, use a library like date-fns
-    const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
-    const startDate = new Date(year, monthIndex, 1);
-    const endDate = new Date(year, monthIndex + 1, 0); // Last day of month
-
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return `${startDate.toLocaleDateString('en-US', options)} to ${endDate.toLocaleDateString('en-US', options)}`;
-  };
-
-  const handleDownload = (id: string) => {
-    alert("Downloading payslip...");
-  };
-
-  if (loading) {
-     return <div className="p-6 text-gray-500">Loading payroll data...</div>;
-  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">My Payslips</h1>
+        <h1 className="text-2xl font-bold text-gray-800">My Payroll</h1>
+        <p className="text-gray-500">View your salary slips and payroll history.</p>
+        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase text-gray-500 font-bold tracking-wider">
-                <th className="px-6 py-4">Pay Period</th>
-                <th className="px-6 py-4">Salary</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {myPayrolls.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-gray-600 font-medium">
-                    {getPayPeriodString(record.month, record.year)}
-                  </td>
-                  <td className="px-6 py-4 text-gray-900 font-medium">
-                    ${record.netSalary.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        record.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                        record.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                    }`}>
-                        {record.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button 
-                      onClick={() => handleDownload(record.id)}
-                      className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline"
-                    >
-                      Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {myPayrolls.length === 0 && (
-                <tr>
-                   <td colSpan={4} className="py-12 text-center flex flex-col items-center justify-center text-gray-400">
-                     <FileText className="w-12 h-12 mb-2 opacity-20" />
-                     <p>No payslips found for your account.</p>
-                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <table className="w-full text-left">
+          <thead><tr className="bg-gray-50 text-xs uppercase text-gray-500"><th className="px-6 py-4">Month</th><th className="px-6 py-4">Gross</th><th className="px-6 py-4">Deductions</th><th className="px-6 py-4">Net</th><th className="px-6 py-4">Action</th></tr></thead>
+          <tbody className="divide-y divide-gray-100">
+            {records.map((r) => (
+              <tr key={r.id}><td className="px-6 py-4">{r.month} {r.year}</td><td className="px-6 py-4">${r.baseSalary.toLocaleString()}</td><td className="px-6 py-4">${r.deductions.toLocaleString()}</td><td className="px-6 py-4 font-semibold text-green-600">${r.netSalary.toLocaleString()}</td><td className="px-6 py-4"><button className="flex items-center gap-1 text-orange-600"><Download className="w-4 h-4" /> Download</button></td></tr>
+            ))}
+            {records.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500"><CreditCard className="w-6 h-6 mx-auto mb-2" />No payroll records available.</td></tr>}
+          </tbody>
+        </table>
       </div>
     </div>
   );
