@@ -9,6 +9,47 @@ A production-oriented, full-stack HR platform with dedicated role experiences fo
 
 ---
 
+## 🚦 Current Status
+
+### ✅ Completed & Working
+
+| Area | Status | Notes |
+|---|---|---|
+| **Admin Dashboard** | ✅ Working | Stats, employees, departments, payroll, leave management |
+| **Employee Dashboard** | ✅ Working | Dashboard, attendance, leave, payslips, announcements |
+| **Employee – My Profile** | ✅ Fixed | Fixed double `/api` URL bug + added `/me/` DRF endpoint with correct permissions |
+| **Applicant (Career) Dashboard** | ✅ Working | Dashboard and profile pages load correctly |
+| **Applicant – Job Board** | ✅ Fixed | Fixed `jobsData.filter is not a function` (paginated DRF response unwrapping) |
+| **Announcements** | ✅ Fixed | Created missing DB migration for `core` app; seeded sample announcements |
+| **Seed Data** | ✅ Done | Departments, employees, job postings, leave types, payroll |
+| **Role-based Auth** | ✅ Working | JWT tokens, RBAC enforced on all API endpoints and frontend routes |
+| **Setup Admin Command** | ✅ Added | `python manage.py setup_admin` creates the admin user reliably |
+
+### 🔧 Demo Login Credentials
+
+| Portal | Email | Password | Role |
+|---|---|---|---|
+| Admin / HR | `admin@ems.com` | `admin123` | ADMIN |
+| Employee | `john.doe@ems.com` | `123` | EMPLOYEE |
+| Applicant | Sign up via the app | — | APPLICANT |
+
+### ⚠️ Known Remaining Items
+
+| Area | Issue | Priority |
+|---|---|---|
+| **Attendance** | Clock-in/out UI not yet wired to backend API | Medium |
+| **Leave Requests** | Employee leave submission frontend not connected | Medium |
+| **Payslip PDF** | Payslip detail/download not implemented | Low |
+| **Real-time notifications** | Bell icon is static; no WebSocket/push yet | Low |
+| **Admin – Create Job Posting** | UI form needs end-to-end test with the recruitment API | Medium |
+| **Admin – Announcements CRUD** | Create/edit announcement form needs verification | Medium |
+| **Email sending** | Password reset and email verification emails not configured | Low |
+| **PostgreSQL** | Dev uses SQLite; production PostgreSQL config needs `.env` setup | High (pre-deploy) |
+
+---
+
+
+
 ## Table of Contents
 
 - [1. Product Overview](#1-product-overview)

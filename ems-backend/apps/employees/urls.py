@@ -3,6 +3,6 @@ from .views import DepartmentViewSet, EmployeeProfileViewSet
 
 router = DefaultRouter()
 router.register('departments', DepartmentViewSet)
-router.register('profiles', EmployeeProfileViewSet)
+router.register('profiles', EmployeeProfileViewSet, basename='employeeprofile')
 
 urlpatterns = router.urls

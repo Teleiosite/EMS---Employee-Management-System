@@ -34,10 +34,19 @@ const JobBoard: React.FC = () => {
     const loadData = async () => {
       try {
         // Fetch jobs (public, no auth needed) and user's applications in parallel
-        const [jobsData, appsData] = await Promise.all([
+        const [jobsRaw, appsRaw] = await Promise.all([
           applicantApi.getPublicJobs(),
           applicantApi.getMyApplications().catch(() => []) // Ignore error if not logged in
         ]);
+
+        // Backend may return a paginated object {count, results:[]} or a plain array
+        const jobsData: PublicJob[] = Array.isArray(jobsRaw)
+          ? jobsRaw
+          : (jobsRaw as any)?.results ?? [];
+
+        const appsData: Application[] = Array.isArray(appsRaw)
+          ? appsRaw
+          : (appsRaw as any)?.results ?? [];
 
         setJobs(jobsData.filter(j => j.status === 'OPEN'));
         setApplications(appsData);
