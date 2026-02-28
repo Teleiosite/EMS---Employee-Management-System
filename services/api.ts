@@ -67,6 +67,21 @@ export const api = {
     return handleResponse<T>(response);
   },
 
+  getBlob: async (endpoint: string, authenticated: boolean = true): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: getHeaders(authenticated),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const message = data.detail || data.message || data.error || 'An error occurred downloading the file';
+      throw new ApiError(message, response.status, data);
+    }
+
+    return await response.blob();
+  },
+
   post: async <T>(endpoint: string, data?: any, authenticated: boolean = true): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',

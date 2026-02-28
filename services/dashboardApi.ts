@@ -8,6 +8,7 @@ import { employeesApi, departmentsApi } from './employeesApi';
 import { leavesApi } from './leavesApi';
 import { attendanceApi } from './attendanceApi';
 import { payrollApi } from './payrollApi';
+import { announcementsApi } from './announcementsApi';
 
 export const dashboardApi = {
     /**
@@ -21,7 +22,7 @@ export const dashboardApi = {
             totalDepartments: 0,
             pendingApprovals: 0,
             presentToday: 0,
-            totalAnnouncements: 0, // No backend endpoint
+            totalAnnouncements: 0,
             approvedLeave: 0,
             pendingPayrolls: 0,
         };
@@ -74,6 +75,14 @@ export const dashboardApi = {
             stats.pendingPayrolls = payrollRuns.filter(pr => pr.status === 'DRAFT' || pr.status === 'PROCESSING').length;
         } catch (e) {
             console.warn('Failed to fetch payroll for dashboard:', e);
+        }
+
+        try {
+            // Get total announcements
+            const announcements = await announcementsApi.list();
+            stats.totalAnnouncements = announcements.length;
+        } catch (e) {
+            console.warn('Failed to fetch announcements for dashboard:', e);
         }
 
         return stats;

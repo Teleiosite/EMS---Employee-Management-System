@@ -122,6 +122,10 @@ export const payrollApi = {
         return transformPayslip(response);
     },
 
+    downloadPayslip: async (id: string): Promise<Blob> => {
+        return api.getBlob(`/payroll/payslips/${id}/download/`);
+    },
+
     // ==================== TAX SLABS ====================
 
     listTaxSlabs: async (): Promise<TaxSlab[]> => {

@@ -37,12 +37,12 @@ A production-oriented, full-stack HR platform with dedicated role experiences fo
 
 | Area | Issue | Priority |
 |---|---|---|
-| **Attendance** | Clock-in/out UI not yet wired to backend API | Medium |
-| **Leave Requests** | Employee leave submission frontend not connected | Medium |
-| **Payslip PDF** | Payslip detail/download not implemented | Low |
-| **Real-time notifications** | Bell icon is static; no WebSocket/push yet | Low |
+| **Attendance** | ✅ Integrated to backend API | High |
+| **Leave Requests** | ✅ Connected to real API | High |
+| **Payslip PDF** | ✅ Implemented PDF generation | Medium |
+| **Alerts & Notifications** | ✅ Uses in-app Toast & alert components | Medium |
+| **Admin – Announcements CRUD** | ✅ Integrated and counts update correctly | Medium |
 | **Admin – Create Job Posting** | UI form needs end-to-end test with the recruitment API | Medium |
-| **Admin – Announcements CRUD** | Create/edit announcement form needs verification | Medium |
 | **Email sending** | Password reset and email verification emails not configured | Low |
 | **PostgreSQL** | Dev uses SQLite; production PostgreSQL config needs `.env` setup | High (pre-deploy) |
 

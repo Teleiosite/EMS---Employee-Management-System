@@ -125,7 +125,7 @@ const EmployeeProfile: React.FC = () => {
                 </div>
                 <div className="px-8 pb-8 relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-16">
-                        <div className="w-32 h-32 rounded-full bg-white border-4 border-white shadow-xl flex flex-shrink-0 items-center justify-center text-5xl font-extrabold text-orange-500 overflow-hidden relative">
+                        <div className="w-28 h-28 rounded-full bg-white border-4 border-white shadow-xl flex flex-shrink-0 items-center justify-center text-4xl font-extrabold text-orange-500 overflow-hidden relative">
                             {user?.avatarUrl ? (
                                 <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
@@ -133,16 +133,16 @@ const EmployeeProfile: React.FC = () => {
                             )}
                         </div>
                         <div className="flex-1 sm:pb-2">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-1">
-                                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{displayName}</h2>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-2">
+                                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{displayName}</h2>
                                 {profile && (
-                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${getStatusColor(profile.status)}`}>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${getStatusColor(profile.status)}`}>
                                         {profile.status.replace('_', ' ')}
                                     </span>
                                 )}
                             </div>
                             {profile && (
-                                <p className="text-gray-500 text-lg flex items-center gap-2">
+                                <p className="text-gray-500 text-base flex items-center gap-2">
                                     <span className="font-medium text-gray-700">{profile.designation}</span>
                                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                                     <span>{profile.department}</span>

@@ -41,8 +41,21 @@ const EmployeePayroll: React.FC = () => {
     }
   };
 
-  const handleDownload = (id: string) => {
-    alert("Downloading payslip...");
+  const handleDownload = async (record: PayrollRecord) => {
+    try {
+      const blob = await payrollApi.downloadPayslip(record.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payslip_${record.month}_${record.year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      console.error("Failed to download payslip:", err);
+      setError("Failed to download payslip PDF.");
+    }
   };
 
   if (loading) {
@@ -97,15 +110,15 @@ const EmployeePayroll: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${record.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                        record.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-blue-100 text-blue-700'
+                      record.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
                       }`}>
                       {record.status}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => handleDownload(record.id)}
+                      onClick={() => handleDownload(record)}
                       className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline"
                     >
                       Download

@@ -95,7 +95,7 @@ const ApplicantDashboard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
       </div>
     );
   }
@@ -159,8 +159,8 @@ const ApplicantDashboard: React.FC = () => {
 
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Calendar className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Calendar className="w-5 h-5 text-orange-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">{statusCounts.interviews}</p>
@@ -189,7 +189,7 @@ const ApplicantDashboard: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-800">My Applications</h2>
             <button
               onClick={() => navigate('/applicant/jobs')}
-              className="text-sm font-medium text-purple-600 hover:text-purple-700 hover:underline"
+              className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline"
             >
               Browse Jobs
             </button>
@@ -210,7 +210,7 @@ const ApplicantDashboard: React.FC = () => {
               <p className="text-gray-500 mt-1 mb-6">Start exploring opportunities and apply today.</p>
               <button
                 onClick={() => navigate('/applicant/jobs')}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 View Open Positions
               </button>
@@ -231,7 +231,7 @@ const ApplicantDashboard: React.FC = () => {
 
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <p className="text-sm text-gray-700 flex items-start gap-2">
-                      <span className="mt-0.5 text-purple-500"><FileText className="w-4 h-4" /></span>
+                      <span className="mt-0.5 text-orange-500"><FileText className="w-4 h-4" /></span>
                       {app.status_message}
                     </p>
                   </div>
@@ -260,8 +260,8 @@ const ApplicantDashboard: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-800 mb-4">My Profile</h2>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 border border-purple-200 flex items-center justify-center">
-                <UserIcon className="w-8 h-8 text-purple-500" />
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-orange-100 border border-orange-200 flex items-center justify-center">
+                <UserIcon className="w-8 h-8 text-orange-500" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">
@@ -284,7 +284,7 @@ const ApplicantDashboard: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-purple-600 h-2 rounded-full transition-all"
+                    className="bg-orange-600 h-2 rounded-full transition-all"
                     style={{ width: `${profile.profile_completeness}%` }}
                   />
                 </div>
@@ -317,7 +317,7 @@ const ApplicantDashboard: React.FC = () => {
               </button>
               <button
                 onClick={() => navigate('/applicant/jobs')}
-                className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 Find Jobs
               </button>
