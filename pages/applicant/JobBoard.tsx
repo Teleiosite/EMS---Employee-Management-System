@@ -109,7 +109,7 @@ const JobBoard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
       </div>
     );
   }
@@ -142,14 +142,14 @@ const JobBoard: React.FC = () => {
             const isExpanded = expandedJobId === job.id;
 
             return (
-              <div key={job.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all ${isApplying ? 'ring-2 ring-purple-500' : ''}`}>
+              <div key={job.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all ${isApplying ? 'ring-2 ring-orange-500' : ''}`}>
                 <div
                   className="flex flex-col md:flex-row md:items-start justify-between gap-4 cursor-pointer"
                   onClick={() => toggleDetails(job.id)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide">
+                      <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide">
                         {job.department}
                       </span>
                       {isApplied && (
@@ -193,7 +193,7 @@ const JobBoard: React.FC = () => {
                         {job.description && (
                           <div>
                             <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                              <Building className="w-4 h-4 text-purple-500" /> About the Role
+                              <Building className="w-4 h-4 text-orange-500" /> About the Role
                             </h4>
                             <p className="text-sm text-gray-600 leading-relaxed">{job.description}</p>
                           </div>
@@ -202,7 +202,7 @@ const JobBoard: React.FC = () => {
                         {job.responsibilities && job.responsibilities.length > 0 && (
                           <div>
                             <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-purple-500" /> Key Responsibilities
+                              <FileText className="w-4 h-4 text-orange-500" /> Key Responsibilities
                             </h4>
                             <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-1">
                               {job.responsibilities.map((resp, idx) => (
@@ -215,7 +215,7 @@ const JobBoard: React.FC = () => {
                         {job.education_level && (
                           <div>
                             <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                              <GraduationCap className="w-4 h-4 text-purple-500" /> Education Requirements
+                              <GraduationCap className="w-4 h-4 text-orange-500" /> Education Requirements
                             </h4>
                             <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
                               {job.education_level}
@@ -230,7 +230,7 @@ const JobBoard: React.FC = () => {
                     {!isApplied && !isApplying && (
                       <button
                         onClick={(e) => handleApplyClick(job.id, e)}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm z-10 relative"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm z-10 relative"
                       >
                         Apply Now
                       </button>
@@ -248,18 +248,18 @@ const JobBoard: React.FC = () => {
                   <div className="mt-6 pt-6 border-t border-gray-100 animate-fade-in">
                     <h4 className="font-semibold text-gray-800 mb-4">Submit Your Application</h4>
                     <form onSubmit={handleSubmitApplication} className="space-y-4">
-                      <div className="border-2 border-dashed border-purple-200 rounded-xl p-6 bg-purple-50 text-center relative">
+                      <div className="border-2 border-dashed border-orange-200 rounded-xl p-6 bg-orange-50 text-center relative">
                         <input
                           type="file"
                           accept=".pdf,.docx,.doc"
                           onChange={(e) => setResumeFile(e.target.files ? e.target.files[0] : null)}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
-                        <Upload className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                        <Upload className="w-8 h-8 text-orange-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-700 font-medium">
                           {resumeFile ? resumeFile.name : "Click to upload your resume (optional)"}
                         </p>
-                        <p className="text-xs text-purple-400 mt-1">PDF or DOCX (Max 5MB) - or use your profile resume</p>
+                        <p className="text-xs text-orange-400 mt-1">PDF or DOCX (Max 5MB) - or use your profile resume</p>
                       </div>
 
                       <div className="flex gap-3 justify-end">
@@ -273,7 +273,7 @@ const JobBoard: React.FC = () => {
                         <button
                           type="submit"
                           disabled={isProcessing}
-                          className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                          className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                           {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 'Submit Application'}
                         </button>

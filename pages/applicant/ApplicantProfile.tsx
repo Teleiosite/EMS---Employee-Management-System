@@ -169,7 +169,7 @@ const ApplicantProfile: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
       </div>
     );
   }
@@ -194,7 +194,7 @@ const ApplicantProfile: React.FC = () => {
         <button
           onClick={handleSaveProfile}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70"
+          className="flex items-center gap-2 px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Changes
@@ -206,11 +206,11 @@ const ApplicantProfile: React.FC = () => {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium text-gray-700">Profile Completeness</span>
-            <span className="text-lg font-bold text-purple-600">{profile.profile_completeness}%</span>
+            <span className="text-lg font-bold text-orange-600">{profile.profile_completeness}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
-              className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all"
               style={{ width: `${profile.profile_completeness}%` }}
             />
           </div>
@@ -225,7 +225,7 @@ const ApplicantProfile: React.FC = () => {
       {/* Basic Information */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <UserIcon className="w-5 h-5 text-purple-500" /> Basic Information
+          <UserIcon className="w-5 h-5 text-orange-500" /> Basic Information
         </h2>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -245,7 +245,7 @@ const ApplicantProfile: React.FC = () => {
               value={formData.phone}
               onChange={handleInputChange}
               placeholder="Enter your phone number"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -257,7 +257,7 @@ const ApplicantProfile: React.FC = () => {
               value={formData.headline}
               onChange={handleInputChange}
               placeholder="e.g., Senior Software Engineer with 5+ years experience"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -269,7 +269,7 @@ const ApplicantProfile: React.FC = () => {
               onChange={handleInputChange}
               rows={3}
               placeholder="Tell us about yourself..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -281,7 +281,7 @@ const ApplicantProfile: React.FC = () => {
               value={formData.city}
               onChange={handleInputChange}
               placeholder="City"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -293,7 +293,7 @@ const ApplicantProfile: React.FC = () => {
               value={formData.country}
               onChange={handleInputChange}
               placeholder="Country"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -305,7 +305,7 @@ const ApplicantProfile: React.FC = () => {
               value={formData.years_of_experience}
               onChange={handleInputChange}
               min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
         </div>
@@ -314,7 +314,7 @@ const ApplicantProfile: React.FC = () => {
       {/* Resume Upload */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-purple-500" /> Resume
+          <FileText className="w-5 h-5 text-orange-500" /> Resume
         </h2>
 
         {profile?.current_resume ? (
@@ -335,7 +335,7 @@ const ApplicantProfile: React.FC = () => {
           </div>
         )}
 
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center relative hover:border-purple-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center relative hover:border-orange-400 transition-colors">
           <input
             type="file"
             accept=".pdf,.docx,.doc"
@@ -353,7 +353,7 @@ const ApplicantProfile: React.FC = () => {
           <button
             onClick={handleResumeUpload}
             disabled={isUploadingResume}
-            className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="mt-4 w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             {isUploadingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Upload Resume
@@ -364,14 +364,14 @@ const ApplicantProfile: React.FC = () => {
       {/* Skills */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-purple-500" /> Skills
+          <Briefcase className="w-5 h-5 text-orange-500" /> Skills
         </h2>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {skills.map(skill => (
-            <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+            <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
               {skill}
-              <button onClick={() => handleRemoveSkill(skill)} className="hover:text-purple-900">
+              <button onClick={() => handleRemoveSkill(skill)} className="hover:text-orange-900">
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -385,7 +385,7 @@ const ApplicantProfile: React.FC = () => {
             onChange={(e) => setNewSkill(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
             placeholder="Add a skill..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
           />
           <button
             onClick={handleAddSkill}
@@ -400,11 +400,11 @@ const ApplicantProfile: React.FC = () => {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-purple-500" /> Education
+            <GraduationCap className="w-5 h-5 text-orange-500" /> Education
           </h2>
           <button
             onClick={handleAddEducation}
-            className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700"
+            className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
           >
             <Plus className="w-4 h-4" /> Add Education
           </button>
@@ -455,11 +455,11 @@ const ApplicantProfile: React.FC = () => {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-purple-500" /> Experience
+            <Briefcase className="w-5 h-5 text-orange-500" /> Experience
           </h2>
           <button
             onClick={handleAddExperience}
-            className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700"
+            className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
           >
             <Plus className="w-4 h-4" /> Add Experience
           </button>
@@ -518,7 +518,7 @@ const ApplicantProfile: React.FC = () => {
         <button
           onClick={handleSaveProfile}
           disabled={isSaving}
-          className="flex items-center gap-2 px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70"
+          className="flex items-center gap-2 px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Profile

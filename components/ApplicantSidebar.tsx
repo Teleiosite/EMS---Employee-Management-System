@@ -31,12 +31,12 @@ const ApplicantSidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar
   return (
     <aside className={`w-64 bg-white border-r border-gray-200 h-screen overflow-y-auto z-10 transition-transform ${isMobile ? 'block' : 'hidden md:block fixed left-0 top-0'}`}>
       <div className="p-6 flex items-center gap-3">
-        <div className="bg-purple-100 p-2 rounded-lg">
-          <Building className="w-6 h-6 text-purple-600" />
+        <div className="bg-orange-100 p-2 rounded-lg">
+          <Building className="w-6 h-6 text-orange-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-purple-600 leading-none">Career</h1>
-          <h2 className="text-sm font-semibold text-purple-400">Portal</h2>
+          <h1 className="text-xl font-bold text-orange-600 leading-none">Career</h1>
+          <h2 className="text-sm font-semibold text-orange-400">Portal</h2>
         </div>
       </div>
 
@@ -52,7 +52,7 @@ const ApplicantSidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
                   isActive
-                    ? 'bg-purple-50 text-purple-600 border-r-4 border-purple-500'
+                    ? 'bg-orange-50 text-orange-600 border-r-4 border-orange-500'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
