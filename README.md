@@ -17,13 +17,16 @@ A production-oriented, full-stack HR platform with dedicated role experiences fo
 |---|---|---|
 | **Admin Dashboard** | ✅ Working | Stats, employees, departments, payroll, leave management |
 | **Employee Dashboard** | ✅ Working | Dashboard, attendance, leave, payslips, announcements |
-| **Employee – My Profile** | ✅ Fixed | Fixed double `/api` URL bug + added `/me/` DRF endpoint with correct permissions |
-| **Applicant (Career) Dashboard** | ✅ Working | Dashboard and profile pages load correctly |
-| **Applicant – Job Board** | ✅ Fixed | Fixed `jobsData.filter is not a function` (paginated DRF response unwrapping) |
-| **Announcements** | ✅ Fixed | Created missing DB migration for `core` app; seeded sample announcements |
+| **Employee – My Profile** | ✅ Fixed | Fixed double `/api` URL bug, added `/me/` DRF endpoint, and optimized typography |
+| **Applicant (Career) Portal** | ✅ Working | Dashboard, Job Board, Profile pages fixed and UI theme unified to match the orange brand colors |
+| **Announcements** | ✅ Fixed | CRUD integrated, Admin dashboard count updates correctly, seeded sample data |
 | **Seed Data** | ✅ Done | Departments, employees, job postings, leave types, payroll |
 | **Role-based Auth** | ✅ Working | JWT tokens, RBAC enforced on all API endpoints and frontend routes |
 | **Setup Admin Command** | ✅ Added | `python manage.py setup_admin` creates the admin user reliably |
+| **Attendance** | ✅ Working | Integrated frontend clock-in/out to real backend API |
+| **Leave Requests** | ✅ Working | Connected employee leave submission form to real API |
+| **Payslip PDF** | ✅ Working | Implemented generated payslip PDF downloads using ReportLab on the backend |
+| **Alerts/Notifications** | ✅ Working | UI fully utilizes dynamic Toast alerts & notifications |
 
 ### 🔧 Demo Login Credentials
 
@@ -37,11 +40,6 @@ A production-oriented, full-stack HR platform with dedicated role experiences fo
 
 | Area | Issue | Priority |
 |---|---|---|
-| **Attendance** | ✅ Integrated to backend API | High |
-| **Leave Requests** | ✅ Connected to real API | High |
-| **Payslip PDF** | ✅ Implemented PDF generation | Medium |
-| **Alerts & Notifications** | ✅ Uses in-app Toast & alert components | Medium |
-| **Admin – Announcements CRUD** | ✅ Integrated and counts update correctly | Medium |
 | **Admin – Create Job Posting** | UI form needs end-to-end test with the recruitment API | Medium |
 | **Email sending** | Password reset and email verification emails not configured | Low |
 | **PostgreSQL** | Dev uses SQLite; production PostgreSQL config needs `.env` setup | High (pre-deploy) |
@@ -446,3 +444,21 @@ Use seeded data only in local/staging, never in production.
 ## 17. License
 
 MIT (or your preferred organization license policy).
+🔐 EMS Login Credentials
+1. 🛡️ Admin Dashboard (/admin)
+Field	Value
+Email	admin@ems.com
+Password	admin123
+Access	Full access — Employees, Departments, Payroll, Leave, Recruitment, Announcements
+2. 👤 Employee Dashboard (/employee)
+Field	Value
+Email	john.doe@ems.com
+Password	123
+Access	Attendance, Leave requests, Payslips, Announcements, Profile
+ℹ️ These demo credentials are shown directly on the login page.
+
+3. 🎯 Applicant Dashboard (/applicant)
+Field	Value
+Email	test_applicant_123@ems.com
+Password	Password123!
+Access	Job board, Applications tracker, Profile
