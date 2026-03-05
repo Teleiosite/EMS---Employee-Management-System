@@ -1,4 +1,5 @@
 import secrets
+from typing import Optional
 
 import pyotp
 
@@ -16,7 +17,7 @@ def generate_mfa_secret() -> str:
     return pyotp.random_base32()
 
 
-def verify_totp_code(secret: str | None, code: str) -> bool:
+def verify_totp_code(secret: Optional[str], code: str) -> bool:
     if not secret:
         return False
     return pyotp.TOTP(secret).verify(code, valid_window=1)
