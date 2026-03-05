@@ -3,7 +3,8 @@
  * Handles JWT token injection, error handling, and response parsing.
  */
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (isLocalhost ? 'http://localhost:8000/api' : '/api');
 
 // Get the auth token from localStorage
 const getAuthToken = (): string | null => {
