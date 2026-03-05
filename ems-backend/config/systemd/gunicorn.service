@@ -1,10 +1,21 @@
 [Unit]
-Description=EMS Gunicorn
-After=network.target
+Description=EMS Gunicorn Application Server
+After=network.target postgresql.service
+Wants=postgresql.service
 
 [Service]
-WorkingDirectory=/opt/ems-backend
-ExecStart=/opt/ems-backend/venv/bin/gunicorn ems_core.wsgi:application -c config/gunicorn.conf.py
+Type=notify
+User=ubuntu
+Group=www-data
+WorkingDirectory=/opt/ems/backend
+EnvironmentFile=/opt/ems/backend/.env
+ExecStart=/opt/ems/backend/venv/bin/gunicorn ems_core.wsgi:application -c config/gunicorn.conf.py
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
