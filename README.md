@@ -1,464 +1,244 @@
-# EMS — Employee Management System
+<div align="center">
 
-[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-61DAFB)](#frontend)
-[![Backend](https://img.shields.io/badge/backend-Django%20%2B%20DRF-0C4B33)](#backend)
-[![Auth](https://img.shields.io/badge/auth-JWT%20%2B%20MFA-orange)](#authentication--security)
-[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF)](#ci--quality-gates)
+# 🏢 EMS — Employee Management System
 
-A production-oriented, full-stack HR platform with dedicated role experiences for **Admin/HR**, **Employee**, and **Applicant** users.
+**A production-ready, full-stack HR platform built for modern organizations.**
 
----
+[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-129.151.189.48-success)](http://129.151.189.48)
+[![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB?logo=react)](/)
+[![Backend](https://img.shields.io/badge/Backend-Django%20%2B%20DRF-0C4B33?logo=django)](./ems-backend)
+[![Auth](https://img.shields.io/badge/Auth-JWT%20%2B%20RBAC-orange)](#authentication--security)
+[![Deployed on](https://img.shields.io/badge/Deployed%20on-Oracle%20Cloud-red?logo=oracle)](http://129.151.189.48)
 
-## 🚦 Current Status
-
-### ✅ Completed & Working
-
-| Area | Status | Notes |
-|---|---|---|
-| **Admin Dashboard** | ✅ Working | Stats, employees, departments, payroll, leave management |
-| **Employee Dashboard** | ✅ Working | Dashboard, attendance, leave, payslips, announcements |
-| **Employee – My Profile** | ✅ Fixed | Fixed double `/api` URL bug, added `/me/` DRF endpoint, and optimized typography |
-| **Applicant (Career) Portal** | ✅ Working | Dashboard, Job Board, Profile pages fixed and UI theme unified to match the orange brand colors |
-| **Announcements** | ✅ Fixed | CRUD integrated, Admin dashboard count updates correctly, seeded sample data |
-| **Seed Data** | ✅ Done | Departments, employees, job postings, leave types, payroll |
-| **Role-based Auth** | ✅ Working | JWT tokens, RBAC enforced on all API endpoints and frontend routes |
-| **Setup Admin Command** | ✅ Added | `python manage.py setup_admin` creates the admin user reliably |
-| **Attendance** | ✅ Working | Integrated frontend clock-in/out to real backend API |
-| **Leave Requests** | ✅ Working | Connected employee leave submission form to real API |
-| **Payslip PDF** | ✅ Working | Implemented generated payslip PDF downloads using ReportLab on the backend |
-| **Alerts/Notifications** | ✅ Working | UI fully utilizes dynamic Toast alerts & notifications |
-
-### 🔧 Demo Login Credentials
-
-| Portal | Email | Password | Role |
-|---|---|---|---|
-| Admin / HR | `admin@ems.com` | `admin123` | ADMIN |
-| Employee | `john.doe@ems.com` | `123` | EMPLOYEE |
-| Applicant | Sign up via the app | — | APPLICANT |
-
-### ⚠️ Known Remaining Items
-
-| Area | Issue | Priority |
-|---|---|---|
-| **Admin – Create Job Posting** | UI form needs end-to-end test with the recruitment API | Medium |
-| **Email sending** | Password reset and email verification emails not configured | Low |
-| **PostgreSQL** | Dev uses SQLite; production PostgreSQL config needs `.env` setup | High (pre-deploy) |
+</div>
 
 ---
 
+## 🌐 Live Demo
 
+> **http://129.151.189.48** — hosted on Oracle Cloud Free Tier (Johannesburg region)
 
-## Table of Contents
-
-- [1. Product Overview](#1-product-overview)
-- [2. Capabilities by Domain](#2-capabilities-by-domain)
-- [3. System Architecture](#3-system-architecture)
-- [4. Tech Stack](#4-tech-stack)
-- [5. Repository Layout](#5-repository-layout)
-- [6. Quick Start](#6-quick-start)
-- [7. Detailed Local Setup](#7-detailed-local-setup)
-- [8. Environment Variables](#8-environment-variables)
-- [9. Authentication & Security](#9-authentication--security)
-- [10. Backend API Modules](#10-backend-api-modules)
-- [11. Testing Strategy](#11-testing-strategy)
-- [12. CI & Quality Gates](#12-ci--quality-gates)
-- [13. Operations & Deployment](#13-operations--deployment)
-- [14. Data & Seeding](#14-data--seeding)
-- [15. Roadmap & Delivery Rhythm](#15-roadmap--delivery-rhythm)
-- [16. Contribution Guidelines](#16-contribution-guidelines)
-- [17. License](#17-license)
+| Portal | Email | Password |
+|--------|-------|----------|
+| 🛡️ **Admin / HR** | `admin@ems.com` | `admin123` |
+| 👤 **Employee** | `john.doe@ems.com` | `123` |
+| 🎯 **Applicant** | Register from the app | — |
 
 ---
 
-## 1. Product Overview
+## 📋 Overview
 
-EMS is designed to cover core HR and recruitment workflows in one system:
+EMS is a full-stack Human Resources Management System covering the complete employee lifecycle — from recruitment and onboarding to attendance, leave management, and payroll — with three dedicated role-based portals for **Admin/HR**, **Employee**, and **Applicant** users.
 
-- **People Operations**: departments, employee profiles, attendance, leave, payroll.
-- **Recruitment**: job postings, candidate applications, resume processing.
-- **Role-sensitive UX**:
-  - **Admin/HR Manager**: approvals, governance, and management actions.
-  - **Employee**: self-service attendance, leave requests, payroll visibility.
-  - **Applicant**: job browsing, profile and application journey.
-
-The repository contains both:
-- A **React + TypeScript frontend** (root)
-- A **Django + DRF backend** (`ems-backend/`)
+The system is composed of:
+- A **React + TypeScript** single-page application (frontend root)
+- A **Django + Django REST Framework** API server (`ems-backend/`)
 
 ---
 
-## 2. Capabilities by Domain
+## ✨ Features
 
-### Admin / HR
-- Employee and department lifecycle management.
-- Attendance monitoring and correction review lifecycle.
-- Leave policy, leave balance, and request approval workflows.
-- Payroll runs, salary structures/components, tax slab configuration, payslips.
-- Recruitment management for jobs and candidate pipeline.
+### 🛡️ Admin / HR Portal
+- Interactive dashboard with real-time stats (headcount, open leaves, payroll totals)
+- Full employee lifecycle management (add, edit, deactivate)
+- Department management
+- Attendance monitoring and correction review
+- Leave policy configuration, balance management, and approval workflows
+- Payroll runs, salary structures, tax slab configuration, and payslip generation
+- Job postings and recruitment candidate pipeline management
+- Announcement publishing with instant notification delivery
 
-### Employee
-- View and track personal attendance records.
-- Submit leave requests against policy windows.
-- Access personal payslip/payroll records.
+### 👤 Employee Self-Service Portal
+- Personal dashboard with attendance summary and announcements
+- Clock in / clock out with real-time status
+- Leave request submission and balance tracking
+- Payslip history with **PDF download** (generated via ReportLab)
+- Profile management
 
-### Applicant
-- Register/login and browse open job opportunities.
-- Track application progress.
-
----
-
-## 3. System Architecture
-
-### Frontend
-- React SPA with role-based routes and layouts.
-- Service layer supports backend integration and controlled fallback behavior.
-- Built via Vite for fast local development and optimized production builds.
-
-### Backend
-- Django project with modular apps:
-  - `authentication`
-  - `employees`
-  - `attendance`
-  - `leaves`
-  - `payroll`
-  - `recruitment`
-  - `core`
-- DRF APIs with JWT auth (SimpleJWT).
-- Role and object-level permission controls.
-- Migration-driven schema management.
-
-### Runtime & Platform Components
-- Docker / docker-compose assets.
-- Gunicorn + Nginx templates.
-- Celery + Redis scaffolding for async/background work.
+### 🎯 Applicant / Career Portal
+- Job board with open position listings
+- Application submission and status tracking
+- Applicant profile management
 
 ---
 
-## 4. Tech Stack
+## 🏗️ Architecture
 
-### Frontend
-- React 19
-- TypeScript 5
-- Vite
-- Tailwind CSS
-- React Router
+```
+┌─────────────────────────────────────────────────────┐
+│                   Oracle Cloud VM                   │
+│  ┌────────────┐      ┌──────────────────────────┐  │
+│  │   Nginx    │─────▶│   React (Static Files)   │  │
+│  │  :80       │      └──────────────────────────┘  │
+│  │            │      ┌──────────────────────────┐  │
+│  │  /api/*    │─────▶│  Gunicorn + Django DRF   │  │
+│  │  /admin/*  │      │  :8000 (localhost only)  │  │
+│  └────────────┘      └──────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
 
-### Backend
-- Django 4.2
-- Django REST Framework
-- django-filter
-- SimpleJWT
-- drf-spectacular (OpenAPI docs)
-- PostgreSQL (primary production target)
-- SQLite (fast CI/test fallback profile)
-
-### Ops / Reliability
-- Docker & Compose
-- Celery + Redis
-- python-json-logger / structlog (available)
-- sentry-sdk (available)
-- GitHub Actions
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript 5, Vite, Tailwind CSS, React Router |
+| Backend | Django 4.2, DRF, SimpleJWT, drf-spectacular, WhiteNoise |
+| Database | SQLite (dev/current) · PostgreSQL (production upgrade path) |
+| Server | Gunicorn (WSGI) + Nginx (reverse proxy & static files) |
+| Hosting | Oracle Cloud Free Tier — VM.Standard.E2.1.Micro (1 GB RAM) |
+| Async | Celery + Redis (scaffolded, tasks run eagerly in current config) |
 
 ---
 
-## 5. Repository Layout
+## 📁 Repository Structure
 
-```text
+```
 EMS---Employee-Management-System/
-├── App.tsx
-├── components/
-├── context/
-├── pages/
-├── services/
-├── types.ts
-├── package.json
-├── README.md
-├── .github/
-│   └── workflows/
-│       └── backend-ci.yml
-└── ems-backend/
-    ├── manage.py
-    ├── requirements.txt
+├── App.tsx                    # Root application component
+├── components/                # Shared UI components
+├── context/                   # React context providers
+├── pages/                     # Route-level page components
+│   ├── admin/                 # Admin portal pages
+│   ├── applicant/             # Applicant portal pages
+│   └── *.tsx                  # Employee & shared pages
+├── services/                  # API service layer
+├── types.ts                   # Shared TypeScript types
+├── deploy.sh                  # Oracle Cloud deploy script
+├── DEPLOY_ORACLE.md           # Deployment guide
+└── ems-backend/               # Django API server
     ├── apps/
-    ├── ems_core/
-    ├── scripts/
-    ├── tests/
-    ├── docker-compose.yml
+    │   ├── authentication/    # JWT auth, MFA, RBAC
+    │   ├── employees/         # Employee & department models
+    │   ├── attendance/        # Clock-in/out, corrections
+    │   ├── leaves/            # Leave types, requests, balances
+    │   ├── payroll/           # Salary, payslips (PDF)
+    │   ├── recruitment/       # Jobs, candidates
+    │   └── core/              # Shared utilities, permissions
+    ├── ems_core/              # Django project settings
+    ├── config/                # Nginx, Gunicorn, systemd configs
+    ├── scripts/               # Setup admin, seed data
+    ├── requirements.txt
     └── Dockerfile
 ```
 
 ---
 
-## 6. Quick Start
+## 🚀 Local Development
 
 ### Prerequisites
-- Node.js 18+
-- npm 9+
+- Node.js 18+, npm 9+
 - Python 3.10+
-- (Optional) Docker Desktop
 
-### Fastest local start
-
-```bash
-# 1) frontend
-npm install
-npm run dev
-
-# 2) backend (new terminal)
-cd ems-backend
-pip install -r requirements.txt
-cp .env.example .env  # if available
-python manage.py migrate
-python manage.py runserver
-```
-
-Frontend default: `http://localhost:5173`  
-Backend default: `http://localhost:8000`
-
----
-
-## 7. Detailed Local Setup
-
-### A. Frontend
+### Frontend
 
 ```bash
 npm install
 npm run dev
+# → http://localhost:5173
 ```
 
-Production build check:
-
-```bash
-npm run build
-```
-
-### B. Backend (native Python)
+### Backend
 
 ```bash
 cd ems-backend
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install --upgrade pip
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env            # Configure your environment variables
 python manage.py migrate
+python manage.py setup_admin    # Creates admin@ems.com / admin123
 python manage.py runserver
+# → http://localhost:8000
 ```
 
-### C. Backend (Docker)
+### Seed Demo Data
 
 ```bash
 cd ems-backend
-docker compose up --build
-```
-
-Then apply migrations (inside container):
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-### D. API Docs
-
-- OpenAPI schema: `http://localhost:8000/api/schema/`
-- Swagger UI: `http://localhost:8000/api/docs/`
-
----
-
-## 8. Environment Variables
-
-Backend config is env-driven. Typical variable groups:
-
-### Core
-- `SECRET_KEY`
-- `DEBUG`
-- `ALLOWED_HOSTS`
-
-### Database
-- `DB_ENGINE`
-- `DB_NAME`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_HOST`
-- `DB_PORT`
-- `DB_CONN_MAX_AGE`
-
-### API / DRF
-- `PAGE_SIZE`
-- `THROTTLE_USER`
-- `THROTTLE_ANON`
-
-### CORS / CSRF
-- `CORS_ALLOW_ALL_ORIGINS`
-- `CORS_ALLOWED_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
-
-### Celery / Redis
-- `CELERY_BROKER_URL`
-- `CELERY_RESULT_BACKEND`
-
-### Network Guardrails
-- `IP_WHITELIST_ENABLED`
-- `IP_WHITELIST`
-
----
-
-## 9. Authentication & Security
-
-Current backend security implementation includes:
-
-- JWT login/refresh flows.
-- Role-aware registration constraints.
-- Login attempt auditing.
-- Failed login lockout window.
-- MFA/TOTP setup + verification endpoints.
-- Password reset request/confirm token flows.
-- Email verification token flows.
-- Object-level permissions for self-service boundaries.
-
-> Note: verify policy requirements before enforcing MFA as mandatory for all roles.
-
----
-
-## 10. Backend API Modules
-
-### `authentication`
-User model, JWT login/refresh, MFA, password reset, email verification, login attempt logs.
-
-### `employees`
-Department and employee profile models/API.
-
-### `attendance`
-Attendance logs plus correction request lifecycle.
-
-### `leaves`
-Leave types, policy windows, balances, and requests.
-
-### `payroll`
-Salary components/structures, payroll runs, tax slabs, payslips.
-
-### `recruitment`
-Job postings and candidate entities.
-
----
-
-## 11. Testing Strategy
-
-### Backend checks
-
-```bash
-cd ems-backend
-PYTHONPATH=. python -m compileall .
-PYTHONPATH=. pytest -q
-```
-
-### Frontend checks
-
-```bash
-npm run build
-```
-
-### Notes
-- CI is configured to run backend tests with SQLite defaults for reliability.
-- Domain-level tests include integration utilities and API flow coverage.
-
----
-
-## 12. CI & Quality Gates
-
-Backend CI workflow (`.github/workflows/backend-ci.yml`) runs:
-
-1. Dependency install
-2. Python compile validation
-3. Pytest suite
-
-Recommended branch policy:
-- Require CI success before merge.
-- Require at least one code review approval.
-- Squash merge for linear history (optional but recommended).
-
----
-
-## 13. Operations & Deployment
-
-Deployment assets available under `ems-backend/`:
-
-- `Dockerfile`
-- `docker-compose.yml`
-- `config/nginx.conf`
-- `config/gunicorn.conf.py`
-- `config/systemd/*.service`
-
-Recommended promotion flow:
-1. Feature branch -> PR
-2. CI green + review
-3. Merge to main
-4. Deploy to staging
-5. QA signoff
-6. Production deploy
-7. Post-deploy smoke checks
-
----
-
-## 14. Data & Seeding
-
-The backend includes a seed utility for realistic staging baselines (admin/HR/employee records, leave/policy structures, attendance, salary/tax and payslip entities).
-
-Run from Django shell:
-
-```bash
-cd ems-backend
+source venv/bin/activate
 python manage.py shell -c "from scripts.seed_data import run; run()"
 ```
 
-Use seeded data only in local/staging, never in production.
+### API Documentation
+
+| URL | Description |
+|-----|-------------|
+| `http://localhost:8000/api/docs/` | Swagger UI |
+| `http://localhost:8000/api/schema/` | OpenAPI JSON |
 
 ---
 
-## 15. Roadmap & Delivery Rhythm
+## ⚙️ Environment Variables
 
-### Priority sequence
-1. Finalize data layer and migration hygiene.
-2. Harden security and auth flows.
-3. Complete business logic depth.
-4. Expand role-based API and permission tests.
-5. Improve observability/reliability (monitoring + backup drills).
-6. Enforce production-grade release workflow.
+Copy `ems-backend/.env.example` to `ems-backend/.env` and fill in the values:
 
-### Weekly rhythm
-- **Mon**: pick one domain and define acceptance criteria.
-- **Tue-Wed**: implement API + UI integration.
-- **Thu**: edge cases + hardening tests.
-- **Fri**: demo, retro, backlog refinement.
-
----
-
-## 16. Contribution Guidelines
-
-- Keep changes domain-focused and small when possible.
-- Update tests with behavior changes.
-- Update docs when routes/contracts/config change.
-- Favor explicit migrations over implicit schema drift.
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | Django secret key (50+ characters) |
+| `DEBUG` | `False` in production |
+| `ALLOWED_HOSTS` | Comma-separated allowed hostnames/IPs |
+| `DB_ENGINE` | Database engine (SQLite or PostgreSQL) |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database credentials |
+| `CORS_ALLOWED_ORIGINS` | Frontend origin(s) allowed to call the API |
+| `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF protection |
+| `CELERY_BROKER_URL` | Redis URL for async tasks |
 
 ---
 
-## 17. License
+## 🔐 Authentication & Security
 
-MIT (or your preferred organization license policy).
-🔐 EMS Login Credentials
-1. 🛡️ Admin Dashboard (/admin)
-Field	Value
-Email	admin@ems.com
-Password	admin123
-Access	Full access — Employees, Departments, Payroll, Leave, Recruitment, Announcements
-2. 👤 Employee Dashboard (/employee)
-Field	Value
-Email	john.doe@ems.com
-Password	123
-Access	Attendance, Leave requests, Payslips, Announcements, Profile
-ℹ️ These demo credentials are shown directly on the login page.
+- **JWT** access (30 min) + refresh (7 days) tokens via `djangorestframework-simplejwt`
+- **RBAC** — role-based permission classes on every API endpoint (`ADMIN`, `EMPLOYEE`, `APPLICANT`)
+- Object-level permissions for self-service boundaries
+- Login attempt auditing and failed-login lockout
+- **MFA/TOTP** setup and verification endpoints
+- IP whitelist middleware (configurable)
+- Production settings enforce `SECRET_KEY`, no wildcard `ALLOWED_HOSTS`, `DEBUG=False`
 
-3. 🎯 Applicant Dashboard (/applicant)
-Field	Value
-Email	test_applicant_123@ems.com
-Password	Password123!
-Access	Job board, Applications tracker, Profile
+---
+
+## 🧪 Testing
+
+```bash
+# Backend
+cd ems-backend
+pytest -q
+
+# Frontend (build validation)
+npm run build
+```
+
+CI runs automatically on every push via **GitHub Actions** (`.github/workflows/backend-ci.yml`).
+
+---
+
+## ☁️ Oracle Cloud Deployment
+
+See **[DEPLOY_ORACLE.md](./DEPLOY_ORACLE.md)** for the full step-by-step guide.
+
+**Quick deploy on a fresh Oracle Ubuntu VM:**
+
+```bash
+git clone https://github.com/Teleiosite/EMS---Employee-Management-System.git /opt/ems
+bash /opt/ems/deploy.sh
+```
+
+**Update the live app:**
+
+```bash
+ssh -i ~/Downloads/oracle-key.key ubuntu@129.151.189.48
+cd /opt/ems && sudo git pull
+sudo VITE_API_BASE_URL=http://129.151.189.48/api npm run build
+sudo cp -r dist/* /opt/ems/frontend/
+sudo systemctl restart ems-gunicorn nginx
+```
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](./LICENSE) for details.
+
+---
+
+<div align="center">
+  Built with ❤️ · Deployed on Oracle Cloud Free Tier
+</div>
