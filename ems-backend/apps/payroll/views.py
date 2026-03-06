@@ -1,6 +1,8 @@
+from decimal import Decimal
+
+from django.http import HttpResponse
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from django.http import HttpResponse
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
 from .models import PayrollRun, Payslip, TaxSlab
@@ -8,10 +10,41 @@ from .serializers import PayrollRunSerializer, PayslipSerializer, TaxSlabSeriali
 from .pdf_generator import generate_payslip_pdf
 
 
+def _generate_payslips_for_run(payroll_run: PayrollRun) -> None:
+    """Auto-generate a Payslip for every active EmployeeProfile when a PayrollRun is created."""
+    from apps.employees.models import EmployeeProfile
+    employees = EmployeeProfile.objects.filter(status='ACTIVE').select_related('user', 'designation')
+    payslips = []
+    for employee in employees:
+        # Skip if payslip already exists for this employee/run pair
+        if Payslip.objects.filter(payroll_run=payroll_run, employee=employee).exists():
+            continue
+        gross = Decimal(str(employee.base_salary))
+        # Simple 10% deduction as a placeholder — replace with salary structure logic
+        deduction = round(gross * Decimal('0.10'), 2)
+        tax = round(gross * Decimal('0.05'), 2)
+        net = gross - deduction - tax
+        payslips.append(Payslip(
+            payroll_run=payroll_run,
+            employee=employee,
+            gross_salary=gross,
+            total_deductions=deduction,
+            tax_deduction=tax,
+            net_salary=net,
+        ))
+    if payslips:
+        Payslip.objects.bulk_create(payslips)
+
+
 class PayrollRunViewSet(viewsets.ModelViewSet):
     queryset = PayrollRun.objects.all()
     serializer_class = PayrollRunSerializer
     permission_classes = [IsAdminOrHRManager]
+
+    def perform_create(self, serializer):
+        """Create the PayrollRun and auto-generate payslips for all active employees."""
+        payroll_run = serializer.save()
+        _generate_payslips_for_run(payroll_run)
 
 
 class TaxSlabViewSet(viewsets.ModelViewSet):
@@ -38,7 +71,7 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
     def download(self, request, pk=None):
         payslip = self.get_object()
         pdf_bytes = generate_payslip_pdf(payslip)
-        
+
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="payslip_{payslip.id}.pdf"'
         return response

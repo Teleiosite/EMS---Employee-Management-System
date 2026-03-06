@@ -171,7 +171,7 @@ const AddEmployee: React.FC = () => {
         // Step 2: Create the employee profile
         const employeeId = `EMP${Date.now().toString().slice(-6)}`;
         await employeesApi.create({
-          user: registerResponse.id,
+          user_id: registerResponse.id,
           employee_id: employeeId,
           base_salary: parseFloat(formData.salary),
           joining_date: formData.joiningDate,

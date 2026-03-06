@@ -115,7 +115,7 @@ export const employeesApi = {
 
     // Create employee profile (requires user to exist first)
     create: async (data: {
-        user: string; // User UUID
+        user_id: string; // User UUID — sent as 'user_id' to match backend serializer
         department?: number;
         designation?: number;
         employee_id: string;
