@@ -62,6 +62,14 @@ The system is composed of:
 
 ---
 
+## ⚠️ Known Issues
+
+| Issue | Status | Description |
+|-------|--------|-------------|
+| **Intermittent Login Failure** | Under Investigation | Users may encounter a `Failed to fetch` error (with HTML parsing errors in the console) when attempting to log in again after previously logging out. This affects all portals (Admin, Employee, Applicant) and is currently being diagnosed on the Oracle Cloud environment. |
+
+---
+
 ## 🏗️ Architecture
 
 ```
