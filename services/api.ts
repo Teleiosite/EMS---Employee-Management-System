@@ -115,8 +115,21 @@ const handleResponse = async <T>(response: Response, retryFn?: () => Promise<Res
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message = data.detail || data.message || data.error || 'An error occurred';
-    throw new ApiError(message, response.status, data);
+    // Handle DRF field-level validation errors: {field: ["msg", ...], ...}
+    const extractMessage = (d: any): string => {
+      if (!d || typeof d !== 'object') return 'An error occurred';
+      if (d.detail) return d.detail;
+      if (d.message) return d.message;
+      if (d.error) return d.error;
+      // Field-level errors — join them all
+      const parts: string[] = [];
+      for (const [key, val] of Object.entries(d)) {
+        const msgs = Array.isArray(val) ? val.join(' ') : String(val);
+        parts.push(key === 'non_field_errors' ? msgs : `${key}: ${msgs}`);
+      }
+      return parts.length ? parts.join(' | ') : 'An error occurred';
+    };
+    throw new ApiError(extractMessage(data), response.status, data);
   }
 
   return data as T;
