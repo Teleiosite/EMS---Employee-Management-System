@@ -30,7 +30,7 @@ const AddJob: React.FC = () => {
 
   useEffect(() => {
     // Fetch departments
-    api.get<{ results: Department[] }>('/departments/')
+    api.get<{ results: Department[] }>('/employees/departments/')
       .then(res => setDepartments(res.results || []))
       .catch(err => {
         console.error('Failed to fetch departments:', err);
