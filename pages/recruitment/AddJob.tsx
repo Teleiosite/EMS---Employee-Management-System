@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { jobRequirements } from '../../services/mockData';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
+import recruitmentApi from '../../services/recruitmentApi';
 
 interface Department {
   id: number;
@@ -39,8 +39,7 @@ const AddJob: React.FC = () => {
       .finally(() => setLoadingDepts(false));
 
     if (isEditMode && id) {
-      const job = jobRequirements.find(j => j.id === id);
-      if (job) {
+      recruitmentApi.getJob(id).then(job => {
         setFormData({
           role_name: job.role_name,
           department: job.department,
@@ -50,7 +49,10 @@ const AddJob: React.FC = () => {
           responsibilities: job.responsibilities ? job.responsibilities.join('\n') : '',
           status: job.status
         });
-      }
+      }).catch(err => {
+        showToast('Failed to load job details', 'error');
+        navigate('/admin/recruitment/jobs');
+      });
     }
   }, [isEditMode, id, showToast]);
 
@@ -59,11 +61,13 @@ const AddJob: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [submitting, setSubmitting] = useState(false);
 
-    // Simulate API latency
-    setTimeout(() => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
       const skillsArray = formData.required_skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
       const responsibilitiesArray = formData.responsibilities.split('\n').map(s => s.trim()).filter(s => s.length > 0);
 
@@ -74,24 +78,26 @@ const AddJob: React.FC = () => {
         minimum_years_experience: Number(formData.minimum_years_experience),
         education_level: formData.education_level,
         responsibilities: responsibilitiesArray,
-        status: formData.status as 'OPEN' | 'CLOSED'
+        status: formData.status as 'OPEN' | 'CLOSED',
+        location: 'Remote',
+        employment_type: 'Full-time',
+        description: `We are looking for a talented ${formData.role_name} to join our ${formData.department} team.`,
+        salary_range: 'Negotiable'
       };
 
       if (isEditMode && id) {
-        const index = jobRequirements.findIndex(j => j.id === id);
-        if (index !== -1) {
-          jobRequirements[index] = { ...jobRequirements[index], ...newJobData };
-        }
+        await recruitmentApi.updateJob(id, newJobData);
         showToast("Job posting updated successfully!", "success");
       } else {
-        jobRequirements.push({
-          id: `job${Date.now()}`,
-          ...newJobData
-        });
+        await recruitmentApi.createJob(newJobData);
         showToast("New job posted successfully!", "success");
       }
       navigate('/admin/recruitment/jobs');
-    }, 500);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save job posting', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -201,8 +207,8 @@ const AddJob: React.FC = () => {
           </div>
 
           <div className="pt-4 flex gap-3">
-            <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
-              {isEditMode ? 'Update Job' : 'Post Job'}
+            <button disabled={submitting} type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm disabled:bg-orange-300">
+              {submitting ? 'Saving...' : (isEditMode ? 'Update Job' : 'Post Job')}
             </button>
             <button
               type="button"
