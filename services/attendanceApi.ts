@@ -1,129 +1,109 @@
 /**
  * Attendance API Service
- * Endpoints: /api/attendance/logs/, /api/attendance/corrections/
+ * Endpoints: /api/attendance/clock-in/, /api/attendance/clock-out/,
+ *            /api/attendance/status/, /api/attendance/policy/,
+ *            /api/attendance/suspicious/, /api/attendance/logs/
  */
 
 import api from './api';
-import { AttendanceLog } from '../types';
 
-// Backend types (snake_case)
-interface BackendAttendanceLog {
+// ─── Backend shapes ─────────────────────────────────────────────────────────
+
+export interface AttendancePolicy {
+    id: number;
+    check_in_start: string;       // "HH:MM:SS"
+    check_in_end: string;
+    late_grace_minutes: number;
+    absent_if_no_checkin_by: string;
+    half_day_if_checkout_before: string;
+    check_out_start: string;
+    check_out_end: string;
+    is_active: boolean;
+}
+
+export interface AttendanceLog {
     id: number;
     employee: number;
     employee_name?: string;
+    employee_code?: string;
     date: string;
     clock_in_timestamp: string | null;
     clock_out_timestamp: string | null;
     clock_in_ip: string | null;
     clock_out_ip: string | null;
-    status: string;
+    device_fingerprint: string | null;
+    is_suspicious: boolean;
+    suspicious_reason: string;
+    status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY';
 }
 
-interface BackendCorrectionRequest {
-    id: number;
-    attendance_log: number;
-    requested_by: string;
-    reviewer: string | null;
-    reason: string;
-    requested_clock_in: string | null;
-    requested_clock_out: string | null;
-    status: string;
-    review_notes: string;
+export interface AttendanceStatus {
+    today: string;
+    window_open: boolean;
+    window_message: string;
+    log: {
+        id: number;
+        status: string;
+        clock_in: string | null;
+        clock_out: string | null;
+    } | null;
+    policy: AttendancePolicy | null;
 }
 
-interface PaginatedResponse<T> {
+interface Paginated<T> {
     count: number;
-    next: string | null;
-    previous: string | null;
     results: T[];
 }
 
-// Transform backend attendance to frontend format
-const transformAttendanceLog = (log: BackendAttendanceLog): AttendanceLog => ({
-    id: String(log.id),
-    employeeId: String(log.employee),
-    employeeName: log.employee_name || 'Unknown',
-    date: log.date,
-    clockInTime: log.clock_in_timestamp ? new Date(log.clock_in_timestamp).toLocaleTimeString('en-US', { hour12: false }) : undefined,
-    clockOutTime: log.clock_out_timestamp ? new Date(log.clock_out_timestamp).toLocaleTimeString('en-US', { hour12: false }) : undefined,
-    status: log.status as 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LATE' | 'EARLY_LEAVE',
-    ipAddress: log.clock_in_ip || log.clock_out_ip || 'N/A',
-});
+// ─── Device fingerprint ──────────────────────────────────────────────────────
+
+function buildFingerprint(): string {
+    const raw = [
+        navigator.userAgent,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        navigator.language,
+        navigator.hardwareConcurrency ?? 0,
+    ].join('|');
+
+    let hash = 5381;
+    for (let i = 0; i < raw.length; i++) {
+        hash = ((hash << 5) + hash + raw.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash).toString(16).padStart(8, '0');
+}
+
+// ─── API calls ───────────────────────────────────────────────────────────────
 
 export const attendanceApi = {
-    // Get all attendance logs
-    list: async (params?: { employee?: string; date?: string; status?: string }): Promise<AttendanceLog[]> => {
+    getStatus: (): Promise<AttendanceStatus> =>
+        api.get<AttendanceStatus>('/attendance/status/'),
+
+    clockIn: (): Promise<{ detail: string; status: string; clock_in: string; is_suspicious: boolean }> =>
+        api.post('/attendance/clock-in/', { device_fingerprint: buildFingerprint() }),
+
+    clockOut: (): Promise<{ detail: string; status: string; clock_out: string; working_minutes: number }> =>
+        api.post('/attendance/clock-out/', { device_fingerprint: buildFingerprint() }),
+
+    listLogs: (params?: { date?: string }): Promise<AttendanceLog[]> => {
         let endpoint = '/attendance/logs/';
-        if (params) {
-            const queryParams = new URLSearchParams();
-            if (params.employee) queryParams.append('employee', params.employee);
-            if (params.date) queryParams.append('date', params.date);
-            if (params.status) queryParams.append('status', params.status);
-            if (queryParams.toString()) endpoint += `?${queryParams.toString()}`;
-        }
-        const response = await api.get<PaginatedResponse<BackendAttendanceLog> | BackendAttendanceLog[]>(endpoint);
-        const results = Array.isArray(response) ? response : response.results;
-        return results.map(transformAttendanceLog);
+        if (params?.date) endpoint += `?date=${params.date}`;
+        return api.get<Paginated<AttendanceLog> | AttendanceLog[]>(endpoint).then((res) =>
+            Array.isArray(res) ? res : res.results
+        );
     },
 
-    // Get single attendance log
-    get: async (id: string): Promise<AttendanceLog> => {
-        const response = await api.get<BackendAttendanceLog>(`/attendance/logs/${id}/`);
-        return transformAttendanceLog(response);
-    },
+    listSuspicious: (): Promise<AttendanceLog[]> =>
+        api.get<Paginated<AttendanceLog> | AttendanceLog[]>('/attendance/suspicious/').then((res) =>
+            Array.isArray(res) ? res : res.results
+        ),
 
-    // Clock in - create attendance log
-    clockIn: async (employeeId: string): Promise<AttendanceLog> => {
-        const response = await api.post<BackendAttendanceLog>('/attendance/logs/', {
-            employee: parseInt(employeeId),
-            date: new Date().toISOString().split('T')[0],
-            clock_in_timestamp: new Date().toISOString(),
-            status: 'PRESENT',
-        });
-        return transformAttendanceLog(response);
-    },
+    getPolicy: (): Promise<AttendancePolicy> =>
+        api.get<AttendancePolicy>('/attendance/policy/'),
 
-    // Clock out - update attendance log
-    clockOut: async (logId: string): Promise<AttendanceLog> => {
-        const response = await api.patch<BackendAttendanceLog>(`/attendance/logs/${logId}/`, {
-            clock_out_timestamp: new Date().toISOString(),
-        });
-        return transformAttendanceLog(response);
-    },
-
-    // Update attendance log (admin)
-    update: async (id: string, data: Partial<{
-        status: string;
-        clock_in_timestamp: string;
-        clock_out_timestamp: string;
-    }>): Promise<AttendanceLog> => {
-        const response = await api.patch<BackendAttendanceLog>(`/attendance/logs/${id}/`, data);
-        return transformAttendanceLog(response);
-    },
-
-    // Get correction requests
-    listCorrections: async (): Promise<BackendCorrectionRequest[]> => {
-        const response = await api.get<PaginatedResponse<BackendCorrectionRequest> | BackendCorrectionRequest[]>('/attendance/corrections/');
-        return Array.isArray(response) ? response : response.results;
-    },
-
-    // Submit correction request
-    submitCorrection: async (data: {
-        attendance_log: number;
-        reason: string;
-        requested_clock_in?: string;
-        requested_clock_out?: string;
-    }): Promise<BackendCorrectionRequest> => {
-        return api.post<BackendCorrectionRequest>('/attendance/corrections/', data);
-    },
-
-    // Approve/reject correction (admin)
-    reviewCorrection: async (id: string, data: {
-        status: 'APPROVED' | 'REJECTED';
-        review_notes?: string;
-    }): Promise<BackendCorrectionRequest> => {
-        return api.patch<BackendCorrectionRequest>(`/attendance/corrections/${id}/`, data);
-    },
+    updatePolicy: (data: Partial<AttendancePolicy>): Promise<AttendancePolicy> =>
+        api.patch<AttendancePolicy>('/attendance/policy/', data),
 };
 
 export default attendanceApi;
