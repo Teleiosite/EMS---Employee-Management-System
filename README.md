@@ -240,6 +240,15 @@ sudo systemctl restart ems-gunicorn nginx
 ```
 
 ---
+Demo Login Credentials
+Portal	Email	Password
+Admin	
+admin@ems.com
+admin123
+Employee	
+john.doe@ems.com
+123
+Applicant	Register from the app	—
 
 ## 📄 License
 

@@ -42,7 +42,7 @@ const CandidateList: React.FC = () => {
 
   const handleStatusChange = async (candidateId: number, newStatus: string) => {
     try {
-      await recruitmentApi.updateCandidateStatus(candidateId, newStatus as any);
+      await recruitmentApi.updateCandidateStatus(candidateId.toString(), newStatus);
       // Optimistic update
       setCandidates(prev => prev.map(c =>
         c.id === candidateId ? { ...c, status: newStatus as any } : c
@@ -156,7 +156,7 @@ const CandidateList: React.FC = () => {
                           />
 
                           {/* Quick Move Overlay Options on Hover */}
-                          <div className="absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1 z-10">
+                          <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1 z-10">
                             {column.id !== 'SHORTLISTED' && column.id === 'APPLIED' && (
                               <button onClick={() => handleStatusChange(candidate.id, 'SHORTLISTED')} className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:scale-110 transition-transform" title="Move to Shortlisted">→</button>
                             )}
