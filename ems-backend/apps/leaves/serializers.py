@@ -18,17 +18,43 @@ class LeavePolicyWindowSerializer(serializers.ModelSerializer):
 
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
+    leave_type_name = serializers.CharField(source='leave_type.name', read_only=True)
+
     class Meta:
         model = LeaveBalance
         fields = '__all__'
 
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
+    # Read-only computed fields so employee name and leave type appear in responses
+    employee_name = serializers.SerializerMethodField()
+    leave_type_name = serializers.SerializerMethodField()
+
     class Meta:
         model = LeaveRequest
         fields = '__all__'
 
+    def get_employee_name(self, obj):
+        try:
+            user = obj.employee.user
+            return f"{user.first_name} {user.last_name}".strip() or user.email
+        except Exception:
+            return 'Unknown'
+
+    def get_leave_type_name(self, obj):
+        try:
+            return obj.leave_type.name if obj.leave_type else 'General'
+        except Exception:
+            return 'General'
+
     def validate(self, attrs):
+        # When admin/HR is only updating the status (PATCH with just status field),
+        # skip the heavy validation — we don't need the policy window checks.
+        if self.instance is not None:
+            updating_fields = set(attrs.keys())
+            if updating_fields <= {'status'}:
+                return attrs  # Admin approve/reject — skip all other checks
+
         start_date = attrs.get('start_date')
         end_date = attrs.get('end_date')
         duration_days = attrs.get('duration_days')
@@ -70,15 +96,16 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         if previous_status != 'APPROVED' and instance.status == 'APPROVED':
-            balance = LeaveBalance.objects.select_for_update().filter(
-                employee=instance.employee,
-                leave_type=instance.leave_type,
-                year=instance.start_date.year,
-            ).first()
-            if not balance or balance.available_days < instance.duration_days:
-                raise serializers.ValidationError('Insufficient leave balance for approval.')
-            balance.available_days -= instance.duration_days
-            balance.used_days += instance.duration_days
-            balance.save(update_fields=['available_days', 'used_days'])
+            # Deduct from leave balance only if a leave_type and balance exist
+            if instance.leave_type:
+                balance = LeaveBalance.objects.select_for_update().filter(
+                    employee=instance.employee,
+                    leave_type=instance.leave_type,
+                    year=instance.start_date.year,
+                ).first()
+                if balance and balance.available_days >= instance.duration_days:
+                    balance.available_days -= instance.duration_days
+                    balance.used_days += instance.duration_days
+                    balance.save(update_fields=['available_days', 'used_days'])
 
         return instance

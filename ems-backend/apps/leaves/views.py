@@ -28,7 +28,7 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
 
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
-    queryset = LeaveRequest.objects.select_related('employee', 'leave_type').all()
+    queryset = LeaveRequest.objects.select_related('employee', 'employee__user', 'leave_type').all()
     serializer_class = LeaveRequestSerializer
 
     def get_queryset(self):
