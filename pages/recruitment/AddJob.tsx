@@ -22,7 +22,9 @@ const AddJob: React.FC = () => {
     minimum_years_experience: '',
     education_level: '',
     responsibilities: '',
-    status: 'OPEN'
+    status: 'OPEN',
+    location: 'Remote',
+    employment_type: 'Full-time'
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -47,7 +49,9 @@ const AddJob: React.FC = () => {
           minimum_years_experience: job.minimum_years_experience.toString(),
           education_level: job.education_level || '',
           responsibilities: job.responsibilities ? job.responsibilities.join('\n') : '',
-          status: job.status
+          status: job.status,
+          location: job.location || 'Remote',
+          employment_type: job.employment_type || 'Full-time'
         });
       }).catch(err => {
         showToast('Failed to load job details', 'error');
@@ -79,8 +83,8 @@ const AddJob: React.FC = () => {
         education_level: formData.education_level,
         responsibilities: responsibilitiesArray,
         status: formData.status as 'OPEN' | 'CLOSED',
-        location: 'Remote',
-        employment_type: 'Full-time',
+        location: formData.location,
+        employment_type: formData.employment_type,
         description: `We are looking for a talented ${formData.role_name} to join our ${formData.department} team.`,
         salary_range: 'Negotiable'
       };
@@ -176,6 +180,37 @@ const AddJob: React.FC = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
               placeholder="e.g. Bachelors Degree in Computer Science, Engineering, or a related field. Masters is a plus."
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Location</label>
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+              >
+                <option value="Remote">Remote</option>
+                <option value="On-site">On-site</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Employment Type</label>
+              <select
+                name="employment_type"
+                value={formData.employment_type}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+              >
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

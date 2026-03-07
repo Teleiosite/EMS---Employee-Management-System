@@ -119,7 +119,7 @@ const JobList: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {job.department}</span>
-                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Remote/Hybrid</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {job.location} • {job.employment_type}</span>
                       <span>Exp: {job.minimum_years_experience}+ years</span>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
