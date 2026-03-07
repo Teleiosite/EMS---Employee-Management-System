@@ -11,13 +11,21 @@ import api from './api';
 
 export interface AttendancePolicy {
     id: number;
-    check_in_start: string;       // "HH:MM:SS"
+    check_in_start: string;
     check_in_end: string;
     late_grace_minutes: number;
     absent_if_no_checkin_by: string;
     half_day_if_checkout_before: string;
     check_out_start: string;
     check_out_end: string;
+    // IP security
+    allowed_ips: string[];
+    enforce_ip: 'off' | 'flag' | 'block';
+    // GPS / location security
+    office_latitude: number | null;
+    office_longitude: number | null;
+    office_radius_meters: number;
+    enforce_location: 'off' | 'flag' | 'block';
     is_active: boolean;
 }
 
@@ -80,8 +88,25 @@ export const attendanceApi = {
     getStatus: (): Promise<AttendanceStatus> =>
         api.get<AttendanceStatus>('/attendance/status/'),
 
-    clockIn: (): Promise<{ detail: string; status: string; clock_in: string; is_suspicious: boolean }> =>
-        api.post('/attendance/clock-in/', { device_fingerprint: buildFingerprint() }),
+    clockIn: async (): Promise<{ detail: string; status: string; clock_in: string; is_suspicious: boolean; distance_from_office?: number | null }> => {
+        let latitude: number | null = null;
+        let longitude: number | null = null;
+        try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, maximumAge: 0 })
+            );
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
+        } catch {
+            // Location denied or unavailable — backend decides based on enforce_location
+        }
+        return api.post('/attendance/clock-in/', {
+            device_fingerprint: buildFingerprint(),
+            ...(latitude !== null && { latitude }),
+            ...(longitude !== null && { longitude }),
+        });
+    },
+
 
     clockOut: (): Promise<{ detail: string; status: string; clock_out: string; working_minutes: number }> =>
         api.post('/attendance/clock-out/', { device_fingerprint: buildFingerprint() }),

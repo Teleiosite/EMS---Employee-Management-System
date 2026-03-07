@@ -3,16 +3,46 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+ENFORCE_CHOICES = (
+    ('off', 'Off'),
+    ('flag', 'Flag (allow but warn admin)'),
+    ('block', 'Block (reject sign-in)'),
+)
+
 
 class AttendancePolicy(models.Model):
     """Admin-configurable attendance rules. Only one record should be active at a time."""
+    # ── Time windows ──────────────────────────────────────────────────────────
     check_in_start = models.TimeField(help_text='Earliest allowed clock-in (e.g. 07:00)')
     check_in_end = models.TimeField(help_text='On-time clock-in deadline (e.g. 09:00)')
-    late_grace_minutes = models.PositiveIntegerField(default=15, help_text='Minutes after check_in_end before marked LATE')
-    absent_if_no_checkin_by = models.TimeField(help_text='Time after which no clock-in = ABSENT (e.g. 11:00)')
-    half_day_if_checkout_before = models.TimeField(help_text='Clock-out before this = HALF_DAY (e.g. 13:00)')
-    check_out_start = models.TimeField(help_text='Earliest allowed clock-out (e.g. 16:00)')
-    check_out_end = models.TimeField(help_text='Expected end of work day (e.g. 18:00)')
+    late_grace_minutes = models.PositiveIntegerField(default=15)
+    absent_if_no_checkin_by = models.TimeField(help_text='No clock-in by this time = ABSENT')
+    half_day_if_checkout_before = models.TimeField(help_text='Checkout before this = HALF_DAY')
+    check_out_start = models.TimeField(help_text='Earliest allowed clock-out')
+    check_out_end = models.TimeField(help_text='Expected end of work day')
+
+    # ── IP security ───────────────────────────────────────────────────────────
+    allowed_ips = models.JSONField(
+        default=list, blank=True,
+        help_text='List of allowed IP addresses. Empty = allow all.',
+    )
+    enforce_ip = models.CharField(
+        max_length=10, choices=ENFORCE_CHOICES, default='off',
+        help_text='What to do when clock-in comes from an unlisted IP.',
+    )
+
+    # ── GPS / location security ───────────────────────────────────────────────
+    office_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    office_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    office_radius_meters = models.PositiveIntegerField(
+        default=200,
+        help_text='Allowed distance from office in metres.',
+    )
+    enforce_location = models.CharField(
+        max_length=10, choices=ENFORCE_CHOICES, default='off',
+        help_text='What to do when clock-in comes from outside the office radius.',
+    )
+
     is_active = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,7 +52,6 @@ class AttendancePolicy(models.Model):
         ordering = ['-updated_at']
 
     def save(self, *args, **kwargs):
-        # Ensure only one policy is active at a time
         if self.is_active:
             AttendancePolicy.objects.exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)
@@ -46,10 +75,17 @@ class AttendanceLog(models.Model):
     clock_out_timestamp = models.DateTimeField(blank=True, null=True)
     clock_in_ip = models.GenericIPAddressField(blank=True, null=True)
     clock_out_ip = models.GenericIPAddressField(blank=True, null=True)
-    # Anti-proxy detection fields
+
+    # GPS at clock-in
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    distance_from_office = models.FloatField(null=True, blank=True, help_text='Metres from office at clock-in')
+
+    # Anti-proxy / remote detection
     device_fingerprint = models.CharField(max_length=128, blank=True, null=True)
     is_suspicious = models.BooleanField(default=False, db_index=True)
     suspicious_reason = models.TextField(blank=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PRESENT', db_index=True)
 
     class Meta:

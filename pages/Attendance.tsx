@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LogIn, LogOut, Clock, Calendar, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { LogIn, LogOut, Clock, Calendar, AlertTriangle, CheckCircle, Loader2, MapPin } from 'lucide-react';
 import { attendanceApi, AttendanceStatus, AttendanceLog } from '../services/attendanceApi';
 import { useToast } from '../context/ToastContext';
 
@@ -22,6 +22,7 @@ const Attendance: React.FC = () => {
   const [history, setHistory] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<'in' | 'out' | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'getting' | 'got' | 'denied'>('idle');
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Live clock
@@ -49,14 +50,21 @@ const Attendance: React.FC = () => {
 
   const handleClockIn = async () => {
     setActing('in');
+    setGpsStatus('getting');
     try {
       const res = await attendanceApi.clockIn();
-      showToast(res.detail, 'success');
+      setGpsStatus('got');
+      let msg = res.detail;
+      if (res.distance_from_office != null) {
+        msg += ` (${Math.round(res.distance_from_office)}m from office)`;
+      }
+      showToast(msg, 'success');
       if (res.is_suspicious) {
         showToast('⚠️ Suspicious sign-in detected and flagged for admin review.', 'info');
       }
       await fetchData();
     } catch (err: any) {
+      setGpsStatus('denied');
       showToast(err.message || 'Clock-in failed', 'error');
     } finally {
       setActing(null);
@@ -144,8 +152,18 @@ const Attendance: React.FC = () => {
                   className="flex items-center gap-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-sm"
                 >
                   {acting === 'in' ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
-                  {hasClockedIn ? 'Signed In ✓' : 'Sign In'}
+                  {acting === 'in' && gpsStatus === 'getting' ? 'Getting location…' : hasClockedIn ? 'Signed In ✓' : 'Sign In'}
                 </button>
+                {/* GPS status */}
+                {gpsStatus !== 'idle' && (
+                  <p className={`text-xs flex items-center gap-1 ${gpsStatus === 'denied' ? 'text-red-500' : gpsStatus === 'got' ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                    <MapPin className="w-3 h-3" />
+                    {gpsStatus === 'getting' && 'Getting your location…'}
+                    {gpsStatus === 'got' && 'Location confirmed ✓'}
+                    {gpsStatus === 'denied' && 'Location unavailable — enable in browser settings'}
+                  </p>
+                )}
                 <button
                   onClick={handleClockOut}
                   disabled={!hasClockedIn || hasClockedOut || acting === 'out'}

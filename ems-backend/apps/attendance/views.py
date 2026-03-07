@@ -1,4 +1,4 @@
-import hashlib
+import math
 from datetime import date, datetime, timedelta
 
 from django.utils import timezone
@@ -16,6 +16,8 @@ from .serializers import (
 )
 
 
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
 def _get_client_ip(request):
     x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded:
@@ -23,18 +25,55 @@ def _get_client_ip(request):
     return request.META.get('REMOTE_ADDR', '0.0.0.0')
 
 
+def _haversine_metres(lat1, lon1, lat2, lon2):
+    """Return distance in metres between two GPS coordinates."""
+    R = 6_371_000  # Earth radius in metres
+    phi1, phi2 = math.radians(float(lat1)), math.radians(float(lat2))
+    dphi = math.radians(float(lat2) - float(lat1))
+    dlambda = math.radians(float(lon2) - float(lon1))
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _check_ip(policy, client_ip):
+    """
+    Returns (blocked: bool, reason: str | None)
+    """
+    if policy.enforce_ip == 'off' or not policy.allowed_ips:
+        return False, None
+    allowed = [ip.strip() for ip in policy.allowed_ips if ip.strip()]
+    if not allowed:
+        return False, None
+    if client_ip not in allowed:
+        reason = f'Sign-in from unlisted IP {client_ip} (allowed: {", ".join(allowed)})'
+        return policy.enforce_ip == 'block', reason
+    return False, None
+
+
+def _check_location(policy, latitude, longitude):
+    """
+    Returns (blocked: bool, reason: str | None, distance: float | None)
+    """
+    if policy.enforce_location == 'off':
+        return False, None, None
+    if not policy.office_latitude or not policy.office_longitude:
+        return False, None, None
+    if latitude is None or longitude is None:
+        reason = 'GPS location not provided — required by attendance policy'
+        return policy.enforce_location == 'block', reason, None
+    distance = _haversine_metres(policy.office_latitude, policy.office_longitude, latitude, longitude)
+    if distance > policy.office_radius_meters:
+        reason = (
+            f'Sign-in from {distance:.0f}m away from office '
+            f'(allowed radius: {policy.office_radius_meters}m)'
+        )
+        return policy.enforce_location == 'block', reason, distance
+    return False, None, distance
+
+
 def _check_proxy(employee, today_ip, today_fingerprint, today_log):
-    """
-    Compare today's IP + fingerprint against employee's last 5 logs.
-    Flag if BOTH are completely new (never seen before).
-    Also flag if another employee used the same IP within 5 minutes.
-    """
     reasons = []
-
-    recent = AttendanceLog.objects.filter(
-        employee=employee,
-    ).exclude(pk=today_log.pk).order_by('-date')[:10]
-
+    recent = AttendanceLog.objects.filter(employee=employee).exclude(pk=today_log.pk).order_by('-date')[:10]
     known_ips = {r.clock_in_ip for r in recent if r.clock_in_ip}
     known_fps = {r.device_fingerprint for r in recent if r.device_fingerprint}
 
@@ -42,20 +81,21 @@ def _check_proxy(employee, today_ip, today_fingerprint, today_log):
     fp_new = today_fingerprint and today_fingerprint not in known_fps and len(known_fps) > 0
 
     if ip_new and fp_new:
-        reasons.append('Unrecognised IP address and new device fingerprint — possible proxy attendance')
+        reasons.append('New device and IP not seen in last 10 logins — possible proxy attendance')
 
-    # Same-IP rapid clock-in check (within 5 minutes, different employee)
     if today_ip:
         cutoff = timezone.now() - timedelta(minutes=5)
-        shared_ip = AttendanceLog.objects.filter(
+        shared = AttendanceLog.objects.filter(
             clock_in_timestamp__gte=cutoff,
             clock_in_ip=today_ip,
         ).exclude(employee=employee).exists()
-        if shared_ip:
-            reasons.append(f'Another employee clocked in from the same IP ({today_ip}) within the last 5 minutes')
+        if shared:
+            reasons.append(f'Another employee clocked in from the same IP ({today_ip}) within 5 minutes')
 
     return reasons
 
+
+# ─── Views ────────────────────────────────────────────────────────────────────
 
 class ClockInView(APIView):
     permission_classes = [IsAuthenticated]
@@ -64,30 +104,30 @@ class ClockInView(APIView):
         try:
             employee = request.user.employee_profile
         except Exception:
-            return Response({'detail': 'No employee profile found for this user.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'No employee profile found.'}, status=status.HTTP_400_BAD_REQUEST)
 
         today = date.today()
         now = timezone.now()
         current_time = now.time()
 
-        # Check for existing log
         existing = AttendanceLog.objects.filter(employee=employee, date=today).first()
         if existing and existing.clock_in_timestamp:
             return Response({'detail': 'Already clocked in today.'}, status=status.HTTP_400_BAD_REQUEST)
 
         policy = AttendancePolicy.get_active()
+
+        # ── Time window check ─────────────────────────────────────────────────
         if policy:
             if current_time < policy.check_in_start:
                 return Response(
-                    {'detail': f'Check-in window not open yet. Opens at {policy.check_in_start.strftime("%H:%M")}.'},
+                    {'detail': f'Check-in opens at {policy.check_in_start.strftime("%H:%M")}.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if current_time > policy.absent_if_no_checkin_by:
                 return Response(
-                    {'detail': f'Check-in closed. You are marked ABSENT for today.'},
+                    {'detail': 'Check-in window closed. You are marked ABSENT for today.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            # Determine status
             late_deadline = (
                 datetime.combine(today, policy.check_in_end) + timedelta(minutes=policy.late_grace_minutes)
             ).time()
@@ -95,21 +135,57 @@ class ClockInView(APIView):
         else:
             attendance_status = 'PRESENT'
 
+        # ── Gather request data ───────────────────────────────────────────────
         ip = _get_client_ip(request)
         fingerprint = request.data.get('device_fingerprint', '')
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
 
+        suspicious_reasons = []
+        distance = None
+
+        # ── IP allowlist check ────────────────────────────────────────────────
+        if policy:
+            ip_blocked, ip_reason = _check_ip(policy, ip)
+            if ip_reason:
+                if ip_blocked:
+                    return Response(
+                        {'detail': f'Sign-in blocked: {ip_reason}'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                suspicious_reasons.append(ip_reason)
+
+            # ── GPS / location check ──────────────────────────────────────────
+            loc_blocked, loc_reason, distance = _check_location(policy, latitude, longitude)
+            if loc_reason:
+                if loc_blocked:
+                    return Response(
+                        {'detail': f'Sign-in blocked: {loc_reason}'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                suspicious_reasons.append(loc_reason)
+
+        # ── Save the log ──────────────────────────────────────────────────────
         log, _ = AttendanceLog.objects.get_or_create(employee=employee, date=today)
         log.clock_in_timestamp = now
         log.clock_in_ip = ip
         log.device_fingerprint = fingerprint
         log.status = attendance_status
+        if latitude is not None:
+            log.latitude = latitude
+        if longitude is not None:
+            log.longitude = longitude
+        if distance is not None:
+            log.distance_from_office = distance
         log.save()
 
-        # Anti-proxy detection
+        # ── Anti-proxy detection ──────────────────────────────────────────────
         proxy_reasons = _check_proxy(employee, ip, fingerprint, log)
-        if proxy_reasons:
+        suspicious_reasons.extend(proxy_reasons)
+
+        if suspicious_reasons:
             log.is_suspicious = True
-            log.suspicious_reason = ' | '.join(proxy_reasons)
+            log.suspicious_reason = ' | '.join(suspicious_reasons)
             log.save(update_fields=['is_suspicious', 'suspicious_reason'])
 
         return Response({
@@ -117,6 +193,7 @@ class ClockInView(APIView):
             'status': attendance_status,
             'clock_in': now.isoformat(),
             'is_suspicious': log.is_suspicious,
+            'distance_from_office': distance,
         })
 
 
@@ -138,21 +215,18 @@ class ClockOutView(APIView):
         if log.clock_out_timestamp:
             return Response({'detail': 'Already clocked out today.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        ip = _get_client_ip(request)
         log.clock_out_timestamp = now
-        log.clock_out_ip = ip
+        log.clock_out_ip = _get_client_ip(request)
 
         policy = AttendancePolicy.get_active()
         if policy and now.time() < policy.half_day_if_checkout_before:
             log.status = 'HALF_DAY'
-
         log.save()
 
         working_minutes = int((now - log.clock_in_timestamp).total_seconds() / 60)
         hours, mins = divmod(working_minutes, 60)
-
         return Response({
-            'detail': f'Clocked out successfully. You worked {hours}h {mins}m today.',
+            'detail': f'Clocked out. You worked {hours}h {mins}m today.',
             'status': log.status,
             'clock_out': now.isoformat(),
             'working_minutes': working_minutes,
@@ -191,6 +265,7 @@ class AttendanceStatusView(APIView):
                 'status': log.status,
                 'clock_in': log.clock_in_timestamp.isoformat() if log.clock_in_timestamp else None,
                 'clock_out': log.clock_out_timestamp.isoformat() if log.clock_out_timestamp else None,
+                'distance_from_office': log.distance_from_office,
             }
 
         return Response({
@@ -203,22 +278,17 @@ class AttendanceStatusView(APIView):
 
 
 class AttendancePolicyView(generics.RetrieveUpdateAPIView):
-    """GET or PUT the active attendance policy. Admin/HR only."""
     serializer_class = AttendancePolicySerializer
     permission_classes = [IsAdminOrHRManager]
 
     def get_object(self):
         policy = AttendancePolicy.get_active()
         if not policy:
-            # Create a sensible default
             policy = AttendancePolicy.objects.create(
-                check_in_start='07:00',
-                check_in_end='09:00',
-                late_grace_minutes=15,
-                absent_if_no_checkin_by='11:00',
+                check_in_start='07:00', check_in_end='09:00',
+                late_grace_minutes=15, absent_if_no_checkin_by='11:00',
                 half_day_if_checkout_before='13:00',
-                check_out_start='16:00',
-                check_out_end='18:00',
+                check_out_start='16:00', check_out_end='18:00',
                 is_active=True,
             )
         return policy
@@ -229,7 +299,6 @@ class AttendancePolicyView(generics.RetrieveUpdateAPIView):
 
 
 class SuspiciousAttendanceView(generics.ListAPIView):
-    """List all suspicious attendance logs. Admin/HR only."""
     serializer_class = AttendanceLogSerializer
     permission_classes = [IsAdminOrHRManager]
 
@@ -245,11 +314,10 @@ class AttendanceLogViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        user = self.request.user
-        # Support ?date=YYYY-MM-DD filter
         filter_date = self.request.query_params.get('date')
         if filter_date:
             queryset = queryset.filter(date=filter_date)
+        user = self.request.user
         if user.role in {'ADMIN', 'HR_MANAGER'}:
             return queryset.order_by('-date', '-clock_in_timestamp')
         return queryset.filter(employee__user=user).order_by('-date')
@@ -261,7 +329,9 @@ class AttendanceLogViewSet(viewsets.ModelViewSet):
 
 
 class AttendanceCorrectionRequestViewSet(viewsets.ModelViewSet):
-    queryset = AttendanceCorrectionRequest.objects.select_related('attendance_log', 'requested_by', 'reviewer').all()
+    queryset = AttendanceCorrectionRequest.objects.select_related(
+        'attendance_log', 'requested_by', 'reviewer'
+    ).all()
     serializer_class = AttendanceCorrectionRequestSerializer
 
     def get_queryset(self):

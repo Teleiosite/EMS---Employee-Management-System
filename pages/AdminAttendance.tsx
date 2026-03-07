@@ -203,29 +203,76 @@ const AttendanceSettings: React.FC = () => {
   const [policy, setPolicy] = useState<Partial<AttendancePolicy>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [ipInput, setIpInput] = useState('');
 
   useEffect(() => {
     attendanceApi.getPolicy()
-      .then(setPolicy)
+      .then((p) => {
+        setPolicy(p);
+        setIpInput(Array.isArray(p.allowed_ips) ? p.allowed_ips.join(', ') : '');
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const set = (field: keyof AttendancePolicy, val: string | number) =>
+  const set = (field: keyof AttendancePolicy, val: any) =>
     setPolicy((p) => ({ ...p, [field]: val }));
+
+  const useMyIp = async () => {
+    try {
+      const res = await fetch('https://api.ipify.org?format=json');
+      const { ip } = await res.json();
+      const existing = ipInput ? ipInput + ', ' : '';
+      setIpInput(existing + ip);
+    } catch {
+      showToast('Could not detect your IP address', 'error');
+    }
+  };
+
+  const useMyLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        set('office_latitude', parseFloat(pos.coords.latitude.toFixed(6)));
+        set('office_longitude', parseFloat(pos.coords.longitude.toFixed(6)));
+        showToast('Office location set to your current position.', 'success');
+      },
+      () => showToast('Location permission denied. Enable it in your browser settings.', 'error'),
+      { timeout: 8000 }
+    );
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await attendanceApi.updatePolicy(policy);
+      const ips = ipInput
+        .split(',')
+        .map((ip) => ip.trim())
+        .filter(Boolean);
+      const updated = await attendanceApi.updatePolicy({ ...policy, allowed_ips: ips });
       setPolicy(updated);
-      showToast('Attendance policy saved successfully!', 'success');
+      setIpInput(Array.isArray(updated.allowed_ips) ? updated.allowed_ips.join(', ') : '');
+      showToast('Attendance policy saved!', 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to save policy', 'error');
     } finally {
       setSaving(false);
     }
   };
+
+  const EnforceSelect: React.FC<{ field: 'enforce_ip' | 'enforce_location' }> = ({ field }) => (
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">Enforcement Mode</label>
+      <select
+        value={(policy[field] as string) || 'off'}
+        onChange={(e) => set(field, e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+      >
+        <option value="off">Off — no restriction</option>
+        <option value="flag">Flag — allow but alert admin</option>
+        <option value="block">Block — reject sign-in</option>
+      </select>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
@@ -235,6 +282,7 @@ const AttendanceSettings: React.FC = () => {
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* Check-In Window */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Check-In Window
@@ -246,20 +294,16 @@ const AttendanceSettings: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Late grace period (minutes)</label>
-            <input
-              type="number"
-              min={0}
-              max={60}
-              value={policy.late_grace_minutes ?? 15}
+            <input type="number" min={0} max={60} value={policy.late_grace_minutes ?? 15}
               onChange={(e) => set('late_grace_minutes', parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-            />
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" />
             <p className="text-xs text-gray-400">Minutes after deadline before status = LATE</p>
           </div>
           <TimeInput label="Absent if no sign-in by" value={policy.absent_if_no_checkin_by || '11:00:00'} onChange={(v) => set('absent_if_no_checkin_by', v)} hint="After this time = ABSENT" />
         </div>
       </div>
 
+      {/* Check-Out Window */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Check-Out Window
@@ -269,6 +313,86 @@ const AttendanceSettings: React.FC = () => {
           <TimeInput label="Check-out opens at" value={policy.check_out_start || '16:00:00'} onChange={(v) => set('check_out_start', v)} hint="Earliest sign-out allowed" />
         </div>
         <TimeInput label="Expected end of work day" value={policy.check_out_end || '18:00:00'} onChange={(v) => set('check_out_end', v)} hint="For reporting purposes" />
+      </div>
+
+      {/* IP Security */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> IP Address Security
+        </h3>
+        <p className="text-xs text-gray-500">Only allow sign-ins from the listed IP addresses (your office network). Leave empty to allow all IPs.</p>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700">Allowed IPs (comma-separated)</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={ipInput}
+              onChange={(e) => setIpInput(e.target.value)}
+              placeholder="e.g. 102.89.33.1, 197.210.5.0"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+            />
+            <button
+              type="button"
+              onClick={useMyIp}
+              className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+            >
+              + Use my IP
+            </button>
+          </div>
+        </div>
+        <EnforceSelect field="enforce_ip" />
+      </div>
+
+      {/* Location Security */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Location (GPS) Security
+        </h3>
+        <p className="text-xs text-gray-500">Set your office GPS coordinates. Employees signing in outside the allowed radius will be flagged or blocked.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Office Latitude</label>
+            <input
+              type="number" step="0.000001"
+              value={policy.office_latitude ?? ''}
+              onChange={(e) => set('office_latitude', parseFloat(e.target.value))}
+              placeholder="e.g. 6.524379"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Office Longitude</label>
+            <input
+              type="number" step="0.000001"
+              value={policy.office_longitude ?? ''}
+              onChange={(e) => set('office_longitude', parseFloat(e.target.value))}
+              placeholder="e.g. 3.379206"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={useMyLocation}
+          className="px-4 py-2 text-sm border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+        >
+          📍 Use my current location as office
+        </button>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700">
+            Allowed radius: <strong>{policy.office_radius_meters ?? 200}m</strong>
+          </label>
+          <input
+            type="range" min={50} max={1000} step={50}
+            value={policy.office_radius_meters ?? 200}
+            onChange={(e) => set('office_radius_meters', parseInt(e.target.value))}
+            className="w-full accent-orange-500"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>50m (strict)</span><span>500m</span><span>1000m (relaxed)</span>
+          </div>
+        </div>
+        <EnforceSelect field="enforce_location" />
       </div>
 
       <button
@@ -282,6 +406,7 @@ const AttendanceSettings: React.FC = () => {
     </div>
   );
 };
+
 
 // ─── Main Admin Page ─────────────────────────────────────────────────────────
 const AdminAttendance: React.FC = () => {
@@ -307,8 +432,8 @@ const AdminAttendance: React.FC = () => {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.id
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-50'
               }`}
           >
             {t.icon}
