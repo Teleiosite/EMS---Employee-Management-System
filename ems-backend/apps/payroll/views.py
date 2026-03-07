@@ -10,17 +10,19 @@ from .serializers import PayrollRunSerializer, PayslipSerializer, TaxSlabSeriali
 from .pdf_generator import generate_payslip_pdf
 
 
-def _generate_payslips_for_run(payroll_run: PayrollRun) -> None:
-    """Auto-generate a Payslip for every active EmployeeProfile when a PayrollRun is created."""
+def _generate_payslips_for_run(payroll_run: PayrollRun, employee_ids=None) -> None:
+    """Auto-generate a Payslip for the given employees (or all active if no IDs provided)."""
     from apps.employees.models import EmployeeProfile
-    employees = EmployeeProfile.objects.filter(status='ACTIVE').select_related('user', 'designation')
+    qs = EmployeeProfile.objects.filter(status='ACTIVE').select_related('user', 'designation')
+    if employee_ids:
+        qs = qs.filter(id__in=employee_ids)
+
     payslips = []
-    for employee in employees:
-        # Skip if payslip already exists for this employee/run pair
+    for employee in qs:
+        # Skip if a payslip already exists for this employee/run pair
         if Payslip.objects.filter(payroll_run=payroll_run, employee=employee).exists():
             continue
         gross = Decimal(str(employee.base_salary))
-        # Simple 10% deduction as a placeholder — replace with salary structure logic
         deduction = round(gross * Decimal('0.10'), 2)
         tax = round(gross * Decimal('0.05'), 2)
         net = gross - deduction - tax
@@ -42,9 +44,11 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
 
     def perform_create(self, serializer):
-        """Create the PayrollRun and auto-generate payslips for all active employees."""
+        """Create the PayrollRun and auto-generate payslips for selected (or all active) employees."""
+        # Extract employee_ids from request data — not a model field, so pop it before saving
+        employee_ids = self.request.data.get('employee_ids', None)
         payroll_run = serializer.save()
-        _generate_payslips_for_run(payroll_run)
+        _generate_payslips_for_run(payroll_run, employee_ids=employee_ids)
 
 
 class TaxSlabViewSet(viewsets.ModelViewSet):

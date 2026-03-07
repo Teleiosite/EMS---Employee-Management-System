@@ -92,7 +92,7 @@ export const payrollApi = {
         return transformPayrollRun(response);
     },
 
-    createRun: async (data: { month: string }): Promise<{ id: string; month: string; year: number; status: string }> => {
+    createRun: async (data: { month: string; employee_ids?: number[] }): Promise<{ id: string; month: string; year: number; status: string }> => {
         const response = await api.post<BackendPayrollRun>('/payroll/runs/', data);
         return transformPayrollRun(response);
     },
