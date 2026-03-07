@@ -1,8 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { jobRequirements, departments } from '../../services/mockData';
+import { jobRequirements } from '../../services/mockData';
 import { useToast } from '../../context/ToastContext';
+import api from '../../services/api';
+
+interface Department {
+  id: number;
+  name: string;
+}
 
 const AddJob: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +25,19 @@ const AddJob: React.FC = () => {
     status: 'OPEN'
   });
 
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(true);
+
   useEffect(() => {
+    // Fetch departments
+    api.get<{ results: Department[] }>('/departments/')
+      .then(res => setDepartments(res.results || []))
+      .catch(err => {
+        console.error('Failed to fetch departments:', err);
+        showToast('Failed to load departments', 'error');
+      })
+      .finally(() => setLoadingDepts(false));
+
     if (isEditMode && id) {
       const job = jobRequirements.find(j => j.id === id);
       if (job) {
@@ -35,7 +52,7 @@ const AddJob: React.FC = () => {
         });
       }
     }
-  }, [isEditMode, id]);
+  }, [isEditMode, id, showToast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -44,12 +61,12 @@ const AddJob: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Simulate API latency
     setTimeout(() => {
       const skillsArray = formData.required_skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
       const responsibilitiesArray = formData.responsibilities.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-      
+
       const newJobData = {
         role_name: formData.role_name,
         department: formData.department,
@@ -88,58 +105,59 @@ const AddJob: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Role Name</label>
-              <input 
+              <input
                 name="role_name"
                 value={formData.role_name}
                 onChange={handleChange}
-                required 
-                type="text" 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                placeholder="e.g. Senior Frontend Engineer" 
+                required
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                placeholder="e.g. Senior Frontend Engineer"
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Department</label>
-              <select 
+              <select
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                disabled={loadingDepts}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white disabled:bg-gray-50"
               >
-                <option value="">Select Department</option>
+                <option value="">{loadingDepts ? 'Loading departments...' : 'Select Department'}</option>
                 {departments.map(dept => (
-                    <option key={dept.id} value={dept.name}>{dept.name}</option>
+                  <option key={dept.id} value={dept.name}>{dept.name}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className="space-y-2">
-             <label className="text-sm font-medium text-gray-700">Required Skills (Comma separated)</label>
-             <textarea 
-               name="required_skills"
-               value={formData.required_skills}
-               onChange={handleChange}
-               required
-               rows={2}
-               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
-               placeholder="e.g. React, TypeScript, Tailwind CSS, Node.js"
-             />
+            <label className="text-sm font-medium text-gray-700">Required Skills (Comma separated)</label>
+            <textarea
+              name="required_skills"
+              value={formData.required_skills}
+              onChange={handleChange}
+              required
+              rows={2}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+              placeholder="e.g. React, TypeScript, Tailwind CSS, Node.js"
+            />
           </div>
 
           <div className="space-y-2">
-             <label className="text-sm font-medium text-gray-700">Key Responsibilities (One per line)</label>
-             <textarea 
-               name="responsibilities"
-               value={formData.responsibilities}
-               onChange={handleChange}
-               required
-               rows={5}
-               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
-               placeholder="- Develop new features&#10;- Maintain existing codebase&#10;- Collaborate with team"
-             />
+            <label className="text-sm font-medium text-gray-700">Key Responsibilities (One per line)</label>
+            <textarea
+              name="responsibilities"
+              value={formData.responsibilities}
+              onChange={handleChange}
+              required
+              rows={5}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+              placeholder="- Develop new features&#10;- Maintain existing codebase&#10;- Collaborate with team"
+            />
           </div>
 
           <div className="space-y-2">
@@ -149,45 +167,45 @@ const AddJob: React.FC = () => {
               value={formData.education_level}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
               placeholder="e.g. Bachelors Degree in Computer Science, Engineering, or a related field. Masters is a plus."
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="space-y-2">
-               <label className="text-sm font-medium text-gray-700">Min. Experience (Years)</label>
-               <input 
-                 name="minimum_years_experience"
-                 value={formData.minimum_years_experience}
-                 onChange={handleChange}
-                 required 
-                 type="number"
-                 min="0"
-                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-               />
-             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Min. Experience (Years)</label>
+              <input
+                name="minimum_years_experience"
+                value={formData.minimum_years_experience}
+                onChange={handleChange}
+                required
+                type="number"
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+              />
+            </div>
 
-             <div className="space-y-2">
-               <label className="text-sm font-medium text-gray-700">Status</label>
-               <select 
-                 name="status"
-                 value={formData.status}
-                 onChange={handleChange}
-                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
-               >
-                 <option value="OPEN">Open</option>
-                 <option value="CLOSED">Closed</option>
-               </select>
-             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+              >
+                <option value="OPEN">Open</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </div>
           </div>
 
           <div className="pt-4 flex gap-3">
             <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
               {isEditMode ? 'Update Job' : 'Post Job'}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => navigate('/admin/recruitment/jobs')}
               className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium transition-colors"
             >
