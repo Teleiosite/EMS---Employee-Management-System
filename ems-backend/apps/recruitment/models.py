@@ -98,7 +98,8 @@ class Candidate(models.Model):
         blank=True,
         help_text="Neutral message shown to applicant"
     )
-    
+
+
     # HR Notes (Hidden from Applicants)
     hr_notes = models.TextField(blank=True)
     
@@ -187,3 +188,38 @@ class ApplicantProfile(models.Model):
             len(self.experience) > 0,
         ]
         return int(sum(fields) / len(fields) * 100)
+
+class AISettings(models.Model):
+    """
+    Singleton model to store API keys and settings for AI resume parsing.
+    """
+    gemini_api_key = models.CharField(
+        max_length=255, 
+        blank=True, 
+        help_text="Google Gemini API Key for parsing resumes"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Enable or disable real AI parsing. If disabled, system falls back to mock."
+    )
+    prompt_template = models.TextField(
+        blank=True,
+        default="Extract the following information from the resume and return ONLY a valid JSON object with keys: name (string), email (string), phone (string), skills (list of strings), experience_years (integer), headline (string), education (list of objects with degree, school, year), experience (list of objects with title, company, duration, description), summary (string overview).",
+        help_text="System instructions for the AI on how to parse the resume"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton pattern
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        has_key = "Key Set" if self.gemini_api_key else "No Key"
+        return f"AI Parser Settings ({status} - {has_key})"

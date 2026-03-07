@@ -1,18 +1,76 @@
 import random
 import time
+import json
 from decimal import Decimal
+import logging
+import google.generativeai as genai
+from pypdf import PdfReader
+from .models import AISettings
+
+logger = logging.getLogger(__name__)
 
 def parse_resume(file):
     """
-    Simulates parsing a resume file (PDF/DOCX) to extract structured data.
-    In a real implementation, this would use a service like Textract, PyPDF2, or an AI API.
+    Extracts text from a resume file and parses it using Google Gemini AI if enabled.
+    Falls back to mock data if AI is disabled or an error occurs.
     """
-    # Simulate processing delay
-    time.sleep(1)
+    settings = AISettings.get_settings()
     
-    filename = file.name.lower()
+    # 1. Fallback / Mock Parsing if AI is disabled
+    if not settings.is_active or not settings.gemini_api_key:
+        logger.warning("AI Parsing is disabled or API key is missing. Using mock data.")
+        return get_mock_resume_data(file.name)
+        
+    try:
+        # 2. Extract Text from PDF
+        text = ""
+        try:
+            reader = PdfReader(file)
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+        except Exception as e:
+            logger.error(f"Failed to read PDF: {e}")
+            return get_mock_resume_data(file.name)
+            
+        if not text.strip():
+            logger.warning("No text extracted from PDF. Using mock data.")
+            return get_mock_resume_data(file.name)
+            
+        # 3. Call Gemini API
+        genai.configure(api_key=settings.gemini_api_key)
+        
+        # We use gemini-2.5-flash as it is fast and supports JSON schema natively, 
+        # but for simplicity we will just prompt it to return a JSON block.
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        full_prompt = f"{settings.prompt_template}\n\nResume Text:\n{text[:15000]}"
+        
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                response_mime_type="application/json",
+            )
+        )
+        
+        # Parse the JSON response
+        try:
+            parsed_json = json.loads(response.text)
+            return parsed_json
+        except json.JSONDecodeError:
+            logger.error("Gemini returned invalid JSON")
+            return get_mock_resume_data(file.name)
+            
+    except Exception as e:
+        logger.error(f"AI Parsing failed: {e}")
+        return get_mock_resume_data(file.name)
+
+
+def get_mock_resume_data(filename):
+    """Fallback mock data generator"""
+    filename = filename.lower()
     
-    # Mock extraction based on filename or random data
     is_developer = 'dev' in filename or 'tech' in filename
     is_marketing = 'market' in filename
     is_design = 'design' in filename
@@ -35,7 +93,7 @@ def parse_resume(file):
         headline = "Professional"
 
     return {
-        'name': 'Parsed Candidate Name', # Ideally extracted from file
+        'name': 'Parsed Candidate Name',
         'email': 'parsed@example.com',
         'phone': '+1-555-0123',
         'skills': skills,

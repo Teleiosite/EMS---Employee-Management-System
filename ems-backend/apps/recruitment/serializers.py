@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Candidate, JobPosting, ApplicantProfile
+from .models import Candidate, JobPosting, ApplicantProfile, AISettings
 
 
 class JobPostingSerializer(serializers.ModelSerializer):
@@ -7,6 +7,16 @@ class JobPostingSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobPosting
         fields = '__all__'
+
+
+class AISettingsSerializer(serializers.ModelSerializer):
+    """Settings for AI Resume Parsing"""
+    class Meta:
+        model = AISettings
+        fields = ['gemini_api_key', 'is_active', 'prompt_template']
+        extra_kwargs = {
+            'gemini_api_key': {'write_only': True} # Don't expose key on GET
+        }
 
 
 class JobPostingPublicSerializer(serializers.ModelSerializer):

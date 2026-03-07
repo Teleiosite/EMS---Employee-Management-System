@@ -179,6 +179,17 @@ export const recruitmentApi = {
     deleteCandidate: async (id: string): Promise<void> => {
         await api.delete(`/recruitment/candidates/${id}/`);
     },
+
+    // ==================== AI SETTINGS ====================
+    getAISettings: async (): Promise<any> => {
+        const response = await api.get('/recruitment/ai-settings/');
+        return response;
+    },
+
+    updateAISettings: async (data: any): Promise<any> => {
+        const response = await api.patch('/recruitment/ai-settings/', data);
+        return response;
+    },
 };
 
 export default recruitmentApi;

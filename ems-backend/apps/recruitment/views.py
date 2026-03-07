@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db.models import Q
 
 from apps.core.permissions import IsAdminOrHRManager, IsApplicant, IsApplicantOwner
-from .models import Candidate, JobPosting, ApplicantProfile
+from .models import Candidate, JobPosting, ApplicantProfile, AISettings
 from .serializers import (
     CandidateSerializer,
     CandidateListSerializer,
@@ -17,6 +17,7 @@ from .serializers import (
     ApplicantCandidateSerializer,
     ApplicantApplicationSerializer,
     ApplicantProfileSerializer,
+    AISettingsSerializer,
 )
 from .utils import parse_resume, analyze_candidate
 
@@ -37,6 +38,16 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         return queryset
+
+
+class AISettingsView(generics.RetrieveUpdateAPIView):
+    """Admin/HR management of AI Resume Parsing Settings. 
+    Returns the singleton setting object."""
+    serializer_class = AISettingsSerializer
+    permission_classes = [IsAdminOrHRManager]
+
+    def get_object(self):
+        return AISettings.get_settings()
 
 
 class CandidateViewSet(viewsets.ModelViewSet):

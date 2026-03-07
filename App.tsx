@@ -32,6 +32,7 @@ import UploadResume from './pages/recruitment/UploadResume';
 import CandidateDetail from './pages/recruitment/CandidateDetail';
 import JobList from './pages/recruitment/JobList';
 import AddJob from './pages/recruitment/AddJob';
+import AISettings from './pages/recruitment/AISettings';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/applicant/ApplicantDashboard';
@@ -115,6 +116,7 @@ const App: React.FC = () => {
               <Route path="candidates" element={<CandidateList />} />
               <Route path="candidates/:id" element={<CandidateDetail />} />
               <Route path="upload" element={<UploadResume />} />
+              <Route path="ai-settings" element={<AISettings />} />
             </Route>
 
             {/* Announcements */}

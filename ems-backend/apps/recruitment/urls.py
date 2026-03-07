@@ -4,6 +4,7 @@ from .views import (
     # Admin/HR Views
     JobPostingViewSet,
     CandidateViewSet,
+    AISettingsView,
     # Applicant Views
     PublicJobListView,
     ApplicantApplicationListView,
@@ -20,6 +21,9 @@ router.register(r'candidates', CandidateViewSet, basename='candidate')
 urlpatterns = [
     # Admin/HR routes (via router)
     path('', include(router.urls)),
+    
+    # AI Settings
+    path('ai-settings/', AISettingsView.as_view(), name='ai-settings'),
     
     # Public job listings (for applicants)
     path('public/jobs/', PublicJobListView.as_view(), name='public-jobs'),

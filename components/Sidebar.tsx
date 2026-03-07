@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Building, 
-  Calendar, 
-  DollarSign, 
-  Clock, 
+import {
+  LayoutDashboard,
+  Users,
+  Building,
+  Calendar,
+  DollarSign,
+  Clock,
   Megaphone,
   Briefcase,
   ChevronDown,
@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment']);
 
   const toggleMenu = (name: string) => {
-    setExpandedMenus(prev => 
+    setExpandedMenus(prev =>
       prev.includes(name) ? prev.filter(item => item !== name) : [...prev, name]
     );
   };
@@ -39,9 +39,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { name: 'Employees', icon: Users, path: '/admin/employees' },
-    { 
-      name: 'Departments', 
-      icon: Building, 
+    {
+      name: 'Departments',
+      icon: Building,
       subItems: [
         { name: 'View Departments', path: '/admin/departments' },
         { name: 'Add Department', path: '/admin/departments/new' }
@@ -50,18 +50,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
     { name: 'Leave Management', icon: Briefcase, path: '/admin/leaves' },
     { name: 'Payroll', icon: DollarSign, path: '/admin/payroll' },
     { name: 'Attendance', icon: Clock, path: '/admin/attendance' },
-    { 
-      name: 'Recruitment', 
-      icon: FileText, 
+    {
+      name: 'Recruitment',
+      icon: FileText,
       subItems: [
         { name: 'Job Postings', path: '/admin/recruitment/jobs' },
         { name: 'Candidate Dashboard', path: '/admin/recruitment/candidates' },
-        { name: 'Upload Resume', path: '/admin/recruitment/upload' }
+        { name: 'Upload Resume', path: '/admin/recruitment/upload' },
+        { name: 'AI Settings', path: '/admin/recruitment/ai-settings' }
       ]
     },
-    { 
-      name: 'Announcements', 
-      icon: Megaphone, 
+    {
+      name: 'Announcements',
+      icon: Megaphone,
       subItems: [
         { name: 'View Announcements', path: '/admin/announcements' },
         { name: 'Add Announcement', path: '/admin/announcements/new' }
@@ -88,16 +89,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
             if (item.subItems) {
               const isExpanded = expandedMenus.includes(item.name);
               const isActive = item.subItems.some(sub => location.pathname === sub.path);
-              
+
               return (
                 <div key={item.name}>
                   <button
                     onClick={() => toggleMenu(item.name)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                      isActive || isExpanded
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-md transition-colors ${isActive || isExpanded
                         ? 'text-orange-600'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <item.icon className="w-5 h-5" />
@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
                     </div>
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
-                  
+
                   {isExpanded && (
                     <div className="ml-12 space-y-1 mt-1">
                       {item.subItems.map((subItem) => (
@@ -114,10 +114,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
                           to={subItem.path}
                           onClick={handleLinkClick}
                           className={({ isActive }) =>
-                            `block px-4 py-2 text-sm rounded-md transition-colors ${
-                              isActive
-                                ? 'text-orange-600 font-medium'
-                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                            `block px-4 py-2 text-sm rounded-md transition-colors ${isActive
+                              ? 'text-orange-600 font-medium'
+                              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                             }`
                           }
                         >
@@ -137,10 +136,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
                 end={item.path === '/admin'} // Exact match for dashboard
                 onClick={handleLinkClick}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-orange-50 text-orange-600 border-r-4 border-orange-500'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors ${isActive
+                    ? 'bg-orange-50 text-orange-600 border-r-4 border-orange-500'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`
                 }
               >
