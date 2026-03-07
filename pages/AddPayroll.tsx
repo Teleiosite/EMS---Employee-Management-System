@@ -1,222 +1,193 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { employees, payrolls } from '../services/mockData';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, AlertCircle, Users } from 'lucide-react';
+import { employeesApi } from '../services/employeesApi';
+import { payrollApi } from '../services/payrollApi';
+import { useToast } from '../context/ToastContext';
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const currentDate = new Date();
 
 const AddPayroll: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditMode = !!id;
+  const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    month: 'August',
-    year: 2025,
-    baseSalary: '',
-    deductions: '',
-    status: 'Processing'
-  });
+  const [month, setMonth] = useState(MONTHS[currentDate.getMonth()]);
+  const [year, setYear] = useState(currentDate.getFullYear());
+  const [employees, setEmployees] = useState<{ id: string; name: string; baseSalary: number; employeeId: string }[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Derived state for display
-  const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
-
+  // Fetch all active employees to preview who will be included
   useEffect(() => {
-    if (isEditMode && id) {
-      const payroll = payrolls.find(p => p.id === id);
-      if (payroll) {
-        setFormData({
-          employeeId: payroll.employeeId,
-          month: payroll.month,
-          year: payroll.year,
-          baseSalary: payroll.baseSalary.toString(),
-          deductions: payroll.deductions.toString(),
-          status: payroll.status
-        });
-        setSelectedEmployeeName(payroll.name);
+    const fetchEmployees = async () => {
+      setLoadingEmployees(true);
+      try {
+        const data = await employeesApi.list();
+        setEmployees(
+          data
+            .filter((e) => e.status === 'ACTIVE')
+            .map((e) => ({ id: e.id, name: e.name, baseSalary: e.baseSalary, employeeId: e.employeeId }))
+        );
+      } catch (err) {
+        console.error('Failed to fetch employees:', err);
+        setError('Could not load employees. Please try again.');
+      } finally {
+        setLoadingEmployees(false);
       }
-    }
-  }, [isEditMode, id]);
+    };
+    fetchEmployees();
+  }, []);
 
-  const handleEmployeeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const empId = e.target.value;
-    const emp = employees.find(e => e.id === empId);
-    if (emp) {
-      setFormData(prev => ({
-        ...prev,
-        employeeId: empId,
-        baseSalary: emp.baseSalary.toString(),
-        // Simple 12% mock tax calc
-        deductions: Math.round(emp.baseSalary * 0.12).toString() 
-      }));
-      setSelectedEmployeeName(emp.name);
-    } else {
-      setFormData(prev => ({ ...prev, employeeId: '', baseSalary: '', deductions: '' }));
-      setSelectedEmployeeName('');
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const calculateNet = () => {
-    const base = Number(formData.baseSalary) || 0;
-    const ded = Number(formData.deductions) || 0;
-    return base - ded;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    setTimeout(() => {
-      const emp = employees.find(e => e.id === formData.employeeId);
-      const designation = emp ? emp.designation : 'Employee';
-      const name = emp ? emp.name : selectedEmployeeName;
+    if (employees.length === 0) {
+      setError('No active employees found. Please add employees before creating a payroll run.');
+      return;
+    }
 
-      if (isEditMode && id) {
-        const index = payrolls.findIndex(p => p.id === id);
-        if (index !== -1) {
-          payrolls[index] = {
-            ...payrolls[index],
-            month: formData.month,
-            year: Number(formData.year),
-            baseSalary: Number(formData.baseSalary),
-            deductions: Number(formData.deductions),
-            netSalary: calculateNet(),
-            status: formData.status as any,
-          };
-        }
-        alert("Payroll record updated!");
-      } else {
-        payrolls.push({
-          id: `p${Date.now()}`,
-          employeeId: formData.employeeId,
-          name: name,
-          designation: designation,
-          month: formData.month,
-          year: Number(formData.year),
-          baseSalary: Number(formData.baseSalary),
-          deductions: Number(formData.deductions),
-          netSalary: calculateNet(),
-          status: formData.status as any
-        });
-        alert("Payroll record created!");
-      }
+    setSubmitting(true);
+    setError(null);
+    try {
+      // Month is 0-indexed from state so getting its real index + 1
+      const monthIndex = MONTHS.indexOf(month) + 1;
+      const monthStr = `${year}-${String(monthIndex).padStart(2, '0')}-01`;
+      await payrollApi.createRun({ month: monthStr });
+      showToast(`Payroll for ${month} ${year} created! Payslips generated for ${employees.length} employees.`, 'success');
       navigate('/admin/payroll');
-    }, 500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create payroll. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const totalPayroll = employees.reduce((sum, e) => sum + e.baseSalary, 0);
+  const estimatedDeductions = Math.round(totalPayroll * 0.15);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">{isEditMode ? 'Edit Payroll' : 'Create Payroll'}</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Create Payroll Run</h1>
+        <p className="text-gray-500 mt-1">Generate payslips for all active employees for a given month.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Employee Selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Employee</label>
-            {isEditMode ? (
-              <input 
-                type="text" 
-                value={selectedEmployeeName} 
-                disabled 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
-              />
-            ) : (
-              <select 
-                name="employeeId" 
-                value={formData.employeeId} 
-                onChange={handleEmployeeChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Month</label>
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Year</label>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  min={2020}
+                  max={2099}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-semibold text-orange-700">Payroll Summary</p>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Employees included</span>
+                <span className="font-medium">{loadingEmployees ? '...' : employees.length}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Total gross salary</span>
+                <span className="font-medium">${totalPayroll.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Estimated deductions (15%)</span>
+                <span className="font-medium text-red-600">-${estimatedDeductions.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-gray-800 border-t border-orange-200 pt-2 mt-2">
+                <span>Estimated net payout</span>
+                <span className="text-green-600">${(totalPayroll - estimatedDeductions).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-4">
+              <button
+                type="submit"
+                disabled={submitting || loadingEmployees || employees.length === 0}
+                className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2"
               >
-                <option value="">Select Employee</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.name} ({emp.employeeId})</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-             <div className="space-y-2">
-               <label className="text-sm font-medium text-gray-700">Month</label>
-               <select 
-                 name="month"
-                 value={formData.month}
-                 onChange={handleChange}
-                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
-               >
-                 {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                   <option key={m} value={m}>{m}</option>
-                 ))}
-               </select>
-             </div>
-             <div className="space-y-2">
-               <label className="text-sm font-medium text-gray-700">Year</label>
-               <input 
-                 name="year"
-                 type="number"
-                 value={formData.year}
-                 onChange={handleChange}
-                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-               />
-             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Base Salary ($)</label>
-              <input 
-                name="baseSalary"
-                type="number"
-                value={formData.baseSalary}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Deductions/Tax ($)</label>
-              <input 
-                name="deductions"
-                type="number"
-                value={formData.deductions}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="p-4 bg-gray-50 rounded-lg flex justify-between items-center border border-gray-200">
-             <span className="font-semibold text-gray-700">Net Salary:</span>
-             <span className="font-bold text-xl text-green-600">${calculateNet().toLocaleString()}</span>
-          </div>
-
-          <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Status</label>
-              <select 
-                name="status" 
-                value={formData.status} 
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {submitting ? 'Creating...' : `Create Payroll for ${month} ${year}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/payroll')}
+                className="px-8 py-2.5 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <option value="Processing">Processing</option>
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
-              </select>
+                Cancel
+              </button>
             </div>
+          </form>
+        </div>
 
-          <div className="pt-4">
-            <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
-              {isEditMode ? 'Update Payroll' : 'Create Payroll'}
-            </button>
+        {/* Employee Preview */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-5 h-5 text-orange-500" />
+            <h2 className="font-semibold text-gray-700">Active Employees ({employees.length})</h2>
           </div>
-        </form>
+
+          {loadingEmployees ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+              <span className="ml-2 text-gray-500">Loading employees...</span>
+            </div>
+          ) : employees.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No active employees found.</p>
+              <p className="text-sm mt-1">Add at least one employee before creating a payroll run.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+              {employees.map((emp) => (
+                <div key={emp.id} className="py-3 flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{emp.name}</p>
+                    <p className="text-xs text-gray-500">{emp.employeeId}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">
+                    ${emp.baseSalary.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
