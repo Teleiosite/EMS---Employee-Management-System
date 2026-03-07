@@ -59,7 +59,6 @@ const Payroll: React.FC = () => {
   // Selection Logic
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setPayrollData(payrollData.map(p => p.id));
       setSelectedIds(payrollData.map(p => p.id));
     } else {
       setSelectedIds([]);
@@ -183,8 +182,8 @@ const Payroll: React.FC = () => {
                       <td className="px-6 py-4 text-sm font-bold text-green-600">${record.netSalary.toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.status === 'Paid' ? 'bg-green-100 text-green-800' :
-                            record.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-blue-100 text-blue-800'
+                          record.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
                           }`}>
                           {record.status}
                         </span>
