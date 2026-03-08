@@ -73,7 +73,7 @@ const AISettings: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Sparkles className="w-6 h-6 text-purple-600" /> AI Resume Parsing
+                        <Sparkles className="w-6 h-6 text-orange-600" /> AI Resume Parsing
                     </h1>
                     <p className="text-gray-500 mt-1">Configure Google Gemini to automatically extract data from applicant resumes.</p>
                 </div>
@@ -95,7 +95,7 @@ const AISettings: React.FC = () => {
                                 checked={isActive}
                                 onChange={(e) => setIsActive(e.target.checked)}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none ring-0 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none ring-0 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                         </label>
                     </div>
 
@@ -111,10 +111,10 @@ const AISettings: React.FC = () => {
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
                                 placeholder="Enter new API Key (leave blank to keep existing)"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-shadow"
                             />
                             <p className="text-xs text-gray-500">
-                                Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-purple-600 hover:underline">Google AI Studio</a>.
+                                Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-orange-600 hover:underline">Google AI Studio</a>.
                             </p>
                         </div>
 
@@ -128,7 +128,7 @@ const AISettings: React.FC = () => {
                                 value={promptTemplate}
                                 onChange={(e) => setPromptTemplate(e.target.value)}
                                 rows={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-shadow font-mono text-sm leading-relaxed"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-shadow font-mono text-sm leading-relaxed"
                                 placeholder="Instructions on what JSON schema the AI should return..."
                             />
                             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
@@ -158,7 +158,7 @@ const AISettings: React.FC = () => {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {saving ? (
                                 <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
