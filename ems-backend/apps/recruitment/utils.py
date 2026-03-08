@@ -1,9 +1,9 @@
 import random
 import time
 import json
+import requests
 from decimal import Decimal
 import logging
-import google.generativeai as genai
 from pypdf import PdfReader
 from .models import AISettings
 
@@ -38,28 +38,36 @@ def parse_resume(file):
             logger.warning("No text extracted from PDF. Using mock data.")
             return get_mock_resume_data(file.name)
             
-        # 3. Call Gemini API
-        genai.configure(api_key=settings.gemini_api_key)
-        
-        # We use gemini-2.5-flash as it is fast and supports JSON schema natively, 
-        # but for simplicity we will just prompt it to return a JSON block.
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        # 3. Call Gemini API via REST request
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}"
         
         full_prompt = f"{settings.prompt_template}\n\nResume Text:\n{text[:15000]}"
         
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
-                response_mime_type="application/json",
-            )
-        )
+        payload = {
+            "contents": [{
+                "parts": [{"text": full_prompt}]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, json=payload)
+        
+        if not response.ok:
+            logger.error(f"Gemini API Error: {response.text}")
+            return get_mock_resume_data(file.name)
+            
+        response_data = response.json()
         
         # Parse the JSON response
         try:
-            parsed_json = json.loads(response.text)
+            raw_text = response_data['candidates'][0]['content']['parts'][0]['text']
+            parsed_json = json.loads(raw_text)
             return parsed_json
-        except json.JSONDecodeError:
-            logger.error("Gemini returned invalid JSON")
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.error(f"Gemini returned invalid or missing JSON: {e}")
             return get_mock_resume_data(file.name)
             
     except Exception as e:
