@@ -168,7 +168,11 @@ class ApplicantApplicationListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsApplicant]
     
     def get_queryset(self):
-        return Candidate.objects.filter(user=self.request.user).select_related('job')
+        user = self.request.user
+        # Match by user FK OR by email (for admin-created candidates)
+        return Candidate.objects.filter(
+            Q(user=user) | Q(email__iexact=user.email)
+        ).select_related('job').distinct()
 
 
 class ApplicantApplicationDetailView(generics.RetrieveAPIView):
@@ -177,7 +181,10 @@ class ApplicantApplicationDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsApplicant, IsApplicantOwner]
     
     def get_queryset(self):
-        return Candidate.objects.filter(user=self.request.user).select_related('job')
+        user = self.request.user
+        return Candidate.objects.filter(
+            Q(user=user) | Q(email__iexact=user.email)
+        ).select_related('job').distinct()
 
 
 class ApplicantApplyView(generics.CreateAPIView):
