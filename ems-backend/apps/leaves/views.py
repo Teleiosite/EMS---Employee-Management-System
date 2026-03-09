@@ -8,7 +8,12 @@ from .serializers import LeaveBalanceSerializer, LeavePolicyWindowSerializer, Le
 class LeaveTypeViewSet(viewsets.ModelViewSet):
     queryset = LeaveType.objects.all()
     serializer_class = LeaveTypeSerializer
-    permission_classes = [IsAdminOrHRManager]
+    
+    def get_permissions(self):
+        from rest_framework.permissions import IsAuthenticated
+        if self.action in {'list', 'retrieve'}:
+            return [IsAuthenticated()]
+        return [IsAdminOrHRManager()]
 
 
 class LeavePolicyWindowViewSet(viewsets.ModelViewSet):

@@ -23,6 +23,8 @@ interface BackendPayslip {
     total_deductions: string;
     tax_deduction: string;
     net_salary: string;
+    payroll_month?: string;
+    payroll_status?: string;
 }
 
 interface BackendTaxSlab {
@@ -58,18 +60,36 @@ const transformPayrollRun = (run: BackendPayrollRun): { id: string; month: strin
     };
 };
 
-const transformPayslip = (slip: BackendPayslip, runInfo?: { month: string; year: number }): PayrollRecord => ({
-    id: String(slip.id),
-    employeeId: String(slip.employee),
-    name: slip.employee_name || 'Unknown',
-    designation: slip.employee_designation || 'N/A',
-    baseSalary: parseFloat(slip.gross_salary),
-    deductions: parseFloat(slip.total_deductions) + parseFloat(slip.tax_deduction),
-    netSalary: parseFloat(slip.net_salary),
-    status: 'Paid', // Default, can be determined from payroll run
-    month: runInfo?.month || 'Unknown',
-    year: runInfo?.year || new Date().getFullYear(),
-});
+const transformPayslip = (slip: BackendPayslip, runInfo?: { month: string; year: number }): PayrollRecord => {
+    let finalMonth = runInfo?.month || 'Unknown';
+    let finalYear = runInfo?.year || new Date().getFullYear();
+    let finalStatus = 'Paid';
+
+    if (slip.payroll_month) {
+        const date = new Date(slip.payroll_month);
+        finalMonth = date.toLocaleString('default', { month: 'long' });
+        finalYear = date.getFullYear();
+    }
+
+    if (slip.payroll_status) {
+        if (slip.payroll_status === 'COMPLETED') finalStatus = 'Paid';
+        else if (slip.payroll_status === 'DRAFT') finalStatus = 'Pending';
+        else finalStatus = 'Processing';
+    }
+
+    return {
+        id: String(slip.id),
+        employeeId: String(slip.employee),
+        name: slip.employee_name || 'Unknown',
+        designation: slip.employee_designation || 'N/A',
+        baseSalary: parseFloat(slip.gross_salary),
+        deductions: parseFloat(slip.total_deductions) + parseFloat(slip.tax_deduction),
+        netSalary: parseFloat(slip.net_salary),
+        status: finalStatus as any,
+        month: finalMonth,
+        year: finalYear,
+    };
+};
 
 const transformTaxSlab = (slab: BackendTaxSlab): TaxSlab => ({
     id: String(slab.id),
