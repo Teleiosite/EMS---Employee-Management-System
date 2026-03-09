@@ -160,16 +160,17 @@ class PublicJobListView(generics.ListAPIView):
     queryset = JobPosting.objects.filter(status='OPEN', is_active=True)
     serializer_class = JobPostingPublicSerializer
     permission_classes = [AllowAny]
+    pagination_class = None
 
 
 class ApplicantApplicationListView(generics.ListAPIView):
     """Applicant's own applications - read only"""
     serializer_class = ApplicantCandidateSerializer
     permission_classes = [IsAuthenticated, IsApplicant]
+    pagination_class = None
     
     def get_queryset(self):
         user = self.request.user
-        # Match by user FK OR by email (for admin-created candidates)
         return Candidate.objects.filter(
             Q(user=user) | Q(email__iexact=user.email)
         ).select_related('job').distinct()
