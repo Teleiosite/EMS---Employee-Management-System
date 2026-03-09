@@ -33,7 +33,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveRequest
         fields = '__all__'
-        read_only_fields = ('employee',)
+        read_only_fields = ('employee', 'duration_days')
 
     def get_employee_name(self, obj):
         try:
@@ -58,18 +58,18 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
 
         start_date = attrs.get('start_date')
         end_date = attrs.get('end_date')
-        duration_days = attrs.get('duration_days')
         leave_type = attrs.get('leave_type')
 
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError('start_date must be before or equal to end_date.')
-        if duration_days is not None and duration_days <= 0:
-            raise serializers.ValidationError('duration_days must be greater than 0.')
 
-        if start_date and end_date and duration_days is not None:
-            expected_duration = business_days(start_date, end_date)
-            if float(duration_days) > float(expected_duration):
-                raise serializers.ValidationError('duration_days cannot exceed business days in the selected window.')
+        duration_days = 0
+        if start_date and end_date:
+            duration_days = business_days(start_date, end_date)
+            if duration_days <= 0:
+                raise serializers.ValidationError('Leave duration must be at least 1 business day.')
+            # Enforce the calculated business days duration over whatever the frontend sent
+            attrs['duration_days'] = duration_days
 
         # Since employee is read_only, it won't be in attrs during creation.
         # We handle validation for existing instances, but for creation, we assume

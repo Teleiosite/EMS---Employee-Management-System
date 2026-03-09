@@ -60,9 +60,6 @@ const EmployeeLeaves: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const diffTime = Math.abs(new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
-
       // Let's assume we use leave_type = 1 as general/default for now since the frontend form is just a text input
       // Ideally we should have a dropdown for leave types. 
       const types = await leavesApi.listTypes();
@@ -72,7 +69,6 @@ const EmployeeLeaves: React.FC = () => {
         leave_type: fallBackTypeId, // Defaulting to the first available leave type
         start_date: formData.startDate,
         end_date: formData.endDate,
-        duration_days: diffDays,
         reason: formData.reason
       });
 
