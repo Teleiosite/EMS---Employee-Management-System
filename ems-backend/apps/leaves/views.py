@@ -52,7 +52,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         # If user is Admin/HR, they might be creating it for someone else,
         # but normally an employee creates their own leave request.
-        employee = getattr(user, 'employee', None)
+        employee = getattr(user, 'employee_profile', None)
         if employee:
             serializer.save(employee=employee)
         else:

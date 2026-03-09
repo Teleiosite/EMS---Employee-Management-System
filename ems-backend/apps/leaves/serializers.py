@@ -75,7 +75,9 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         # We handle validation for existing instances, but for creation, we assume
         # the view's perform_create sets valid data.
         employee = attrs.get('employee') or (self.instance.employee if self.instance else None)
-        
+        if not employee and 'request' in self.context:
+            employee = getattr(self.context['request'].user, 'employee_profile', None)
+
         # Only validate policy and balance if all these fields are available.
         # During creation, we skip this specific validation check and let DB handle issues,
         # or we could move this check to perform_create if we want strict balance checks 
