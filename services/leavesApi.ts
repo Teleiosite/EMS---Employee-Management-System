@@ -135,7 +135,7 @@ export const leavesApi = {
 
     // Create leave request
     createRequest: async (data: {
-        employee: number;
+        employee?: number; // Optional since backend sets it automatically
         leave_type: number;
         start_date: string;
         end_date: string;

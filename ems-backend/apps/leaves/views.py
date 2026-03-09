@@ -47,3 +47,13 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         if self.action in {'update', 'partial_update', 'destroy'}:
             return [IsAdminOrHRManager()]
         return [IsSelfOrAdminOrHR()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        # If user is Admin/HR, they might be creating it for someone else,
+        # but normally an employee creates their own leave request.
+        employee = getattr(user, 'employee', None)
+        if employee:
+            serializer.save(employee=employee)
+        else:
+            serializer.save()

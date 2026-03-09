@@ -69,7 +69,6 @@ const EmployeeLeaves: React.FC = () => {
       const fallBackTypeId = types.length > 0 ? parseInt(types[0].id) : 1;
 
       const newLeave = await leavesApi.createRequest({
-        employee: parseInt(user.id),
         leave_type: fallBackTypeId, // Defaulting to the first available leave type
         start_date: formData.startDate,
         end_date: formData.endDate,
@@ -110,8 +109,8 @@ const EmployeeLeaves: React.FC = () => {
         <button
           onClick={() => setActiveTab('APPLY')}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors ${activeTab === 'APPLY'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+            ? 'border-orange-500 text-orange-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
         >
           <Plus className="w-4 h-4" /> Apply Leave
@@ -119,8 +118,8 @@ const EmployeeLeaves: React.FC = () => {
         <button
           onClick={() => setActiveTab('HISTORY')}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors ${activeTab === 'HISTORY'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+            ? 'border-orange-500 text-orange-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
         >
           <History className="w-4 h-4" /> Leave History
@@ -215,8 +214,8 @@ const EmployeeLeaves: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{leave.reason}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${leave.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                          leave.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
+                        leave.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
                         }`}>
                         {leave.status === 'APPROVED' && <CheckCircle className="w-3 h-3" />}
                         {leave.status === 'REJECTED' && <XCircle className="w-3 h-3" />}
