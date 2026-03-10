@@ -139,7 +139,6 @@ export const leavesApi = {
         leave_type: number;
         start_date: string;
         end_date: string;
-        duration_days: number;
         reason: string;
     }): Promise<LeaveRequest> => {
         const response = await api.post<BackendLeaveRequest>('/leaves/requests/', data);
