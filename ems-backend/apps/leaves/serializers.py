@@ -96,8 +96,21 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
                 leave_type=leave_type,
                 year=start_date.year,
             ).first()
-            if not balance or balance.available_days < duration_days:
-                raise serializers.ValidationError('Insufficient leave balance for this leave type.')
+            
+            if not balance:
+                # Auto-initialize leave balance for the year if it doesn't exist
+                balance = LeaveBalance.objects.create(
+                    employee=employee,
+                    leave_type=leave_type,
+                    year=start_date.year,
+                    available_days=leave_type.max_days_per_year,
+                    used_days=0
+                )
+
+            if balance.available_days < duration_days:
+                raise serializers.ValidationError(
+                    f'Insufficient leave balance. You have {balance.available_days} days available, but requested {duration_days} days.'
+                )
 
         return attrs
 
