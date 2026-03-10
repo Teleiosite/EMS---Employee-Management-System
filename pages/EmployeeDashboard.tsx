@@ -59,40 +59,61 @@ const EmployeeDashboard: React.FC = () => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // 1. Fetch user's own leaves using their Employee Profile ID
-        if (currentUser) {
-          const profile = await employeesApi.getProfile(currentUser.id);
-          if (profile && profile.id) {
-            const myLeaves = await leavesApi.listRequests({ employee: profile.id });
-            const pending = myLeaves.filter(req => req.status === 'PENDING').length;
+        // Use Promise.allSettled so one failure doesn't crash the whole dashboard
+        Promise.allSettled([
+          // 1. Leaves
+          (async () => {
+            console.log("[Dashboard] Leaves block start. currentUser?.id:", currentUser?.id);
+            if (currentUser?.id) {
+              const profile = await employeesApi.getProfile(currentUser.id);
+              console.log("[Dashboard] getProfile returned:", profile);
+              if (profile?.id) {
+                const myLeaves = await leavesApi.listRequests({ employee: profile.id });
+                console.log("[Dashboard] leavesApi returned:", myLeaves);
+                const pending = myLeaves.filter(req => req.status === 'PENDING').length;
+                const approvedThisMonth = myLeaves.filter(req => {
+                  const startDate = new Date(req.startDate);
+                  return req.status === 'APPROVED' && startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
+                }).length;
+                console.log("[Dashboard] Leaves calc -> pending:", pending, "approved:", approvedThisMonth);
+                setPendingLeaves(pending);
+                setApprovedLeaves(approvedThisMonth);
+              }
+            }
+          })(),
 
-            const approvedThisMonth = myLeaves.filter(req => {
-              const startDate = new Date(req.startDate);
-              return req.status === 'APPROVED' && startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
+          // 2. Attendance
+          (async () => {
+            console.log("[Dashboard] Attendance block start.");
+            const myAttendance = await attendanceApi.listLogs();
+            console.log("[Dashboard] attendanceApi returned:", myAttendance);
+            const presentThisMonth = myAttendance.filter(log => {
+              const logDate = new Date(log.date);
+              return (log.status === 'PRESENT' || log.status === 'LATE' || log.status === 'HALF_DAY') &&
+                logDate.getMonth() === currentMonth &&
+                logDate.getFullYear() === currentYear;
             }).length;
+            console.log("[Dashboard] Attendance calc -> presentThisMonth:", presentThisMonth);
+            setAttendanceDays(presentThisMonth);
+          })(),
 
-            setPendingLeaves(pending);
-            setApprovedLeaves(approvedThisMonth);
-          }
-        }
-
-        // 2. Fetch user's attendance for the month
-        // Since listLogs returns everything, we filter to current month
-        const myAttendance = await attendanceApi.listLogs();
-        const presentThisMonth = myAttendance.filter(log => {
-          const logDate = new Date(log.date);
-          return (log.status === 'PRESENT' || log.status === 'LATE' || log.status === 'HALF_DAY') &&
-            logDate.getMonth() === currentMonth &&
-            logDate.getFullYear() === currentYear;
-        }).length;
-        setAttendanceDays(presentThisMonth);
-
-        // 3. Fetch announcements
-        const announcements = await announcementsApi.list();
-        setAnnouncementsCount(announcements.length);
+          // 3. Announcements
+          (async () => {
+            console.log("[Dashboard] Announcements block start.");
+            const announcements = await announcementsApi.list();
+            console.log("[Dashboard] announcementsApi returned:", announcements);
+            setAnnouncementsCount(announcements.length);
+          })()
+        ]).then((results) => {
+          results.forEach((res, index) => {
+            if (res.status === 'rejected') {
+              console.error(`[Dashboard] Fetch ${index + 1} Failed:`, res.reason);
+            }
+          });
+        });
 
       } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
+        console.error("Dashboard initialization error", error);
       }
     };
 
