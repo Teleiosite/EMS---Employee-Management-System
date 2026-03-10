@@ -9,6 +9,7 @@ import { User } from '../types';
 import leavesApi from '../services/leavesApi';
 import attendanceApi from '../services/attendanceApi';
 import { announcementsApi } from '../services/announcementsApi';
+import { employeesApi } from '../services/employeesApi';
 
 interface DashboardCardProps {
   title: string;
@@ -58,18 +59,21 @@ const EmployeeDashboard: React.FC = () => {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        // 1. Fetch user's own leaves
+        // 1. Fetch user's own leaves using their Employee Profile ID
         if (currentUser) {
-          const myLeaves = await leavesApi.listRequests({ employee: currentUser.id });
-          const pending = myLeaves.filter(req => req.status === 'PENDING').length;
+          const profile = await employeesApi.getProfile(currentUser.id);
+          if (profile && profile.id) {
+            const myLeaves = await leavesApi.listRequests({ employee: profile.id });
+            const pending = myLeaves.filter(req => req.status === 'PENDING').length;
 
-          const approvedThisMonth = myLeaves.filter(req => {
-            const startDate = new Date(req.startDate);
-            return req.status === 'APPROVED' && startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
-          }).length;
+            const approvedThisMonth = myLeaves.filter(req => {
+              const startDate = new Date(req.startDate);
+              return req.status === 'APPROVED' && startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
+            }).length;
 
-          setPendingLeaves(pending);
-          setApprovedLeaves(approvedThisMonth);
+            setPendingLeaves(pending);
+            setApprovedLeaves(approvedThisMonth);
+          }
         }
 
         // 2. Fetch user's attendance for the month

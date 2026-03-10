@@ -130,16 +130,19 @@ export const employeesApi = {
     },
 
     // Update employee
-    update: async (id: string, data: Partial<{
-        department: number | null;
-        designation: number | null;
-        base_salary: number;
-        phone_number: string;
-        address: string;
-        status: string;
-    }>): Promise<EmployeeProfile & { name: string; email: string }> => {
-        const response = await api.patch<BackendEmployeeProfile>(`/employees/profiles/${id}/`, data);
+    update: async (id: string, data: Partial<EmployeeProfile>): Promise<EmployeeProfile & { name: string; email: string }> => {
+        const payload: any = { ...data };
+        if (data.department) payload.department_id = data.department;
+        if (data.designation) payload.designation_id = data.designation;
+
+        const response = await api.put<BackendEmployeeProfile>(`/employees/profiles/${id}/`, payload);
         return transformEmployee(response);
+    },
+
+    getProfile: async (userId: string): Promise<EmployeeProfile & { name: string; email: string } | null> => {
+        const response = await api.get<PaginatedResponse<BackendEmployeeProfile> | BackendEmployeeProfile[]>(`/employees/profiles/?user=${userId}`);
+        const results = Array.isArray(response) ? response : response.results;
+        return results.length > 0 ? transformEmployee(results[0]) : null;
     },
 
     // Delete employee
