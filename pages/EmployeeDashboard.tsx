@@ -6,6 +6,9 @@ import {
   Megaphone
 } from 'lucide-react';
 import { User } from '../types';
+import { leavesApi } from '../services/leavesApi';
+import { attendanceApi } from '../services/attendanceApi';
+import { announcementsApi } from '../services/announcementsApi';
 
 interface DashboardCardProps {
   title: string;
@@ -29,6 +32,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon: Icon,
 
 const EmployeeDashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [pendingLeaveRequests, setPendingLeaveRequests] = useState(0);
+  const [approvedLeavesThisMonth, setApprovedLeavesThisMonth] = useState(0);
+  const [attendanceDaysThisMonth, setAttendanceDaysThisMonth] = useState(0);
+  const [announcementCount, setAnnouncementCount] = useState(0);
+  const [latestAnnouncementTitle, setLatestAnnouncementTitle] = useState('No new announcements');
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -40,6 +48,56 @@ const EmployeeDashboard: React.FC = () => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const loadDashboardStats = async () => {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      try {
+        const leaveRequests = await leavesApi.listRequests();
+        setPendingLeaveRequests(leaveRequests.filter((request) => request.status === 'PENDING').length);
+        setApprovedLeavesThisMonth(
+          leaveRequests.filter((request) => {
+            if (request.status !== 'APPROVED') return false;
+            const startDate = new Date(request.startDate);
+            return startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
+          }).length
+        );
+      } catch (error) {
+        console.error('Failed to load employee leave statistics:', error);
+      }
+
+      try {
+        const attendanceLogs = await attendanceApi.listLogs();
+        setAttendanceDaysThisMonth(
+          attendanceLogs.filter((log) => {
+            const logDate = new Date(log.date);
+            const isThisMonth = logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+            const isCountableStatus = log.status === 'PRESENT' || log.status === 'LATE' || log.status === 'HALF_DAY';
+            return isThisMonth && isCountableStatus;
+          }).length
+        );
+      } catch (error) {
+        console.error('Failed to load employee attendance statistics:', error);
+      }
+
+      try {
+        const announcements = await announcementsApi.list();
+        setAnnouncementCount(announcements.length);
+
+        if (announcements.length > 0) {
+          const latestAnnouncement = [...announcements].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          )[0];
+          setLatestAnnouncementTitle(latestAnnouncement.title);
+        }
+      } catch (error) {
+        console.error('Failed to load employee announcement statistics:', error);
+      }
+    };
+
+    loadDashboardStats();
   }, []);
 
   return (
@@ -58,28 +116,28 @@ const EmployeeDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Pending Leave Requests"
-          value="0"
+          value={pendingLeaveRequests}
           icon={FileText}
           colorClass="bg-yellow-400"
           iconBgClass="bg-yellow-500"
         />
         <DashboardCard
           title="Approved Leaves (This Month)"
-          value="0"
+          value={approvedLeavesThisMonth}
           icon={CheckSquare}
           colorClass="bg-green-500"
           iconBgClass="bg-green-600"
         />
         <DashboardCard
           title="Attendance (This Month)"
-          value="2 Days"
+          value={`${attendanceDaysThisMonth} Days`}
           icon={Clock}
           colorClass="bg-blue-500"
           iconBgClass="bg-blue-600"
         />
         <DashboardCard
           title="Announcements"
-          value="1"
+          value={announcementCount}
           icon={Megaphone}
           colorClass="bg-purple-500"
           iconBgClass="bg-purple-600"
@@ -90,7 +148,7 @@ const EmployeeDashboard: React.FC = () => {
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] flex items-center justify-center text-gray-400 flex-col gap-3">
           <Megaphone className="w-12 h-12 text-gray-200" />
-          <p>No new announcements</p>
+          <p>{latestAnnouncementTitle}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] flex items-center justify-center text-gray-400 flex-col gap-3">
           <Clock className="w-12 h-12 text-gray-200" />
