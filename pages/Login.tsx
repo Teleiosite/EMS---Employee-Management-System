@@ -144,17 +144,17 @@ const Login: React.FC = () => {
 
         <div className="mt-6 text-center">
           <button 
-            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+            onClick={() => navigate('/register')}
             className="text-orange-600 hover:text-orange-800 text-sm font-medium hover:underline"
           >
-            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+            Don't have an account? Sign Up your company
           </button>
         </div>
 
         {isLogin && (
           <div className="mt-8 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
              <p className="mb-2 font-semibold">Demo Credentials:</p>
-             <p>Admin: <span className="font-mono">admin@ems.com</span> / admin</p>
+             <p>Admin: <span className="font-mono">admin@ems.com</span> / admin123</p>
              <p>Employee: <span className="font-mono">john.doe@ems.com</span> / 123</p>
              <p>Applicant: <span className="font-mono">alice.j@example.com</span> / 123</p>
           </div>
