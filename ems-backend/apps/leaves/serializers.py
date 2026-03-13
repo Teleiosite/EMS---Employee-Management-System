@@ -132,4 +132,28 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
                     balance.used_days += instance.duration_days
                     balance.save(update_fields=['available_days', 'used_days'])
 
+        # Dispatch background email on approval or rejection
+        if previous_status == 'PENDING' and instance.status in ['APPROVED', 'REJECTED']:
+            from ems_core.utils_email import send_email_in_background
+            
+            user = instance.employee.user
+            subject = f"Leave Request {instance.status.title()}"
+            
+            leave_name = instance.leave_type.name if instance.leave_type else 'General'
+            message = f"Hello {user.first_name},\n\nYour recent leave request has been marked as **{instance.status}**.\n\n"
+            message += f"Details:\n"
+            message += f"Leave Type: {leave_name}\n"
+            message += f"Duration: {instance.start_date} to {instance.end_date} ({instance.duration_days} days)\n"
+            
+            if instance.hr_notes:
+                message += f"\nHR Notes:\n{instance.hr_notes}\n"
+                
+            message += "\nLog in to the EMS Dashboard for full details regarding your leave balance.\n\nBest,\nHR Management"
+            
+            send_email_in_background(
+                subject=subject,
+                message=message,
+                recipient_list=[user.email]
+            )
+
         return instance

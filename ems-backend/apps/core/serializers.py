@@ -14,3 +14,26 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
         return None
+
+    def create(self, validated_data):
+        announcement = super().create(validated_data)
+        
+        # Dispatch background emails to all active employees
+        from django.contrib.auth import get_user_model
+        from ems_core.utils_email import send_email_in_background
+        
+        User = get_user_model()
+        # Only email active users whose role is precisely 'EMPLOYEE'
+        employee_emails = list(User.objects.filter(is_active=True, role='EMPLOYEE').values_list('email', flat=True))
+        
+        if employee_emails:
+            subject = f"New Company Announcement: {announcement.title}"
+            message = f"Hello Team,\n\nA new {announcement.priority.lower()}-priority announcement has been posted:\n\n{announcement.content}\n\nLog in to the EMS Dashboard to view more details.\n\nBest,\nHR Management"
+            
+            send_email_in_background(
+                subject=subject,
+                message=message,
+                recipient_list=employee_emails
+            )
+            
+        return announcement

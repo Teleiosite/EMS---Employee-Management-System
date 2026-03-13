@@ -8,6 +8,29 @@ class JobPostingSerializer(serializers.ModelSerializer):
         model = JobPosting
         fields = '__all__'
 
+    def create(self, validated_data):
+        job = super().create(validated_data)
+        
+        # Dispatch background emails to all active employees if job is OPEN
+        if job.status == 'OPEN':
+            from django.contrib.auth import get_user_model
+            from ems_core.utils_email import send_email_in_background
+            
+            User = get_user_model()
+            employee_emails = list(User.objects.filter(is_active=True, role='EMPLOYEE').values_list('email', flat=True))
+            
+            if employee_emails:
+                formatted_dept = job.department.name if job.department else 'General'
+                subject = f"Internal Job Opening: {job.title} ({formatted_dept})"
+                message = f"Hello Team,\n\nWe are excited to announce a new internal job opening!\n\nRole: {job.title}\nDepartment: {formatted_dept}\nLocation: {job.location}\nType: {job.employment_type}\n\nDescription:\n{job.description}\n\nLog in to the EMS Dashboard to apply or refer a candidate.\n\nBest,\nHR Management"
+                
+                send_email_in_background(
+                    subject=subject,
+                    message=message,
+                    recipient_list=employee_emails
+                )
+        return job
+
 
 class AISettingsSerializer(serializers.ModelSerializer):
     """Settings for AI Resume Parsing"""
@@ -136,3 +159,37 @@ class CandidateStatusUpdateSerializer(serializers.ModelSerializer):
             'status', 'status_message', 'hr_notes',
             'interview_scheduled_at', 'interview_location', 'interview_notes'
         ]
+
+    def update(self, instance, validated_data):
+        previous_status = instance.status
+        updated_instance = super().update(instance, validated_data)
+        
+        # Dispatch background email to candidate when status changes
+        if previous_status != updated_instance.status:
+            from ems_core.utils_email import send_email_in_background
+            
+            job_title = updated_instance.job.title if updated_instance.job else 'a position'
+            subject = f"Application Update: {job_title}"
+            
+            message = f"Hello {updated_instance.full_name},\n\nYour application status for the '{job_title}' position has been updated to: **{updated_instance.status}**.\n\n"
+            
+            if updated_instance.status == 'INTERVIEWING' and updated_instance.interview_scheduled_at:
+                message += f"Interview Scheduled: {updated_instance.interview_scheduled_at.strftime('%Y-%m-%d %H:%M')}\n"
+                if updated_instance.interview_location:
+                    message += f"Location/Link: {updated_instance.interview_location}\n"
+                if updated_instance.interview_notes:
+                    message += f"\nNote from HR:\n{updated_instance.interview_notes}\n"
+            
+            if updated_instance.status_message:
+                message += f"\nMessage:\n{updated_instance.status_message}\n"
+                
+            message += "\nThank you for your interest in joining our team!\n\nBest,\nTalent Acquisition Team"
+            
+            if updated_instance.email:
+                send_email_in_background(
+                    subject=subject,
+                    message=message,
+                    recipient_list=[updated_instance.email]
+                )
+                
+        return updated_instance

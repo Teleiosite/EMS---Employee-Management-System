@@ -53,8 +53,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         from django.core.mail import send_mail
         from django.conf import settings
         
-        subject = 'Welcome to the EMS Portal!'
-        message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been successfully created.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and update your password as soon as possible.\n\nBest,\nHR Team"
+        if user.role == 'APPLICANT':
+            subject = 'Welcome to the Careers Portal!'
+            message = f"Hello {user.first_name},\n\nThank you for creating an account on our Careers Portal! You can now browse open roles and submit your applications seamlessly.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and complete your Applicant Profile to stand out.\n\nBest,\nTalent Acquisition Team"
+        else:
+            subject = 'Welcome to the EMS Portal!'
+            message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been successfully created by Human Resources.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and update your password as soon as possible.\n\nBest,\nHR Team"
         
         try:
             send_mail(
