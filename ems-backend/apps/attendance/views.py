@@ -114,7 +114,7 @@ class ClockInView(APIView):
         if existing and existing.clock_in_timestamp:
             return Response({'detail': 'Already clocked in today.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        policy = AttendancePolicy.get_active()
+        policy = AttendancePolicy.get_active(tenant=getattr(request, 'tenant', None))
 
         # ── Time window check ─────────────────────────────────────────────────
         if policy:
@@ -218,7 +218,7 @@ class ClockOutView(APIView):
         log.clock_out_timestamp = now
         log.clock_out_ip = _get_client_ip(request)
 
-        policy = AttendancePolicy.get_active()
+        policy = AttendancePolicy.get_active(tenant=getattr(request, 'tenant', None))
         if policy and now.time() < policy.half_day_if_checkout_before:
             log.status = 'HALF_DAY'
         log.save()
@@ -246,7 +246,7 @@ class AttendanceStatusView(APIView):
         now_time = timezone.now().time()
         log = AttendanceLog.objects.filter(employee=employee, date=today).first()
 
-        policy = AttendancePolicy.get_active()
+        policy = AttendancePolicy.get_active(tenant=getattr(request, 'tenant', None))
         window_open = False
         window_message = 'No attendance policy configured.'
         if policy:
@@ -282,7 +282,7 @@ class AttendancePolicyView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAdminOrHRManager]
 
     def get_object(self):
-        policy = AttendancePolicy.get_active()
+        policy = AttendancePolicy.get_active(tenant=getattr(request, 'tenant', None))
         if not policy:
             policy = AttendancePolicy.objects.create(
                 check_in_start='07:00', check_in_end='09:00',
@@ -304,6 +304,7 @@ class SuspiciousAttendanceView(generics.ListAPIView):
 
     def get_queryset(self):
         return AttendanceLog.objects.filter(
+            tenant=getattr(self.request, 'tenant', None),
             is_suspicious=True
         ).select_related('employee', 'employee__user').order_by('-date')
 
@@ -313,7 +314,7 @@ class AttendanceLogViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceLogSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None))
         filter_date = self.request.query_params.get('date')
         if filter_date:
             queryset = queryset.filter(date=filter_date)
@@ -334,8 +335,11 @@ class AttendanceCorrectionRequestViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = AttendanceCorrectionRequestSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(tenant=getattr(self.request, 'tenant', None), requested_by=self.request.user)
+
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None))
         user = self.request.user
         if user.role in {'ADMIN', 'HR_MANAGER'}:
             return queryset

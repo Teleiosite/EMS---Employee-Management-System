@@ -13,6 +13,7 @@ ENFORCE_CHOICES = (
 class AttendancePolicy(models.Model):
     """Admin-configurable attendance rules. Only one record should be active at a time."""
     # ── Time windows ──────────────────────────────────────────────────────────
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='attendance_policies')
     check_in_start = models.TimeField(help_text='Earliest allowed clock-in (e.g. 07:00)')
     check_in_end = models.TimeField(help_text='On-time clock-in deadline (e.g. 09:00)')
     late_grace_minutes = models.PositiveIntegerField(default=15)
@@ -57,8 +58,11 @@ class AttendancePolicy(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_active(cls):
-        return cls.objects.filter(is_active=True).first()
+    def get_active(cls, tenant=None):
+        qs = cls.objects.filter(is_active=True)
+        if tenant is not None:
+            qs = qs.filter(tenant=tenant)
+        return qs.first()
 
 
 class AttendanceLog(models.Model):
@@ -69,6 +73,7 @@ class AttendanceLog(models.Model):
         ('LATE', 'Late'),
     )
 
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='attendance_logs')
     employee = models.ForeignKey('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='attendance_logs')
     date = models.DateField(db_index=True)
     clock_in_timestamp = models.DateTimeField(blank=True, null=True)
@@ -101,6 +106,7 @@ class AttendanceCorrectionRequest(models.Model):
         ('REJECTED', 'Rejected'),
     )
 
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='attendance_corrections')
     attendance_log = models.ForeignKey(AttendanceLog, on_delete=models.CASCADE, related_name='corrections')
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE)
     reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_attendance_corrections')

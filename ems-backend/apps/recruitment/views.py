@@ -33,11 +33,14 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None)).filter(tenant=getattr(self.request, 'tenant', None))
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=getattr(self.request, 'tenant', None))
 
 
 class AISettingsView(generics.RetrieveUpdateAPIView):
@@ -77,6 +80,9 @@ class CandidateViewSet(viewsets.ModelViewSet):
         
         # Order by fit score descending by default
         return queryset.order_by('-ai_fit_score', '-applied_at')
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=getattr(self.request, 'tenant', None))
     
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
@@ -157,10 +163,16 @@ class CandidateViewSet(viewsets.ModelViewSet):
 
 class PublicJobListView(generics.ListAPIView):
     """Public job listings - anyone can view open jobs"""
-    queryset = JobPosting.objects.filter(status='OPEN', is_active=True)
     serializer_class = JobPostingPublicSerializer
     permission_classes = [AllowAny]
     pagination_class = None
+
+    def get_queryset(self):
+        queryset = JobPosting.objects.filter(status='OPEN', is_active=True)
+        tenant_slug = self.request.query_params.get('tenant')
+        if tenant_slug:
+            queryset = queryset.filter(tenant__slug=tenant_slug)
+        return queryset
 
 
 class ApplicantApplicationListView(generics.ListAPIView):
@@ -172,6 +184,8 @@ class ApplicantApplicationListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Candidate.objects.filter(
+            tenant=getattr(self.request, 'tenant', None)
+        ).filter(
             Q(user=user) | Q(email__iexact=user.email)
         ).select_related('job').distinct()
 
@@ -184,6 +198,8 @@ class ApplicantApplicationDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         user = self.request.user
         return Candidate.objects.filter(
+            tenant=getattr(self.request, 'tenant', None)
+        ).filter(
             Q(user=user) | Q(email__iexact=user.email)
         ).select_related('job').distinct()
 
@@ -198,7 +214,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         job_id = request.data.get('job')
         
         # Check if already applied
-        if Candidate.objects.filter(user=request.user, job_id=job_id).exists():
+        if Candidate.objects.filter(user=request.user, job_id=job_id, tenant=getattr(request, 'tenant', None)).exists():
             return Response(
                 {'error': 'You have already applied for this position.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -206,7 +222,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        candidate = serializer.save()
+        candidate = serializer.save(tenant=getattr(request, 'tenant', None))
         
         # Trigger AI resume parsing
         if candidate.resume:
@@ -238,7 +254,8 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         # Get or create profile for the applicant
         profile, created = ApplicantProfile.objects.get_or_create(
-            user=self.request.user
+            user=self.request.user,
+            defaults={'tenant': getattr(self.request, 'tenant', None)}
         )
         return profile
     
@@ -278,7 +295,8 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
     
     def get_object(self):
         profile, created = ApplicantProfile.objects.get_or_create(
-            user=self.request.user
+            user=self.request.user,
+            defaults={'tenant': getattr(self.request, 'tenant', None)}
         )
         return profile
     

@@ -57,13 +57,16 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             duration_days = (end_date - start_date).days + 1
             attrs['duration_days'] = duration_days
 
-            balance = LeaveBalance.objects.filter(employee=employee, leave_type=leave_type, year=year).first()
+            request = self.context.get('request')
+            tenant = getattr(request, 'tenant', None) if request else None
+            balance = LeaveBalance.objects.filter(tenant=tenant, employee=employee, leave_type=leave_type, year=year).first()
             if not balance:
                 raise serializers.ValidationError(
                     {'leave_type': f'No leave balance configured for {leave_type.name} ({year}).'}
                 )
 
             pending_or_approved = LeaveRequest.objects.filter(
+                tenant=tenant,
                 employee=employee,
                 leave_type=leave_type,
                 status__in=['PENDING', 'APPROVED'],

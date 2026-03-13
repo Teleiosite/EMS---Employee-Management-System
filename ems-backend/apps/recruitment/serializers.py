@@ -7,6 +7,7 @@ class JobPostingSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobPosting
         fields = '__all__'
+        read_only_fields = ('tenant',)
 
 
 class AISettingsSerializer(serializers.ModelSerializer):
@@ -39,6 +40,7 @@ class CandidateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Candidate
         fields = '__all__'
+        read_only_fields = ('tenant',)
 
 
 class CandidateListSerializer(serializers.ModelSerializer):
@@ -87,6 +89,7 @@ class ApplicantApplicationSerializer(serializers.ModelSerializer):
         validated_data['full_name'] = f"{user.first_name} {user.last_name}".strip() or user.email
         validated_data['email'] = user.email
         validated_data['status'] = 'APPLIED'
+        validated_data['tenant'] = getattr(user, 'tenant', None)
         
         # Get phone from profile if exists
         if hasattr(user, 'applicant_profile') and user.applicant_profile:
@@ -118,7 +121,7 @@ class ApplicantProfileSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'email', 'first_name', 'last_name',
+            'id', 'tenant', 'email', 'first_name', 'last_name',
             'resume_parsed_data', 'resume_uploaded_at',
             'profile_completed', 'profile_completeness',
             'created_at', 'updated_at'
