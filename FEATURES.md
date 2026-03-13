@@ -43,5 +43,13 @@ The EMS is built on a foundation of strict data privacy and permission validatio
 * **Scoped API Endpoints**: Django REST Framework strictly enforces whether an incoming request belongs to an `Admin`, `HR_Manager`, `Employee`, or `Applicant`.
 * **Data Isolation**: Employees can only view their specific payslips and leave balances. Trying to override system-calculated fields (like leave duration or employee IDs) from the frontend is actively prevented by the backend serializers.
 
+## 📧 6. Comprehensive Automated Email Notifications
+We've integrated a robust, non-blocking background email dispatcher to keep everyone in the loop without slowing down the application.
+
+* **Real-time Announcements**: HR can instantly blast company-wide updates straight to every active employee's inbox.
+* **Internal Job Board Alerts**: When a new role is opened internally, all staff are notified via email to encourage internal mobility.
+* **Applicant Pipeline Updates**: Job seekers receive tailored welcome emails upon registration and are automatically notified as their application status changes.
+* **Leave Request Tracking**: Employees receive instant email confirmations when their leave applications are approved or rejected by management.
+
 ---
 *Built with ❤️ utilizing the power of Django, React, Vite, and cutting-edge GenAI APIs.*
