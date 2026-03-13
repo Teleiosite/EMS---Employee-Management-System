@@ -54,7 +54,7 @@ const Landing: React.FC = () => {
                 Login
               </button>
               <button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/register')}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-orange-500/30"
               >
                 Sign Up
