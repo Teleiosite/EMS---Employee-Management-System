@@ -142,3 +142,14 @@ IP_WHITELIST_ENABLED = config('IP_WHITELIST_ENABLED', cast=bool, default=False)
 IP_WHITELIST = [ip.strip() for ip in config('IP_WHITELIST', default='127.0.0.1,::1').split(',') if ip.strip()]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Email Configuration (Gmail App Passwords)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='EMS Dashboard <noreply@ems.com>')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Setting default from email to match the host user if intended
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

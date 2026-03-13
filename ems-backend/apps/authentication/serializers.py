@@ -48,6 +48,26 @@ class RegisterSerializer(serializers.ModelSerializer):
             email_verified=False,
             **validated_data,
         )
+
+        # Trigger Welcome Email immediately after user creation
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        subject = 'Welcome to the EMS Portal!'
+        message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been successfully created.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and update your password as soon as possible.\n\nBest,\nHR Team"
+        
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,  # Don't crash user creation if email fails
+            )
+        except Exception as e:
+            # In a real app, log this error
+            pass
+
         return user
 
 
