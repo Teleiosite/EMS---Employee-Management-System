@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.employees.models import EmployeeProfile
@@ -40,7 +43,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
-        employee = attrs.get('employee') or getattr(getattr(self.instance, 'employee', None), 'id', None)
+        employee = attrs.get('employee') or getattr(self.instance, 'employee', None)
         if not employee and self.context.get('request'):
             request_user = self.context['request'].user
             employee = getattr(request_user, 'employee_profile', None)
@@ -59,7 +62,12 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
 
             request = self.context.get('request')
             tenant = getattr(request, 'tenant', None) if request else None
-            balance = LeaveBalance.objects.filter(tenant=tenant, employee=employee, leave_type=leave_type, year=year).first()
+            balance = LeaveBalance.objects.filter(
+                tenant=tenant,
+                employee=employee,
+                leave_type=leave_type,
+                year=year,
+            ).first()
             if not balance:
                 raise serializers.ValidationError(
                     {'leave_type': f'No leave balance configured for {leave_type.name} ({year}).'}
@@ -84,3 +92,22 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
                 )
 
         return attrs
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        previous_status = instance.status
+        instance = super().update(instance, validated_data)
+
+        if previous_status != 'APPROVED' and instance.status == 'APPROVED' and instance.leave_type:
+            balance = LeaveBalance.objects.select_for_update().filter(
+                tenant=instance.tenant,
+                employee=instance.employee,
+                leave_type=instance.leave_type,
+                year=instance.start_date.year,
+            ).first()
+            if balance and Decimal(str(balance.available_days)) >= Decimal(str(instance.duration_days)):
+                balance.available_days = Decimal(str(balance.available_days)) - Decimal(str(instance.duration_days))
+                balance.used_days = Decimal(str(balance.used_days)) + Decimal(str(instance.duration_days))
+                balance.save(update_fields=['available_days', 'used_days'])
+
+        return instance
