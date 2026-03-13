@@ -9,10 +9,12 @@ from .views import (
     PasswordResetRequestView,
     RefreshView,
     RegisterView,
+    TenantRegistrationView,
 )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
+    path('tenant-register/', TenantRegistrationView.as_view(), name='tenant-register'),
     path('login/', LoginView.as_view(), name='login'),
     path('refresh/', RefreshView.as_view(), name='refresh'),
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),

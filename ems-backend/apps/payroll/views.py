@@ -10,10 +10,10 @@ from .serializers import PayrollRunSerializer, PayslipSerializer, TaxSlabSeriali
 from .pdf_generator import generate_payslip_pdf
 
 
-def _generate_payslips_for_run(payroll_run: PayrollRun, employee_ids=None) -> None:
+def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_ids=None) -> None:
     """Auto-generate a Payslip for the given employees (or all active if no IDs provided)."""
     from apps.employees.models import EmployeeProfile
-    qs = EmployeeProfile.objects.filter(status='ACTIVE').select_related('user', 'designation')
+    qs = EmployeeProfile.objects.filter(status='ACTIVE', tenant=tenant).select_related('user', 'designation')
     if employee_ids:
         qs = qs.filter(id__in=employee_ids)
 
@@ -27,6 +27,7 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, employee_ids=None) -> No
         tax = round(gross * Decimal('0.05'), 2)
         net = gross - deduction - tax
         payslips.append(Payslip(
+            tenant=tenant,
             payroll_run=payroll_run,
             employee=employee,
             gross_salary=gross,
@@ -43,12 +44,16 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
     serializer_class = PayrollRunSerializer
     permission_classes = [IsAdminOrHRManager]
 
+    def get_queryset(self):
+        return PayrollRun.objects.filter(tenant=getattr(self.request, 'tenant', None)).order_by('-month')
+
     def perform_create(self, serializer):
         """Create the PayrollRun and auto-generate payslips for selected (or all active) employees."""
         # Extract employee_ids from request data — not a model field, so pop it before saving
         employee_ids = self.request.data.get('employee_ids', None)
-        payroll_run = serializer.save()
-        _generate_payslips_for_run(payroll_run, employee_ids=employee_ids)
+        tenant = getattr(self.request, 'tenant', None)
+        payroll_run = serializer.save(tenant=tenant)
+        _generate_payslips_for_run(payroll_run, tenant=tenant, employee_ids=employee_ids)
 
 
 class TaxSlabViewSet(viewsets.ModelViewSet):
@@ -56,13 +61,19 @@ class TaxSlabViewSet(viewsets.ModelViewSet):
     serializer_class = TaxSlabSerializer
     permission_classes = [IsAdminOrHRManager]
 
+    def get_queryset(self):
+        return TaxSlab.objects.filter(tenant=getattr(self.request, 'tenant', None)).order_by('min_income')
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=getattr(self.request, 'tenant', None))
+
 
 class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payslip.objects.select_related('employee', 'employee__user', 'payroll_run').all()
     serializer_class = PayslipSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None))
         user = self.request.user
         if user.role in {'ADMIN', 'HR_MANAGER'}:
             return queryset

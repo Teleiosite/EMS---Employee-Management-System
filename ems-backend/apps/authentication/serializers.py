@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.core.models import Tenant
 from .utils import generate_mfa_secret, generate_secure_token, verify_totp_code
 
 User = get_user_model()
@@ -16,7 +17,7 @@ LOCKOUT_MINUTES = 15
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'is_active', 'email_verified', 'mfa_enabled')
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'is_active', 'email_verified', 'mfa_enabled')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -41,8 +42,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop('password')
         token = generate_secure_token()
+        request = self.context.get('request')
+        tenant = request.user.tenant if request and request.user.is_authenticated else None
         user = User.objects.create_user(
             password=password,
+            tenant=tenant,
             is_active=True,
             email_verification_token=token,
             email_verified=False,
@@ -83,6 +87,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['email'] = user.email
         token['role'] = user.role
+        token['tenant_id'] = str(user.tenant_id) if user.tenant_id else None
         return token
 
     def validate(self, attrs):
@@ -157,3 +162,41 @@ class MFASetupSerializer(serializers.Serializer):
 
 class MFAVerifySerializer(serializers.Serializer):
     code = serializers.CharField(min_length=6, max_length=6)
+
+
+class TenantRegistrationSerializer(serializers.Serializer):
+    company_name = serializers.CharField(max_length=255)
+    company_slug = serializers.SlugField(max_length=100)
+    admin_email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+
+    def validate_company_slug(self, value):
+        if Tenant.objects.filter(slug=value).exists():
+            raise serializers.ValidationError('Company slug is already taken.')
+        return value
+
+    def validate_admin_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return value
+
+    def create(self, validated_data):
+        tenant = Tenant.objects.create(
+            name=validated_data['company_name'],
+            slug=validated_data['company_slug'],
+            is_active=True,
+        )
+        user = User.objects.create_user(
+            email=validated_data['admin_email'],
+            password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data.get('last_name', ''),
+            role='ADMIN',
+            is_staff=True,
+            is_active=True,
+            email_verified=True,
+            tenant=tenant,
+        )
+        return {'tenant': tenant, 'user': user}

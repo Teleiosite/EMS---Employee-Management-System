@@ -3,6 +3,7 @@ from django.conf import settings
 
 
 class JobPosting(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='job_postings')
     STATUS_CHOICES = (
         ('OPEN', 'Open'),
         ('CLOSED', 'Closed'),
@@ -32,6 +33,7 @@ class JobPosting(models.Model):
 
 
 class Candidate(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='candidates')
     STATUS_CHOICES = (
         ('APPLIED', 'Application Submitted'),
         ('UNDER_REVIEW', 'Under Review'),
@@ -138,6 +140,7 @@ class Candidate(models.Model):
 
 
 class ApplicantProfile(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='applicant_profiles')
     """Extended profile for job applicants"""
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

@@ -2,11 +2,13 @@ from django.db import models
 
 
 class LeaveType(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='leave_types')
     name = models.CharField(max_length=100, unique=True)
     max_days_per_year = models.IntegerField()
 
 
 class LeavePolicyWindow(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='leave_policy_windows')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='policy_windows')
     start_date = models.DateField()
     end_date = models.DateField()
@@ -17,6 +19,7 @@ class LeavePolicyWindow(models.Model):
 
 
 class LeaveBalance(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='leave_balances')
     employee = models.ForeignKey('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='leave_balances')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='balances')
     year = models.IntegerField()
@@ -34,6 +37,7 @@ class LeaveRequest(models.Model):
         ('REJECTED', 'Rejected'),
     )
 
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='leave_requests')
     employee = models.ForeignKey('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='leave_requests')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.SET_NULL, null=True)
     start_date = models.DateField()

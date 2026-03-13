@@ -15,6 +15,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
+    TenantRegistrationSerializer,
 )
 from .utils import generate_mfa_secret, generate_secure_token, verify_totp_code
 from django.contrib.auth import get_user_model
@@ -120,3 +121,21 @@ class MFAVerifyView(APIView):
         user.mfa_enabled = True
         user.save(update_fields=['mfa_enabled'])
         return Response({'detail': 'MFA enabled successfully.'})
+
+
+
+class TenantRegistrationView(generics.CreateAPIView):
+    serializer_class = TenantRegistrationSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        created = serializer.save()
+        return Response({
+            'tenant_id': created['tenant'].id,
+            'tenant_name': created['tenant'].name,
+            'tenant_slug': created['tenant'].slug,
+            'admin_user_id': created['user'].id,
+            'admin_email': created['user'].email,
+        }, status=status.HTTP_201_CREATED)

@@ -2,6 +2,7 @@ from django.db import models
 
 
 class SalaryComponent(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='salary_components')
     COMPONENT_TYPES = (
         ('EARNING', 'Earning'),
         ('DEDUCTION', 'Deduction'),
@@ -19,6 +20,7 @@ class SalaryComponent(models.Model):
 
 
 class TaxSlab(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='tax_slabs')
     min_income = models.DecimalField(max_digits=12, decimal_places=2)
     max_income = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     rate_percent = models.DecimalField(max_digits=5, decimal_places=2)
@@ -28,6 +30,7 @@ class TaxSlab(models.Model):
 
 
 class SalaryStructure(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='salary_structures')
     employee = models.OneToOneField('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='salary_structure')
     effective_date = models.DateField()
 
@@ -39,6 +42,7 @@ class SalaryStructureComponent(models.Model):
 
 
 class PayrollRun(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='payroll_runs')
     STATUS_CHOICES = (
         ('DRAFT', 'Draft'),
         ('PROCESSING', 'Processing'),
@@ -50,6 +54,7 @@ class PayrollRun(models.Model):
 
 
 class Payslip(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='payslips')
     payroll_run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE, related_name='payslips')
     employee = models.ForeignKey('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='payslips')
     gross_salary = models.DecimalField(max_digits=12, decimal_places=2)

@@ -9,12 +9,14 @@ class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = '__all__'
+        read_only_fields = ('tenant',)
 
 
 class DesignationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Designation
         fields = '__all__'
+        read_only_fields = ('tenant',)
 
 
 class NestedUserSerializer(serializers.ModelSerializer):
@@ -46,3 +48,14 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfile
         fields = '__all__'
+        read_only_fields = ('tenant',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if not request:
+            return
+        tenant = getattr(request, 'tenant', None)
+        self.fields['user_id'].queryset = User.objects.filter(tenant=tenant)
+        self.fields['department_id'].queryset = Department.objects.filter(tenant=tenant)
+        self.fields['designation_id'].queryset = Designation.objects.filter(tenant=tenant)

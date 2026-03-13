@@ -7,6 +7,9 @@ class PayrollRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = PayrollRun
         fields = '__all__'
+        read_only_fields = ('tenant',)
+        read_only_fields = ('tenant',)
+        read_only_fields = ('tenant',)
 
 
 class TaxSlabSerializer(serializers.ModelSerializer):
