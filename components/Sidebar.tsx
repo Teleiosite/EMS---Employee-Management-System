@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -23,6 +23,30 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment']);
+  const [companyName, setCompanyName] = useState<string>('Employee Management System');
+
+  useEffect(() => {
+    // Decode the JWT access token to get the tenant_id claim
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.tenant_name) {
+          setCompanyName(payload.tenant_name);
+        }
+      }
+    } catch {
+      // Silent fail — default name stays
+    }
+    // Also try from stored user object as fallback
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.tenantName) setCompanyName(u.tenantName);
+      } catch { /* ignore */ }
+    }
+  }, []);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus(prev =>
@@ -76,9 +100,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
         <div className="bg-orange-100 p-2 rounded-lg">
           <Building className="w-6 h-6 text-orange-600" />
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-orange-500 leading-none">Employee</h1>
-          <h2 className="text-sm font-semibold text-orange-400">Management System</h2>
+        <div className="overflow-hidden">
+          <h1 className="text-base font-bold text-orange-500 leading-tight truncate max-w-[9rem]" title={companyName}>{companyName}</h1>
+          <h2 className="text-xs font-semibold text-orange-400">Management System</h2>
         </div>
       </div>
 

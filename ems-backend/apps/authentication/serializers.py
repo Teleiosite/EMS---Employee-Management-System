@@ -88,6 +88,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['role'] = user.role
         token['tenant_id'] = str(user.tenant_id) if user.tenant_id else None
+        token['tenant_name'] = user.tenant.name if user.tenant_id else None
         return token
 
     def validate(self, attrs):

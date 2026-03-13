@@ -12,6 +12,10 @@ import ApplicantLayout from './components/ApplicantLayout'; // Applicant Layout
 // Public Pages
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import CompanyRegister from './pages/CompanyRegister';
+
+// Host (Super Admin) Pages
+import HostDashboard from './pages/host/HostDashboard';
 
 // Admin Pages
 import Dashboard from './pages/Dashboard';
@@ -56,6 +60,12 @@ const App: React.FC = () => {
           {/* ============================================ */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<CompanyRegister />} />
+
+          {/* ============================================ */}
+          {/* HOST ROUTE - Super Admin only               */}
+          {/* ============================================ */}
+          <Route path="/host" element={<HostDashboard />} />
 
           {/* ============================================ */}
           {/* APPLICANT ROUTES - Only APPLICANT role */}
