@@ -20,10 +20,14 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     queryset = Announcement.objects.all()
     serializer_class = AnnouncementSerializer
 
+    def get_queryset(self):
+        tenant = getattr(self.request, 'tenant', None)
+        return Announcement.objects.filter(tenant=tenant)
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [IsAuthenticated()]
         return [IsAdminOrHRManager()]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(created_by=self.request.user, tenant=getattr(self.request, 'tenant', None))

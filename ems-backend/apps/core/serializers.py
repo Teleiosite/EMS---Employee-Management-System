@@ -8,7 +8,7 @@ class AnnouncementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Announcement
         fields = '__all__'
-        read_only_fields = ('created_by',)
+        read_only_fields = ('created_by', 'tenant')
 
     def get_created_by_name(self, obj):
         if obj.created_by:

@@ -32,6 +32,7 @@ class CustomUser(AbstractUser):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = None
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE', db_index=True)
     is_active = models.BooleanField(default=False)

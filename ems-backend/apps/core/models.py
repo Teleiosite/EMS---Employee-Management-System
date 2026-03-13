@@ -10,6 +10,18 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class Tenant(TimeStampedModel):
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Announcement(TimeStampedModel):
     PRIORITY_CHOICES = [
         ('LOW', 'Low'),
@@ -17,6 +29,7 @@ class Announcement(TimeStampedModel):
         ('HIGH', 'High'),
     ]
 
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='announcements')
     title = models.CharField(max_length=255)
     content = models.TextField()
     date = models.DateField()

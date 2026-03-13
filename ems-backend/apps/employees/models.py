@@ -6,6 +6,7 @@ User = get_user_model()
 
 
 class Department(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='departments')
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_departments')
@@ -13,11 +14,13 @@ class Department(models.Model):
 
 
 class Designation(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='designations')
     title = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
 
 
 class EmployeeProfile(models.Model):
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='employee_profiles')
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
     designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, null=True, blank=True)

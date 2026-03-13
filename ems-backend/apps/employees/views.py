@@ -13,16 +13,26 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     permission_classes = [IsAdminOrHRManager]
 
+    def get_queryset(self):
+        tenant = getattr(self.request, 'tenant', None)
+        return Department.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=getattr(self.request, 'tenant', None))
+
 
 class EmployeeProfileViewSet(viewsets.ModelViewSet):
+    queryset = EmployeeProfile.objects.all()
     serializer_class = EmployeeProfileSerializer
 
     def get_queryset(self):
         user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        base_queryset = EmployeeProfile.objects.select_related('user', 'department', 'designation').filter(tenant=tenant)
+
         if getattr(user, 'role', None) in {'ADMIN', 'HR_MANAGER'}:
-            return EmployeeProfile.objects.select_related('user', 'department', 'designation').all()
-        # Employees only see their own profile
-        return EmployeeProfile.objects.select_related('user', 'department', 'designation').filter(user=user)
+            return base_queryset
+        return base_queryset.filter(user=user)
 
     def get_permissions(self):
         if self.action in {'create', 'destroy'}:
@@ -31,13 +41,19 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated()]
         return [IsSelfOrAdminOrHR()]
 
+    def perform_create(self, serializer):
+        profile = serializer.save(tenant=getattr(self.request, 'tenant', None))
+        if profile.user and not profile.user.tenant_id:
+            profile.user.tenant = profile.tenant
+            profile.user.save(update_fields=['tenant'])
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='me')
     def me(self, request):
         """Returns the current employee's own profile."""
         try:
             profile = EmployeeProfile.objects.select_related(
                 'user', 'department', 'designation'
-            ).get(user=request.user)
+            ).get(user=request.user, tenant=getattr(request, 'tenant', None))
             serializer = self.get_serializer(profile)
             return Response(serializer.data)
         except EmployeeProfile.DoesNotExist:

@@ -15,3 +15,18 @@ class IPWhitelistMiddleware:
         if ip not in settings.IP_WHITELIST:
             return JsonResponse({'detail': 'IP address not allowed.'}, status=403)
         return self.get_response(request)
+
+
+class TenantContextMiddleware:
+    """Attach tenant on request for authenticated users."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        tenant = None
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            tenant = getattr(user, 'tenant', None)
+        request.tenant = tenant
+        return self.get_response(request)
