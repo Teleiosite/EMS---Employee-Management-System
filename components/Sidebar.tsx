@@ -12,7 +12,9 @@ import {
   Briefcase,
   ChevronDown,
   ChevronRight,
-  FileText
+  FileText,
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,6 +27,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment']);
   const [companyName, setCompanyName] = useState<string>('Employee Management System');
 
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
   useEffect(() => {
     // Decode the JWT access token to get the tenant_id claim
     try {
@@ -33,6 +37,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
         const payload = JSON.parse(atob(token.split('.')[1]));
         if (payload.tenant_name) {
           setCompanyName(payload.tenant_name);
+        }
+        // Platform owner has no tenant — show Host Console link
+        if (!payload.tenant_id) {
+          setIsSuperAdmin(true);
         }
       }
     } catch {
@@ -173,6 +181,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
           })}
         </nav>
       </div>
+
+      {/* Platform Owner Section - only visible for super admin (no tenant) */}
+      {isSuperAdmin && (
+        <div className="px-4 py-4 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-4">Platform</p>
+          <a
+            href="#/host"
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <ShieldCheck className="w-5 h-5" />
+            Host Console
+            <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-60" />
+          </a>
+        </div>
+      )}
     </aside>
   );
 };
