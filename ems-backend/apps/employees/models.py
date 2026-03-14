@@ -2,15 +2,22 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.core.managers import TenantManager
+
 User = get_user_model()
 
 
 class Department(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='departments')
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_departments')
     budget = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
+
+    objects = TenantManager()
+
+    class Meta:
+        unique_together = ('tenant', 'name')
 
 
 class Designation(models.Model):
@@ -18,18 +25,25 @@ class Designation(models.Model):
     title = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
 
+    objects = TenantManager()
+
 
 class EmployeeProfile(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='employee_profiles')
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
     designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, null=True, blank=True)
-    employee_id = models.CharField(max_length=20, unique=True)
+    employee_id = models.CharField(max_length=20)
     base_salary = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
     joining_date = models.DateField()
     phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     status = models.CharField(max_length=20, default='ACTIVE')
+
+    objects = TenantManager()
+
+    class Meta:
+        unique_together = ('tenant', 'employee_id')
 
     @property
     def full_name(self):

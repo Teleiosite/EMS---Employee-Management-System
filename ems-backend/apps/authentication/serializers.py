@@ -136,6 +136,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not self.user.is_active:
             raise serializers.ValidationError('Account is inactive.')
 
+        if self.user.tenant and not self.user.tenant.is_active:
+            raise serializers.ValidationError('Your company account is currently suspended.')
+
         data['user'] = UserSerializer(self.user).data
         return data
 

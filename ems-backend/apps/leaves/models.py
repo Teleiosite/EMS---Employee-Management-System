@@ -1,10 +1,17 @@
 from django.db import models
 
+from apps.core.managers import TenantManager
+
 
 class LeaveType(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='leave_types')
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     max_days_per_year = models.IntegerField()
+
+    objects = TenantManager()
+
+    class Meta:
+        unique_together = ('tenant', 'name')
 
 
 class LeavePolicyWindow(models.Model):
@@ -13,6 +20,8 @@ class LeavePolicyWindow(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     carry_forward_limit = models.DecimalField(max_digits=4, decimal_places=1, default=0)
+
+    objects = TenantManager()
 
     class Meta:
         unique_together = ('leave_type', 'start_date', 'end_date')
@@ -25,6 +34,8 @@ class LeaveBalance(models.Model):
     year = models.IntegerField()
     available_days = models.DecimalField(max_digits=5, decimal_places=1, default=0)
     used_days = models.DecimalField(max_digits=5, decimal_places=1, default=0)
+
+    objects = TenantManager()
 
     class Meta:
         unique_together = ('employee', 'leave_type', 'year')
@@ -45,3 +56,5 @@ class LeaveRequest(models.Model):
     duration_days = models.DecimalField(max_digits=4, decimal_places=1)
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+
+    objects = TenantManager()
