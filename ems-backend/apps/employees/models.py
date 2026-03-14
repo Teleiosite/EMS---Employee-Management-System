@@ -45,6 +45,13 @@ class EmployeeProfile(models.Model):
     class Meta:
         unique_together = ('tenant', 'employee_id')
 
+    def save(self, *args, **kwargs):
+        # Automatically sync tenant to the associated user
+        if self.tenant and self.user and self.user.tenant != self.tenant:
+            self.user.tenant = self.tenant
+            self.user.save(update_fields=['tenant'])
+        super().save(*args, **kwargs)
+
     @property
     def full_name(self):
         return f"{self.user.first_name} {self.user.last_name}".strip()
