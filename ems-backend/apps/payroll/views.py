@@ -45,7 +45,11 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
 
     def get_queryset(self):
-        return PayrollRun.objects.filter(tenant=getattr(self.request, 'tenant', None)).order_by('-month')
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return PayrollRun.objects.none()
+        return PayrollRun.objects.filter(tenant=tenant).order_by('-month')
 
     def perform_create(self, serializer):
         """Create the PayrollRun and auto-generate payslips for selected (or all active) employees."""
@@ -62,7 +66,11 @@ class TaxSlabViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
 
     def get_queryset(self):
-        return TaxSlab.objects.filter(tenant=getattr(self.request, 'tenant', None)).order_by('min_income')
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return TaxSlab.objects.none()
+        return TaxSlab.objects.filter(tenant=tenant).order_by('min_income')
 
     def perform_create(self, serializer):
         serializer.save(tenant=getattr(self.request, 'tenant', None))
@@ -73,8 +81,12 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PayslipSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None))
         user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return Payslip.objects.none()
+
+        queryset = super().get_queryset().filter(tenant=tenant)
         if user.role in {'ADMIN', 'HR_MANAGER'}:
             return queryset
         return queryset.filter(employee__user=user)

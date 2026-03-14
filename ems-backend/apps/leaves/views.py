@@ -10,7 +10,11 @@ class LeaveTypeViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveTypeSerializer
 
     def get_queryset(self):
-        return LeaveType.objects.filter(tenant=getattr(self.request, 'tenant', None))
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return LeaveType.objects.none()
+        return LeaveType.objects.filter(tenant=tenant)
 
     def get_permissions(self):
         from rest_framework.permissions import IsAuthenticated
@@ -28,7 +32,11 @@ class LeavePolicyWindowViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
 
     def get_queryset(self):
-        return LeavePolicyWindow.objects.select_related('leave_type').filter(tenant=getattr(self.request, 'tenant', None))
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return LeavePolicyWindow.objects.none()
+        return LeavePolicyWindow.objects.select_related('leave_type').filter(tenant=tenant)
 
     def perform_create(self, serializer):
         serializer.save(tenant=getattr(self.request, 'tenant', None))
@@ -39,7 +47,11 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveBalanceSerializer
 
     def get_queryset(self):
-        return LeaveBalance.objects.select_related('employee', 'leave_type').filter(tenant=getattr(self.request, 'tenant', None))
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return LeaveBalance.objects.none()
+        return LeaveBalance.objects.select_related('employee', 'leave_type').filter(tenant=tenant)
 
     def get_permissions(self):
         if self.action in {'list', 'create', 'update', 'partial_update', 'destroy'}:
@@ -55,10 +67,15 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
 
     def get_queryset(self):
-        queryset = LeaveRequest.objects.select_related('employee', 'employee__user', 'leave_type').filter(
-            tenant=getattr(self.request, 'tenant', None)
-        )
         user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        
+        if not user.is_superuser and not tenant:
+            return LeaveRequest.objects.none()
+
+        queryset = LeaveRequest.objects.select_related('employee', 'employee__user', 'leave_type').filter(
+            tenant=tenant
+        )
         if user.role in {'ADMIN', 'HR_MANAGER'}:
             return queryset
         return queryset.filter(employee__user=user)

@@ -28,5 +28,12 @@ class TenantContextMiddleware:
         user = getattr(request, 'user', None)
         if user and user.is_authenticated:
             tenant = getattr(user, 'tenant', None)
+            
+            # Safety: If user is not a superuser but has no tenant, 
+            # we should NOT let them fall into the global bucket unintentionally.
+            if not user.is_superuser and not tenant:
+                # We could log this as an invalid state
+                pass
+                
         request.tenant = tenant
         return self.get_response(request)

@@ -14,7 +14,11 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
 
     def get_queryset(self):
+        user = self.request.user
         tenant = getattr(self.request, 'tenant', None)
+        # Strict Isolation: Non-superusers with None tenant see nothing
+        if not user.is_superuser and not tenant:
+            return Department.objects.none()
         return Department.objects.filter(tenant=tenant)
 
     def perform_create(self, serializer):
@@ -28,6 +32,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         tenant = getattr(self.request, 'tenant', None)
+        
+        # Strict Isolation: Non-superusers with None tenant see nothing
+        if not user.is_superuser and not tenant:
+            return EmployeeProfile.objects.none()
+
         base_queryset = EmployeeProfile.objects.select_related('user', 'department', 'designation').filter(tenant=tenant)
 
         if getattr(user, 'role', None) in {'ADMIN', 'HR_MANAGER'}:

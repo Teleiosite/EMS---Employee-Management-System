@@ -25,7 +25,10 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     serializer_class = AnnouncementSerializer
 
     def get_queryset(self):
+        user = self.request.user
         tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return Announcement.objects.none()
         return Announcement.objects.filter(tenant=tenant)
 
     def get_permissions(self):

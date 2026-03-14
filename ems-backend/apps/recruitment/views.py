@@ -33,7 +33,12 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrHRManager]
     
     def get_queryset(self):
-        queryset = super().get_queryset().filter(tenant=getattr(self.request, 'tenant', None)).filter(tenant=getattr(self.request, 'tenant', None))
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return JobPosting.objects.none()
+            
+        queryset = super().get_queryset().filter(tenant=tenant)
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
@@ -66,7 +71,12 @@ class CandidateViewSet(viewsets.ModelViewSet):
         return CandidateSerializer
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return Candidate.objects.none()
+
+        queryset = super().get_queryset().filter(tenant=tenant)
         
         # Filter by status
         status_filter = self.request.query_params.get('status')
@@ -183,8 +193,12 @@ class ApplicantApplicationListView(generics.ListAPIView):
     
     def get_queryset(self):
         user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return Candidate.objects.none()
+
         return Candidate.objects.filter(
-            tenant=getattr(self.request, 'tenant', None)
+            tenant=tenant
         ).filter(
             Q(user=user) | Q(email__iexact=user.email)
         ).select_related('job').distinct()
@@ -197,8 +211,12 @@ class ApplicantApplicationDetailView(generics.RetrieveAPIView):
     
     def get_queryset(self):
         user = self.request.user
+        tenant = getattr(self.request, 'tenant', None)
+        if not user.is_superuser and not tenant:
+            return Candidate.objects.none()
+
         return Candidate.objects.filter(
-            tenant=getattr(self.request, 'tenant', None)
+            tenant=tenant
         ).filter(
             Q(user=user) | Q(email__iexact=user.email)
         ).select_related('job').distinct()
