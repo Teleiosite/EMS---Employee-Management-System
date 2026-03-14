@@ -38,7 +38,7 @@ const CompanyRegister: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register/tenant/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/tenant-register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
