@@ -147,7 +147,7 @@ const Login: React.FC = () => {
             onClick={() => navigate('/register')}
             className="text-orange-600 hover:text-orange-800 text-sm font-medium hover:underline"
           >
-            Don't have an account? Sign Up your company
+            Not on EMS? <span className="font-bold">Register your company workspace</span>
           </button>
         </div>
 

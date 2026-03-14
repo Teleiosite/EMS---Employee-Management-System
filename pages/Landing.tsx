@@ -57,7 +57,7 @@ const Landing: React.FC = () => {
                 onClick={() => navigate('/register')}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-orange-500/30"
               >
-                Sign Up
+                Sign Up Company
               </button>
             </div>
           </div>
@@ -76,12 +76,12 @@ const Landing: React.FC = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-             <button 
-               onClick={() => navigate('/login')}
-               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-orange-500/20 flex items-center justify-center gap-2"
-             >
-               Get Started <ArrowRight className="w-5 h-5" />
-             </button>
+              <button 
+                onClick={() => navigate('/register')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-orange-500/20 flex items-center justify-center gap-2"
+              >
+                Register Company <ArrowRight className="w-5 h-5" />
+              </button>
              <button 
                onClick={scrollToJobs}
                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
