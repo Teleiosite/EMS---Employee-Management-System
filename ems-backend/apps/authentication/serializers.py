@@ -7,6 +7,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.core.models import Tenant
+from ems_core.utils_email import send_email_in_background
 from .utils import generate_mfa_secret, generate_secure_token, verify_totp_code
 
 User = get_user_model()
@@ -53,28 +54,19 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        # Trigger Welcome Email immediately after user creation
-        from django.core.mail import send_mail
-        from django.conf import settings
-        
+        # Trigger Welcome Email in background
         if user.role == 'APPLICANT':
             subject = 'Welcome to the Careers Portal!'
-            message = f"Hello {user.first_name},\n\nThank you for creating an account on our Careers Portal! You can now browse open roles and submit your applications seamlessly.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and complete your Applicant Profile to stand out.\n\nBest,\nTalent Acquisition Team"
+            message = f"Hello {user.first_name},\n\nThank you for creating an account on our Careers Portal! You can now browse open roles and submit your applications.\n\nBest,\nTalent Acquisition Team"
         else:
             subject = 'Welcome to the EMS Portal!'
-            message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been successfully created by Human Resources.\n\nYour login email is: {user.email}\nYour temporary password is: {password}\n\nPlease log in and update your password as soon as possible.\n\nBest,\nHR Team"
+            message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been created.\n\nLogin email: {user.email}\n\nPlease log in and update your password.\n\nBest,\nHR Team"
         
-        try:
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True,  # Don't crash user creation if email fails
-            )
-        except Exception as e:
-            # In a real app, log this error
-            pass
+        send_email_in_background(
+            subject=subject,
+            message=message,
+            recipient_list=[user.email]
+        )
 
         return user
 
@@ -203,4 +195,14 @@ class TenantRegistrationSerializer(serializers.Serializer):
             email_verified=True,
             tenant=tenant,
         )
+        # Trigger Welcome Email for the new company admin
+        subject = f"Welcome to EMS - {tenant.name} is ready!"
+        message = f"Hello {user.first_name},\n\nCongratulations! Your company workspace '{tenant.name}' has been successfully created on the Employee Management System.\n\nYou can now log in using your admin email: {user.email}\n\nStart by setting up your departments and inviting your team members.\n\nBest,\nThe EMS Team"
+        
+        send_email_in_background(
+            subject=subject,
+            message=message,
+            recipient_list=[user.email]
+        )
+
         return {'tenant': tenant, 'user': user}
