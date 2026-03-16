@@ -119,6 +119,10 @@ echo "[8/8] Starting services..."
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
+# Fail fast if web stack is not healthy (prevents silent "success" with ERR_CONNECTION_REFUSED)
+sudo systemctl is-active --quiet ems-gunicorn || { echo "❌ ems-gunicorn is not active"; sudo journalctl -u ems-gunicorn -n 80 --no-pager; exit 1; }
+sudo systemctl is-active --quiet nginx || { echo "❌ nginx is not active"; sudo journalctl -u nginx -n 80 --no-pager; exit 1; }
+
 echo ""
 echo "=============================="
 echo "  ✅ EMS Deployed Successfully!"
@@ -132,3 +136,4 @@ echo ""
 echo "Check logs:"
 echo "  Backend: sudo journalctl -fu ems-gunicorn"
 echo "  Nginx:   sudo tail -f /var/log/nginx/ems_error.log"
+echo "  Quick recovery: /opt/ems/scripts/oracle-recover.sh"
