@@ -65,7 +65,14 @@ const App: React.FC = () => {
           {/* ============================================ */}
           {/* HOST ROUTE - Super Admin only               */}
           {/* ============================================ */}
-          <Route path="/host" element={<HostDashboard />} />
+          <Route 
+            path="/host" 
+            element={
+              <ProtectedRoute requireSuperuser={true} allowedRoles={[]}>
+                <HostDashboard />
+              </ProtectedRoute>
+            } 
+          />
 
           {/* ============================================ */}
           {/* APPLICANT ROUTES - Only APPLICANT role */}

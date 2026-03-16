@@ -40,9 +40,16 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user, tenant=getattr(self.request, 'tenant', None))
 
 
+from rest_framework.permissions import BasePermission, IsAuthenticated
+
+class IsSuperUser(BasePermission):
+    """Allows access only to superusers."""
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
 class HostStatsView(APIView):
     """Platform owner super-admin dashboard statistics."""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsSuperUser]
 
     def get(self, request):
         tenants = Tenant.objects.annotate(user_count=Count('customuser')).order_by('-created_at')

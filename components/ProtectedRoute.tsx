@@ -5,6 +5,7 @@ import { UserRole } from '../types';
 interface ProtectedRouteProps {
     children: React.ReactNode;
     allowedRoles: UserRole[];
+    requireSuperuser?: boolean;
     redirectTo?: string;
 }
 
@@ -15,6 +16,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     children,
     allowedRoles,
+    requireSuperuser = false,
     redirectTo = '/login'
 }) => {
     const location = useLocation();
@@ -29,6 +31,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     const user = JSON.parse(storedUser);
+
+    // If route requires superuser, exclusively check for isSuperuser
+    if (requireSuperuser) {
+        if (!user.isSuperuser) {
+            return <Navigate to="/" replace />;
+        }
+        return <>{children}</>;
+    }
 
     // Check if user has required role
     if (!allowedRoles.includes(user.role)) {
