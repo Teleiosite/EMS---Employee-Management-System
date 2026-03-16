@@ -53,7 +53,7 @@ class HostStatsView(APIView):
     permission_classes = [IsSuperUser]
 
     def get(self, request):
-        tenants = Tenant.objects.annotate(user_count=Count('customuser')).order_by('-created_at')
+        tenants = Tenant.objects.annotate(user_count=Count('users')).order_by('-created_at')
         total_users = User.objects.count()
         active_tenants = tenants.filter(is_active=True).count()
 
