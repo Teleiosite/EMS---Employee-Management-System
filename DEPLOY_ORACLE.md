@@ -156,6 +156,32 @@ sudo journalctl -fu ems-gunicorn     # Backend live logs
 sudo tail -f /var/log/nginx/ems_error.log  # Nginx errors
 ```
 
+
+## Emergency Fix: Site Not Opening (`ERR_CONNECTION_REFUSED`)
+
+If your browser shows `ERR_CONNECTION_REFUSED`, run this on the VM to recover quickly:
+
+```bash
+# 1) Verify services
+sudo systemctl status nginx --no-pager
+sudo systemctl status ems-gunicorn --no-pager
+
+# 2) Validate nginx config then restart
+sudo nginx -t
+sudo systemctl restart ems-gunicorn
+sudo systemctl restart nginx
+
+# 3) Confirm ports are listening
+sudo ss -tulpn | grep -E ':80|:443|:8000' || true
+
+# 4) Read recent logs
+sudo journalctl -u ems-gunicorn -n 120 --no-pager
+sudo journalctl -u nginx -n 120 --no-pager
+sudo tail -n 120 /var/log/nginx/ems_error.log
+```
+
+If services are running but site is still unreachable, verify OCI Security List ingress rules for ports `80` and `443`, and confirm the VM public IP has not changed.
+
 ## Useful Commands
 
 ```bash

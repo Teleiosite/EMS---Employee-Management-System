@@ -42,4 +42,8 @@ jobs:
 
             sudo systemctl restart ems-gunicorn
             sudo systemctl restart nginx
+
+            systemctl is-active --quiet ems-gunicorn
+            systemctl is-active --quiet nginx
+
             echo "✅ Oracle deployment completed"
