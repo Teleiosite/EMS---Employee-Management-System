@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Announcement, Tenant
+from .tenancy import resolve_tenant
 from .permissions import IsAdminOrHRManager
 from .serializers import AnnouncementSerializer
 
@@ -26,7 +27,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return Announcement.objects.none()
         return Announcement.objects.filter(tenant=tenant)
@@ -37,7 +38,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         return [IsAdminOrHRManager()]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user, tenant=getattr(self.request, 'tenant', None))
+        serializer.save(created_by=self.request.user, tenant=resolve_tenant(self.request))
 
 
 from rest_framework.permissions import BasePermission, IsAuthenticated
