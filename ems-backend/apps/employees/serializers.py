@@ -1,3 +1,4 @@
+from apps.core.tenancy import resolve_tenant
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Department, Designation, EmployeeProfile
@@ -55,7 +56,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request:
             return
-        tenant = getattr(request, 'tenant', None)
+        tenant = resolve_tenant(request)
         self.fields['user_id'].queryset = User.objects.filter(tenant=tenant)
         self.fields['department_id'].queryset = Department.objects.filter(tenant=tenant)
         self.fields['designation_id'].queryset = Designation.objects.filter(tenant=tenant)
