@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
+from apps.core.tenancy import resolve_tenant
 from .models import LeaveBalance, LeavePolicyWindow, LeaveRequest, LeaveType
 from .serializers import LeaveBalanceSerializer, LeavePolicyWindowSerializer, LeaveRequestSerializer, LeaveTypeSerializer
 
@@ -11,7 +12,7 @@ class LeaveTypeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return LeaveType.objects.none()
         return LeaveType.objects.filter(tenant=tenant)
@@ -23,7 +24,7 @@ class LeaveTypeViewSet(viewsets.ModelViewSet):
         return [IsAdminOrHRManager()]
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
 
 
 class LeavePolicyWindowViewSet(viewsets.ModelViewSet):
@@ -33,13 +34,13 @@ class LeavePolicyWindowViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return LeavePolicyWindow.objects.none()
         return LeavePolicyWindow.objects.select_related('leave_type').filter(tenant=tenant)
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
 
 
 class LeaveBalanceViewSet(viewsets.ModelViewSet):
@@ -48,7 +49,7 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return LeaveBalance.objects.none()
         return LeaveBalance.objects.select_related('employee', 'leave_type').filter(tenant=tenant)
@@ -59,7 +60,7 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
         return [IsSelfOrAdminOrHR()]
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
 
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
@@ -68,7 +69,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         
         if not user.is_superuser and not tenant:
             return LeaveRequest.objects.none()
@@ -87,7 +88,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         employee = getattr(user, 'employee_profile', None)
         if employee:
             serializer.save(employee=employee, tenant=tenant)

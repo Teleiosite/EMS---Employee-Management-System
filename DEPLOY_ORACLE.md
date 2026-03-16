@@ -103,6 +103,21 @@ sudo journalctl -fu ems-gunicorn     # Backend live logs
 sudo tail -f /var/log/nginx/ems_error.log  # Nginx errors
 ```
 
+
+## Emergency Recovery (ERR_CONNECTION_REFUSED)
+
+If your domain opens but shows **ERR_CONNECTION_REFUSED**, run:
+
+```bash
+cd /opt/ems
+bash scripts/oracle-recover.sh
+```
+
+If it still fails, verify:
+- OCI security list allows inbound TCP `80` and `443` to your instance.
+- VM public IP / DuckDNS record still points to the current VM IP.
+- `ALLOWED_HOSTS` contains your domain/IP in `/opt/ems/backend/.env`.
+
 ## Useful Commands
 
 ```bash
