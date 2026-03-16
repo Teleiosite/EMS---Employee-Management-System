@@ -9,6 +9,7 @@ type ApiUser = {
   first_name: string;
   last_name: string;
   role: UserRole;
+  is_superuser?: boolean;
 };
 
 const mapUser = (user: ApiUser) => ({
@@ -17,6 +18,7 @@ const mapUser = (user: ApiUser) => ({
   firstName: user.first_name,
   lastName: user.last_name,
   role: user.role,
+  isSuperuser: user.is_superuser ?? false,
 });
 
 export const loginWithBackend = async (email: string, password: string) => {

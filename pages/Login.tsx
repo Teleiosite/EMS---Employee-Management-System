@@ -26,13 +26,16 @@ const Login: React.FC = () => {
     try {
       if (isLogin) {
         const user = await loginWithBackend(email, password);
-        if (user.role === UserRole.ADMIN || user.role === UserRole.HR_MANAGER) {
-          navigate('/admin');
-        } else if (user.role === UserRole.EMPLOYEE) {
-          navigate('/employee');
-        } else {
-          navigate(redirectUrl || '/applicant');
-        }
+          // Superuser (platform host) goes to host dashboard
+          if ((user as any).isSuperuser) {
+            navigate('/host');
+          } else if (user.role === UserRole.ADMIN || user.role === UserRole.HR_MANAGER) {
+            navigate('/admin');
+          } else if (user.role === UserRole.EMPLOYEE) {
+            navigate('/employee');
+          } else {
+            navigate(redirectUrl || '/applicant');
+          }
       } else {
         await registerApplicantWithBackend(name, email, password);
         await loginWithBackend(email, password);

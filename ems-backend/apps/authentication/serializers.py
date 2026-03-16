@@ -18,7 +18,7 @@ LOCKOUT_MINUTES = 15
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'is_active', 'email_verified', 'mfa_enabled')
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'is_active', 'email_verified', 'mfa_enabled', 'is_superuser')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -79,6 +79,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['email'] = user.email
         token['role'] = user.role
+        token['is_superuser'] = user.is_superuser
         token['tenant_id'] = str(user.tenant_id) if user.tenant_id else None
         token['tenant_name'] = user.tenant.name if user.tenant_id else None
         return token
