@@ -2,57 +2,6 @@
 # Oracle Cloud Deployment Guide for EMS
 # ============================================================
 
-
-## Optional: Auto Deploy on Every GitHub Push (Recommended)
-
-If you want Oracle to update automatically whenever code is pushed to `main`, use the included GitHub Actions workflow:
-
-- Workflow file: `.github/workflows/deploy-oracle.yml`
-- Trigger: every push to `main` (and manual run from Actions tab)
-- Deploy method: SSH into your Oracle VM and run pull + migrate + build + restart
-
-### 1) Create required GitHub Secrets
-
-In GitHub → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
-
-- `ORACLE_VM_HOST` → your VM public IP or DNS
-- `ORACLE_VM_USER` → typically `ubuntu`
-- `ORACLE_VM_SSH_KEY` → private key content (entire PEM, including BEGIN/END lines)
-- `VITE_API_BASE_URL` → e.g. `https://yourems.duckdns.org/api`
-- Note: if secrets are missing, the `deploy-oracle` workflow will be skipped until all required secrets are configured.
-
-### 2) Allow passwordless restart commands on VM
-
-The GitHub SSH session needs to restart services without interactive sudo prompts:
-
-```bash
-sudo visudo -f /etc/sudoers.d/ems-deploy
-```
-
-Add:
-
-```bash
-ubuntu ALL=(ALL) NOPASSWD:/bin/systemctl restart ems-gunicorn,/bin/systemctl restart nginx,/bin/cp
-```
-
-### 3) First-time VM prep
-
-Run one-time on VM:
-
-```bash
-sudo chown -R ubuntu:ubuntu /opt/ems
-```
-
-### 4) Deploy automatically
-
-Push to `main` and GitHub Actions will deploy:
-
-```bash
-git push origin main
-```
-
-You can also trigger it manually from **Actions → deploy-oracle → Run workflow**.
-
 ## Step 1: Create an Oracle Cloud Free VM
 
 1. Go to https://cloud.oracle.com and sign up (free, credit card for identity)
@@ -87,8 +36,6 @@ sudo netfilter-persistent save
 # Replace with YOUR Oracle VM public IP and your SSH key path
 ssh -i ~/your_oracle_key.pem ubuntu@YOUR_ORACLE_VM_IP
 ```
-
-> ⚠️ Security: Never paste private keys into chat, git, or public notes. Keep the `.pem` only on devices you trust.
 
 ## Step 4: Run the Deploy Script
 
@@ -156,32 +103,6 @@ sudo journalctl -fu ems-gunicorn     # Backend live logs
 sudo tail -f /var/log/nginx/ems_error.log  # Nginx errors
 ```
 
-
-## Emergency Fix: Site Not Opening (`ERR_CONNECTION_REFUSED`)
-
-If your browser shows `ERR_CONNECTION_REFUSED`, run this on the VM to recover quickly:
-
-```bash
-# 1) Verify services
-sudo systemctl status nginx --no-pager
-sudo systemctl status ems-gunicorn --no-pager
-
-# 2) Validate nginx config then restart
-sudo nginx -t
-sudo systemctl restart ems-gunicorn
-sudo systemctl restart nginx
-
-# 3) Confirm ports are listening
-sudo ss -tulpn | grep -E ':80|:443|:8000' || true
-
-# 4) Read recent logs
-sudo journalctl -u ems-gunicorn -n 120 --no-pager
-sudo journalctl -u nginx -n 120 --no-pager
-sudo tail -n 120 /var/log/nginx/ems_error.log
-```
-
-If services are running but site is still unreachable, verify OCI Security List ingress rules for ports `80` and `443`, and confirm the VM public IP has not changed.
-
 ## Useful Commands
 
 ```bash
@@ -190,9 +111,6 @@ sudo systemctl restart ems-gunicorn
 
 # Rebuild and redeploy frontend
 cd /opt/ems && git pull
-# If git pull fails with ".git/FETCH_HEAD: Permission denied"
-sudo chown -R ubuntu:ubuntu /opt/ems
-cd /opt/ems && git pull origin main
 VITE_API_BASE_URL=http://YOUR_ORACLE_VM_PUBLIC_IP/api npm run build
 sudo cp -r dist/* /opt/ems/frontend/
 
