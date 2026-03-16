@@ -2,6 +2,57 @@
 # Oracle Cloud Deployment Guide for EMS
 # ============================================================
 
+
+## Optional: Auto Deploy on Every GitHub Push (Recommended)
+
+If you want Oracle to update automatically whenever code is pushed to `main`, use the included GitHub Actions workflow:
+
+- Workflow file: `.github/workflows/deploy-oracle.yml`
+- Trigger: every push to `main` (and manual run from Actions tab)
+- Deploy method: SSH into your Oracle VM and run pull + migrate + build + restart
+
+### 1) Create required GitHub Secrets
+
+In GitHub → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+
+- `ORACLE_VM_HOST` → your VM public IP or DNS
+- `ORACLE_VM_USER` → typically `ubuntu`
+- `ORACLE_VM_SSH_KEY` → private key content (entire PEM, including BEGIN/END lines)
+- `VITE_API_BASE_URL` → e.g. `https://yourems.duckdns.org/api`
+- Note: if secrets are missing, the `deploy-oracle` workflow will be skipped until all required secrets are configured.
+
+### 2) Allow passwordless restart commands on VM
+
+The GitHub SSH session needs to restart services without interactive sudo prompts:
+
+```bash
+sudo visudo -f /etc/sudoers.d/ems-deploy
+```
+
+Add:
+
+```bash
+ubuntu ALL=(ALL) NOPASSWD:/bin/systemctl restart ems-gunicorn,/bin/systemctl restart nginx,/bin/cp
+```
+
+### 3) First-time VM prep
+
+Run one-time on VM:
+
+```bash
+sudo chown -R ubuntu:ubuntu /opt/ems
+```
+
+### 4) Deploy automatically
+
+Push to `main` and GitHub Actions will deploy:
+
+```bash
+git push origin main
+```
+
+You can also trigger it manually from **Actions → deploy-oracle → Run workflow**.
+
 ## Step 1: Create an Oracle Cloud Free VM
 
 1. Go to https://cloud.oracle.com and sign up (free, credit card for identity)
@@ -36,6 +87,8 @@ sudo netfilter-persistent save
 # Replace with YOUR Oracle VM public IP and your SSH key path
 ssh -i ~/your_oracle_key.pem ubuntu@YOUR_ORACLE_VM_IP
 ```
+
+> ⚠️ Security: Never paste private keys into chat, git, or public notes. Keep the `.pem` only on devices you trust.
 
 ## Step 4: Run the Deploy Script
 
@@ -111,6 +164,9 @@ sudo systemctl restart ems-gunicorn
 
 # Rebuild and redeploy frontend
 cd /opt/ems && git pull
+# If git pull fails with ".git/FETCH_HEAD: Permission denied"
+sudo chown -R ubuntu:ubuntu /opt/ems
+cd /opt/ems && git pull origin main
 VITE_API_BASE_URL=http://YOUR_ORACLE_VM_PUBLIC_IP/api npm run build
 sudo cp -r dist/* /opt/ems/frontend/
 

@@ -29,10 +29,17 @@ sudo apt-get install -y \
 # ─── 2. Clone / Update Repo ───────────────────────────────
 echo "[2/8] Cloning/updating repository..."
 if [ -d "$EMS_DIR/.git" ]; then
+    # Keep repo writable by the deployment user (avoid root-owned .git/FETCH_HEAD errors)
+    sudo chown -R "$USER":"$USER" "$EMS_DIR"
     cd "$EMS_DIR"
-    sudo git pull origin $BRANCH
+    git fetch origin "$BRANCH"
+    git checkout "$BRANCH"
+    git pull origin "$BRANCH"
 else
-    sudo git clone "$REPO_URL" "$EMS_DIR"
+    # Create /opt/ems with deploy-user ownership so future pulls work without sudo
+    sudo mkdir -p "$(dirname "$EMS_DIR")"
+    sudo chown -R "$USER":"$USER" "$(dirname "$EMS_DIR")"
+    git clone "$REPO_URL" "$EMS_DIR"
     cd "$EMS_DIR"
 fi
 
