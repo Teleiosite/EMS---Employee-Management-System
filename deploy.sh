@@ -116,6 +116,8 @@ sudo systemctl restart ems-gunicorn
 
 # ─── 8. Start Services ────────────────────────────────────
 echo "[8/8] Starting services..."
+sudo chown -R ubuntu:www-data "$BACKEND_DIR"
+sudo chmod -R 775 "$BACKEND_DIR"
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
