@@ -1,0 +1,36 @@
+name: continuous-deployment
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Oracle Cloud
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "🚀 Starting deployment..."
+            cd /opt/ems
+            
+            # Use sudo to pull if the folder is root-owned
+            sudo git fetch origin main
+            sudo git reset --hard origin/main
+            
+            # Execute the deployment script
+            # We pass a flag to skip heavy system updates on routine deploys
+            sudo bash deploy.sh --quick

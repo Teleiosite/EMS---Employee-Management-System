@@ -18,13 +18,17 @@ REPO_URL="https://github.com/Teleiosite/EMS---Employee-Management-System.git"
 BRANCH="main"
 
 # ─── 1. System Dependencies ───────────────────────────────
-echo "[1/8] Installing system packages..."
-sudo apt-get update -y
-sudo apt-get install -y \
-    python3 python3-pip python3-venv \
-    git curl nodejs npm \
-    nginx postgresql postgresql-contrib libpq-dev \
-    build-essential
+if [[ "$1" == "--quick" ]]; then
+    echo "[1/8] Skipping system packages (quick mode)..."
+else
+    echo "[1/8] Installing system packages..."
+    sudo apt-get update -y
+    sudo apt-get install -y \
+        python3 python3-pip python3-venv \
+        git curl nodejs npm \
+        nginx postgresql postgresql-contrib libpq-dev \
+        build-essential
+fi
 
 # ─── 2. Clone / Update Repo ───────────────────────────────
 echo "[2/8] Cloning/updating repository..."
