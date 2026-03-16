@@ -5,6 +5,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
+from apps.core.tenancy import resolve_tenant
 from .models import PayrollRun, Payslip, TaxSlab
 from .serializers import PayrollRunSerializer, PayslipSerializer, TaxSlabSerializer
 from .pdf_generator import generate_payslip_pdf
@@ -46,7 +47,7 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return PayrollRun.objects.none()
         return PayrollRun.objects.filter(tenant=tenant).order_by('-month')
@@ -55,7 +56,7 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
         """Create the PayrollRun and auto-generate payslips for selected (or all active) employees."""
         # Extract employee_ids from request data — not a model field, so pop it before saving
         employee_ids = self.request.data.get('employee_ids', None)
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         payroll_run = serializer.save(tenant=tenant)
         _generate_payslips_for_run(payroll_run, tenant=tenant, employee_ids=employee_ids)
 
@@ -67,13 +68,13 @@ class TaxSlabViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return TaxSlab.objects.none()
         return TaxSlab.objects.filter(tenant=tenant).order_by('min_income')
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
 
 
 class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
@@ -82,7 +83,7 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return Payslip.objects.none()
 
