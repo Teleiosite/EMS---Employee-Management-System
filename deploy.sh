@@ -62,7 +62,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # Copy to deploy dir
-sudo rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
+sudo rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' --exclude='*.sqlite3' \
     "$EMS_DIR/ems-backend/" "$BACKEND_DIR/"
 
 # Copy venv
