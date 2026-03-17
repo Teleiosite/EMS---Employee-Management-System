@@ -50,9 +50,12 @@ fi
 # ─── 3. Backend Setup ─────────────────────────────────────
 echo "[3/8] Setting up Django backend..."
 sudo mkdir -p "$BACKEND_DIR"
-cd "$EMS_DIR/ems-backend"
+# Copy backend source to deploy dir first (without local venv/cache artifacts)
+sudo rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' --exclude='*.sqlite3' \
+    "$EMS_DIR/ems-backend/" "$BACKEND_DIR/"
 
-# Create virtualenv
+# Create virtualenv directly inside deploy dir to avoid broken absolute shebangs
+cd "$BACKEND_DIR"
 if [ ! -d "venv" ]; then
     python3 -m venv venv
 fi
@@ -60,13 +63,6 @@ source venv/bin/activate
 
 pip install --upgrade pip
 pip install -r requirements.txt
-
-# Copy to deploy dir
-sudo rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' --exclude='*.sqlite3' \
-    "$EMS_DIR/ems-backend/" "$BACKEND_DIR/"
-
-# Copy venv
-sudo cp -r venv "$BACKEND_DIR/"
 
 # ─── 4. Configure Backend ─────────────────────────────────
 echo "[4/8] Configuring backend..."
@@ -80,10 +76,26 @@ cd "$BACKEND_DIR"
 source venv/bin/activate
 export DJANGO_SETTINGS_MODULE=ems_core.settings.production
 
+# Load .env so management commands use the exact same DB settings as systemd/gunicorn
+set -a
+source "$BACKEND_DIR/.env"
+set +a
+
+# Ensure sqlite directory/file exists with writable ownership for gunicorn when sqlite is used
+if [[ "${DB_ENGINE:-}" == "django.db.backends.sqlite3" ]] && [[ -n "${DB_NAME:-}" ]]; then
+    sudo mkdir -p "$(dirname "$DB_NAME")"
+    sudo touch "$DB_NAME"
+    sudo chown -R ubuntu:www-data "$(dirname "$DB_NAME")"
+    sudo chmod -R 775 "$(dirname "$DB_NAME")"
+fi
+
 # Run migrations and collect static
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 python manage.py setup_admin 2>/dev/null || true  # Create default admin if command exists
+
+# Fail fast if key auth table does not exist after migrations (prevents runtime JSON parse errors)
+python manage.py shell -c "from django.db import connection; tables=connection.introspection.table_names(); assert 'authentication_customuser' in tables, 'authentication_customuser table missing after deploy'"
 
 # ─── 5. Frontend Build ────────────────────────────────────
 echo "[5/8] Building React frontend..."
