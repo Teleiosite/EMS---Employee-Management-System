@@ -29,16 +29,12 @@ jobs:
             git checkout main
             git pull --ff-only origin main
 
-            cd /opt/ems/ems-backend
-            source venv/bin/activate
-            python manage.py migrate --settings=ems_core.settings.production --noinput
-            python manage.py collectstatic --settings=ems_core.settings.production --noinput
+            # Run the single hardened deploy path (migrate/static/build/services)
+            # as the deploy user so script ownership logic keeps repo writable.
+            if [ -n "${{ secrets.VITE_API_BASE_URL }}" ]; then
+              VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} bash deploy.sh --quick
+            else
+              bash deploy.sh --quick
+            fi
 
-            cd /opt/ems
-            npm ci --legacy-peer-deps
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} npm run build
-            sudo cp -r dist/* /opt/ems/frontend/
-
-            sudo systemctl restart ems-gunicorn
-            sudo systemctl restart nginx
             echo "✅ Oracle deployment completed"
