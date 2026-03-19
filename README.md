@@ -187,6 +187,9 @@ Copy `ems-backend/.env.example` to `ems-backend/.env` and fill in the values:
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database credentials |
 | `CORS_ALLOWED_ORIGINS` | Frontend origin(s) allowed to call the API |
 | `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF protection |
+| `TENANT_SUBDOMAIN_ENABLED` | Enable company-specific subdomain tenant resolution |
+| `TENANT_BASE_DOMAIN` | Base domain for tenant URLs (e.g. `yourdomain.com`) |
+| `TENANT_RESERVED_SUBDOMAINS` | Comma-separated system subdomains to ignore |
 | `CELERY_BROKER_URL` | Redis URL for async tasks |
 
 ---
