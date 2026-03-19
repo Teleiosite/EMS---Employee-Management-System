@@ -633,6 +633,21 @@ bash deploy.sh --quick
 
 Copy `ems-backend/.env.example` to `ems-backend/.env` on your server:
 
+<<<<<<< HEAD
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | Django secret key (50+ characters) |
+| `DEBUG` | `False` in production |
+| `ALLOWED_HOSTS` | Comma-separated allowed hostnames/IPs |
+| `DB_ENGINE` | Database engine (SQLite or PostgreSQL) |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database credentials |
+| `CORS_ALLOWED_ORIGINS` | Frontend origin(s) allowed to call the API |
+| `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF protection |
+| `TENANT_SUBDOMAIN_ENABLED` | Enable company-specific subdomain tenant resolution |
+| `TENANT_BASE_DOMAIN` | Base domain for tenant URLs (e.g. `yourdomain.com`) |
+| `TENANT_RESERVED_SUBDOMAINS` | Comma-separated system subdomains to ignore |
+| `CELERY_BROKER_URL` | Redis URL for async tasks |
+=======
 ```env
 # Django Core
 DJANGO_SETTINGS_MODULE=ems_core.settings.production
@@ -660,6 +675,7 @@ CELERY_BROKER_URL=redis://localhost:6379/0
 ```
 
 > ⚠️ **IMPORTANT:** `DJANGO_SETTINGS_MODULE` must always be set to `ems_core.settings.production` on your server. Without this, Gunicorn falls back to development settings with an empty in-memory database.
+>>>>>>> origin/main
 
 ---
 
@@ -702,6 +718,35 @@ All API endpoints are prefixed with `/api/`. JWT Bearer token is required for al
 
 ---
 
+<<<<<<< HEAD
+## ☁️ Oracle Cloud Deployment
+
+See **[DEPLOY_ORACLE.md](./DEPLOY_ORACLE.md)** for the full step-by-step guide.
+
+**Quick deploy on a fresh Oracle Ubuntu VM:**
+
+```bash
+git clone https://github.com/Teleiosite/EMS---Employee-Management-System.git /opt/ems
+bash /opt/ems/deploy.sh
+```
+
+**Update the live app (from OCI Cloud Shell):**
+
+```bash
+# Cloud Shell is not your VM; first SSH into the VM.
+ssh -i ~/ems.key ubuntu@<YOUR_VM_PUBLIC_IP>
+
+# Then run deploy on the VM
+cd /opt/ems
+git pull --ff-only origin main
+bash deploy.sh --quick
+sudo systemctl status ems-gunicorn --no-pager
+sudo systemctl status nginx --no-pager
+```
+
+
+=======
+>>>>>>> origin/main
 ## 📄 License
 
 MIT License — see [LICENSE](./LICENSE) for details.

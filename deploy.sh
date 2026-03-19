@@ -76,6 +76,16 @@ cd "$BACKEND_DIR"
 source venv/bin/activate
 export DJANGO_SETTINGS_MODULE=ems_core.settings.production
 
+<<<<<<< HEAD
+# Read DB settings from Django (which loads .env safely via python-decouple)
+# Avoid shell-sourcing .env because values like `DEFAULT_FROM_EMAIL=Name <mail@x>` break bash parsing.
+DB_SETTINGS=$(python manage.py shell -c 'from django.conf import settings; d=settings.DATABASES["default"]; print(f"{d.get(\"ENGINE\",\"\")}|{d.get(\"NAME\",\"\")}")')
+DB_ENGINE="${DB_SETTINGS%%|*}"
+DB_NAME="${DB_SETTINGS#*|}"
+
+# Ensure sqlite directory/file exists with writable ownership for gunicorn when sqlite is used
+if [[ "$DB_ENGINE" == "django.db.backends.sqlite3" ]] && [[ -n "$DB_NAME" ]]; then
+=======
 # Load .env so management commands use the exact same DB settings as systemd/gunicorn
 set -a
 source "$BACKEND_DIR/.env"
@@ -83,6 +93,7 @@ set +a
 
 # Ensure sqlite directory/file exists with writable ownership for gunicorn when sqlite is used
 if [[ "${DB_ENGINE:-}" == "django.db.backends.sqlite3" ]] && [[ -n "${DB_NAME:-}" ]]; then
+>>>>>>> origin/main
     sudo mkdir -p "$(dirname "$DB_NAME")"
     sudo touch "$DB_NAME"
     sudo chown -R ubuntu:www-data "$(dirname "$DB_NAME")"
