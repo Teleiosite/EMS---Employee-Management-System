@@ -21,7 +21,7 @@ class JobPostingSerializer(serializers.ModelSerializer):
             employee_emails = list(User.objects.filter(is_active=True, role='EMPLOYEE').values_list('email', flat=True))
             
             if employee_emails:
-                formatted_dept = job.department.name if job.department else 'General'
+                formatted_dept = job.department or 'General'
                 subject = f"Internal Job Opening: {job.title} ({formatted_dept})"
                 message = f"Hello Team,\n\nWe are excited to announce a new internal job opening!\n\nRole: {job.title}\nDepartment: {formatted_dept}\nLocation: {job.location}\nType: {job.employment_type}\n\nDescription:\n{job.description}\n\nLog in to the EMS Dashboard to apply or refer a candidate.\n\nBest,\nHR Management"
                 
