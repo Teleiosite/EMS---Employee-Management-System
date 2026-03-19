@@ -48,25 +48,59 @@ Built with a **SaaS-first architecture**, EMS supports complete isolation betwee
 
 ## 📸 Live Screenshots
 
-### 🏠 Landing Page
-> Public-facing marketing page with company registration CTA.
+### 🔐 Login Page
+> Secure, unified login for all roles — JWT authentication with role-based redirect.
 
-![Landing Page](https://yourems.duckdns.org)
+![Login Page](docs/screenshots/login_page.png)
+
+---
+
+### 🏠 Landing Page
+> Public SaaS landing page with company self-registration CTA.
+
+![Landing Page](docs/screenshots/landing_page.png)
+
+---
 
 ### 🏢 Admin Dashboard
-> Central command for HR Admins and Managers — shows real-time KPIs.
+> Central command for HR Admins — shows real-time KPIs: employees, attendance, leaves, payroll.
 
-![Admin Dashboard](https://yourems.duckdns.org/admin)
+![Admin Dashboard](docs/screenshots/admin_dashboard.png)
+
+---
 
 ### 👤 Employee Portal
-> Personalised view showing leave balance, attendance, payslips, and announcements.
+> Personalised self-service view — leave requests, payslips, attendance, and announcements.
 
-![Employee Dashboard](https://yourems.duckdns.org/employee)
+![Employee Dashboard](docs/screenshots/employee_dashboard.png)
+
+---
+
+### 👤 Employee Profile
+> Detailed employee profile with personal info, contact details, and role information.
+
+![Employee Profile](docs/screenshots/employee_profile.png)
+
+---
+
+### 💰 Payroll Management
+> Admin payroll management with payslip creation for each employee.
+
+![Payroll Page](docs/screenshots/payroll_page.png)
+
+---
+
+### 📢 Announcements
+> Company-wide announcements — admin publishes, all employees receive email and in-app notification.
+
+![Announcements](docs/screenshots/announcements.png)
+
+---
 
 ### 🛡️ Host Command Center
-> Super-admin view to monitor all registered companies on the platform.
+> Super-admin view to monitor and manage all registered companies on the platform.
 
-![Host Dashboard](https://yourems.duckdns.org/host)
+![Host Dashboard](docs/screenshots/host_dashboard.png)
 
 ---
 
