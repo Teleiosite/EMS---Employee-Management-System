@@ -72,6 +72,13 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
     echo "   Especially: SECRET_KEY, ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS"
 fi
 
+# ✅ CRITICAL: Always ensure DJANGO_SETTINGS_MODULE is in .env
+# Without this, Gunicorn loads development settings (empty DB) after every restart
+if ! grep -q "DJANGO_SETTINGS_MODULE" "$BACKEND_DIR/.env"; then
+    echo "DJANGO_SETTINGS_MODULE=ems_core.settings.production" >> "$BACKEND_DIR/.env"
+    echo "✅ Added DJANGO_SETTINGS_MODULE to .env"
+fi
+
 cd "$BACKEND_DIR"
 source venv/bin/activate
 export DJANGO_SETTINGS_MODULE=ems_core.settings.production
