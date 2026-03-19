@@ -24,13 +24,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            set -e
             echo "🚀 Starting deployment..."
             cd /opt/ems
-            
-            # Use sudo to pull if the folder is root-owned
-            sudo git fetch origin main
-            sudo git reset --hard origin/main
-            
-            # Execute the deployment script
-            # We pass a flag to skip heavy system updates on routine deploys
-            sudo bash deploy.sh --quick
+
+            # Keep repo synced to main.
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+
+            # Run deploy script as remote user (not root) so ownership remains correct.
+            bash deploy.sh --quick

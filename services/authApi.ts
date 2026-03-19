@@ -3,6 +3,29 @@ import { UserRole } from '../types';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (isLocalhost ? 'http://localhost:8000/api' : '/api');
 
+
+const parseApiPayload = async (response: Response): Promise<any> => {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  return { raw: text };
+};
+
+const getErrorMessage = (response: Response, data: any, fallback: string): string => {
+  if (data?.detail) return data.detail;
+  if (Array.isArray(data?.non_field_errors) && data.non_field_errors.length) return data.non_field_errors[0];
+
+  const looksLikeHtml = typeof data?.raw === 'string' && data.raw.trim().startsWith('<!DOCTYPE');
+  if (looksLikeHtml) {
+    return `Server returned HTML (status ${response.status}) instead of JSON. Check backend/nginx logs.`;
+  }
+
+  return fallback;
+};
+
 type ApiUser = {
   id: string;
   email: string;
@@ -28,9 +51,13 @@ export const loginWithBackend = async (email: string, password: string) => {
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await response.json();
+  const data = await parseApiPayload(response);
   if (!response.ok) {
-    throw new Error(data.detail || data.non_field_errors?.[0] || 'Failed to login.');
+    throw new Error(getErrorMessage(response, data, 'Failed to login.'));
+  }
+
+  if (!data?.access || !data?.refresh || !data?.user) {
+    throw new Error('Login response is missing required fields.');
   }
 
   localStorage.setItem('accessToken', data.access);
@@ -53,9 +80,9 @@ export const registerApplicantWithBackend = async (name: string, email: string, 
     }),
   });
 
-  const data = await response.json();
+  const data = await parseApiPayload(response);
   if (!response.ok) {
-    throw new Error(data.detail || JSON.stringify(data));
+    throw new Error(getErrorMessage(response, data, 'Failed to register applicant.'));
   }
 
   return data;

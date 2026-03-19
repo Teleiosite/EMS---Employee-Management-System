@@ -187,6 +187,9 @@ Copy `ems-backend/.env.example` to `ems-backend/.env` and fill in the values:
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database credentials |
 | `CORS_ALLOWED_ORIGINS` | Frontend origin(s) allowed to call the API |
 | `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF protection |
+| `TENANT_SUBDOMAIN_ENABLED` | Enable company-specific subdomain tenant resolution |
+| `TENANT_BASE_DOMAIN` | Base domain for tenant URLs (e.g. `yourdomain.com`) |
+| `TENANT_RESERVED_SUBDOMAINS` | Comma-separated system subdomains to ignore |
 | `CELERY_BROKER_URL` | Redis URL for async tasks |
 
 ---
@@ -229,14 +232,18 @@ git clone https://github.com/Teleiosite/EMS---Employee-Management-System.git /op
 bash /opt/ems/deploy.sh
 ```
 
-**Update the live app:**
+**Update the live app (from OCI Cloud Shell):**
 
 ```bash
-ssh -i ~/Downloads/oracle-key.key ubuntu@129.151.189.48
-cd /opt/ems && sudo git pull
-sudo VITE_API_BASE_URL=http://129.151.189.48/api npm run build
-sudo cp -r dist/* /opt/ems/frontend/
-sudo systemctl restart ems-gunicorn nginx
+# Cloud Shell is not your VM; first SSH into the VM.
+ssh -i ~/ems.key ubuntu@<YOUR_VM_PUBLIC_IP>
+
+# Then run deploy on the VM
+cd /opt/ems
+git pull --ff-only origin main
+bash deploy.sh --quick
+sudo systemctl status ems-gunicorn --no-pager
+sudo systemctl status nginx --no-pager
 ```
 
 

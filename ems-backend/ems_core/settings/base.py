@@ -144,6 +144,16 @@ IP_WHITELIST = [ip.strip() for ip in config('IP_WHITELIST', default='127.0.0.1,:
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+TENANT_SUBDOMAIN_ENABLED = config('TENANT_SUBDOMAIN_ENABLED', cast=bool, default=True)
+TENANT_BASE_DOMAIN = config('TENANT_BASE_DOMAIN', default='')
+TENANT_RESERVED_SUBDOMAINS = [
+    x.strip().lower() for x in config(
+        'TENANT_RESERVED_SUBDOMAINS',
+        default='www,api,admin,app,static,media'
+    ).split(',') if x.strip()
+]
+
+
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
