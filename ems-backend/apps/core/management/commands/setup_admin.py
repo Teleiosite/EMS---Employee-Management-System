@@ -69,8 +69,16 @@ class Command(BaseCommand):
 
         # ── 3. Fix any orphaned data created with null tenant ────────────
         from apps.employees.models import Department, Designation, EmployeeProfile
+
+        # Delete null-tenant depts that conflict with existing tenant-owned ones by name
+        existing_dept_names = Department.objects.filter(tenant=tenant).values_list('name', flat=True)
+        Department.objects.filter(tenant__isnull=True, name__in=existing_dept_names).delete()
         fixed_depts = Department.objects.filter(tenant__isnull=True).update(tenant=tenant)
+
+        existing_desig_titles = Designation.objects.filter(tenant=tenant).values_list('title', flat=True)
+        Designation.objects.filter(tenant__isnull=True, title__in=existing_desig_titles).delete()
         fixed_desig = Designation.objects.filter(tenant__isnull=True).update(tenant=tenant)
+
         fixed_emp = EmployeeProfile.objects.filter(tenant__isnull=True).update(tenant=tenant)
         if fixed_depts or fixed_desig or fixed_emp:
             self.stdout.write(self.style.WARNING(
@@ -92,4 +100,5 @@ class Command(BaseCommand):
             pass
 
         self.stdout.write(self.style.SUCCESS('✅ setup_admin complete'))
+
 
