@@ -180,6 +180,18 @@ export const recruitmentApi = {
         await api.delete(`/recruitment/candidates/${id}/`);
     },
 
+    // ==================== PUBLIC ENDPOINTS ====================
+
+    getPublicJobs: async (tenantSlug: string): Promise<JobRequirement[]> => {
+        const response = await api.get<PaginatedResponse<BackendJobPosting> | BackendJobPosting[]>(`/recruitment/public/jobs/?tenant=${tenantSlug}`, false);
+        const results = Array.isArray(response) ? response : response.results;
+        return results.map(transformJobPosting);
+    },
+
+    submitPublicApplication: async (data: FormData): Promise<{ message: string; id: number }> => {
+        return await api.postFormData<{ message: string; id: number }>('/recruitment/public/apply/', data, false);
+    },
+
     // ==================== AI SETTINGS ====================
     getAISettings: async (): Promise<any> => {
         const response = await api.get('/recruitment/ai-settings/');

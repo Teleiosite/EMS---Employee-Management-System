@@ -18,6 +18,7 @@ from .serializers import (
     ApplicantApplicationSerializer,
     ApplicantProfileSerializer,
     AISettingsSerializer,
+    PublicCandidateApplicationSerializer,
 )
 from .utils import parse_resume, analyze_candidate
 
@@ -185,6 +186,53 @@ class PublicJobListView(generics.ListAPIView):
         return queryset
 
 
+class PublicApplicationViewSet(generics.CreateAPIView):
+    """Submit a job application without an account"""
+    serializer_class = PublicCandidateApplicationSerializer
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def create(self, request, *args, **kwargs):
+        job_id = request.data.get('job')
+        if not job_id:
+            return Response({'error': 'Job ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            job = JobPosting.objects.get(id=job_id)
+        except JobPosting.DoesNotExist:
+            return Response({'error': 'Job not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        email = request.data.get('email')
+        if Candidate.objects.filter(email=email, job_id=job_id).exists():
+            return Response(
+                {'error': 'An application with this email already exists for this position.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Link candidate to the job's tenant
+        candidate = serializer.save(tenant=job.tenant, status='APPLIED')
+        
+        if candidate.resume:
+             try:
+                 parsed_data = parse_resume(candidate.resume)
+                 candidate.parsed_resume_data = parsed_data
+                 
+                 analysis_results = analyze_candidate(candidate, candidate.job)
+                 candidate.ai_fit_score = analysis_results['ai_fit_score']
+                 candidate.ai_analysis = analysis_results['ai_analysis']
+                 candidate.ai_skill_match = analysis_results['ai_skill_match']
+                 candidate.save()
+             except Exception as e:
+                 print(f"Error parsing resume via public endpoint: {e}")
+                 
+        return Response(
+            {'message': 'Application submitted successfully.', 'id': candidate.id},
+            status=status.HTTP_201_CREATED
+        )
+
+
 class ApplicantApplicationListView(generics.ListAPIView):
     """Applicant's own applications - read only"""
     serializer_class = ApplicantCandidateSerializer
@@ -193,15 +241,9 @@ class ApplicantApplicationListView(generics.ListAPIView):
     
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
-        if not user.is_superuser and not tenant:
-            return Candidate.objects.none()
-
         return Candidate.objects.filter(
-            tenant=tenant
-        ).filter(
             Q(user=user) | Q(email__iexact=user.email)
-        ).select_related('job').distinct()
+        ).select_related('job', 'tenant').distinct()
 
 
 class ApplicantApplicationDetailView(generics.RetrieveAPIView):
@@ -211,15 +253,9 @@ class ApplicantApplicationDetailView(generics.RetrieveAPIView):
     
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
-        if not user.is_superuser and not tenant:
-            return Candidate.objects.none()
-
         return Candidate.objects.filter(
-            tenant=tenant
-        ).filter(
             Q(user=user) | Q(email__iexact=user.email)
-        ).select_related('job').distinct()
+        ).select_related('job', 'tenant').distinct()
 
 
 class ApplicantApplyView(generics.CreateAPIView):

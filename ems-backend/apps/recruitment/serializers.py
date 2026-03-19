@@ -125,6 +125,18 @@ class ApplicantApplicationSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class PublicCandidateApplicationSerializer(serializers.ModelSerializer):
+    """For public, unauthenticated applicants to submit applications"""
+    class Meta:
+        model = Candidate
+        fields = ['job', 'full_name', 'email', 'phone', 'resume']
+        
+    def create(self, validated_data):
+        validated_data['status'] = 'APPLIED'
+        validated_data['tenant'] = getattr(validated_data['job'], 'tenant', None)
+        return super().create(validated_data)
+
+
 class ApplicantProfileSerializer(serializers.ModelSerializer):
     """Applicant's own profile - editable"""
     email = serializers.EmailField(source='user.email', read_only=True)

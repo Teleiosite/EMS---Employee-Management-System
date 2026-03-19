@@ -16,9 +16,11 @@ LOCKOUT_MINUTES = 15
 
 
 class UserSerializer(serializers.ModelSerializer):
+    tenant_slug = serializers.CharField(source='tenant.slug', read_only=True)
+    
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'is_active', 'email_verified', 'mfa_enabled', 'is_superuser')
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'tenant_slug', 'is_active', 'email_verified', 'mfa_enabled', 'is_superuser')
 
 
 class RegisterSerializer(serializers.ModelSerializer):

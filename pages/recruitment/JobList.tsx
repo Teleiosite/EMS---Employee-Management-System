@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search, Briefcase, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Briefcase, MapPin, Loader2, ExternalLink } from 'lucide-react';
 import { recruitmentApi } from '../../services/recruitmentApi';
 import { jobRequirements as mockJobs } from '../../services/mockData';
 import { JobRequirement } from '../../types';
@@ -132,6 +132,28 @@ const JobList: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {job.status === 'OPEN' && (
+                      <button
+                        title="Copy Public Link"
+                        onClick={() => {
+                          const userStr = localStorage.getItem('user');
+                          let slug = 'default';
+                          if (userStr) {
+                            try {
+                              const u = JSON.parse(userStr);
+                              // Fallback string creation if tenant_slug is not present yet in old session
+                              slug = u.tenant_slug || (u.tenantName ? u.tenantName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'default');
+                            } catch (e) {}
+                          }
+                          const url = `${window.location.origin}/#/jobs/${job.id}/${slug}`;
+                          navigator.clipboard.writeText(url);
+                          showToast('Public job link copied to clipboard!', 'success');
+                        }}
+                        className="p-2 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => navigate(`/admin/recruitment/jobs/edit/${job.id}`)}
                       className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"

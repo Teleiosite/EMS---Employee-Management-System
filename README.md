@@ -177,12 +177,14 @@ Built with a **SaaS-first architecture**, EMS supports complete isolation betwee
 | Feature | Details |
 |---|---|
 | Job Postings | Create, publish, and close job listings |
-| Public Job Board | Applicants can browse openings without logging in |
-| Resume Upload | Applicants upload CVs via secure portal |
-| AI Resume Parsing | Google Gemini flash model extracts skills, experience, and fit score |
+| **Public Careers Portal** | Each company gets a unique shareable link (`/careers/company-slug`) for external applicants |
+| **Frictionless Apply** | Candidates can apply for jobs without needing an account; simply upload a resume |
+| Resume Upload | Applicants upload CVs via secure portal (PDF) |
+| AI Resume Parsing | Google Gemini flash model extracts skills, experience, and fit score automatically on upload |
 | Kanban Candidate Board | Drag-and-drop (or click-to-move) candidates through stages: Applied → Shortlisted → Interviewing → Hired / Rejected |
 | AI Fit Score Badge | Visual ring indicator showing AI match confidence percentage |
 | Pipeline Email | Applicant receives an email on each stage change |
+| **Applicant Dashboard** | Candidates can later log in to view their applications across *all* companies they've applied to |
 
 ### 🛡️ Host Command Center
 

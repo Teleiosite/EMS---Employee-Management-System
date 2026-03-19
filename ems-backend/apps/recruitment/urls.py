@@ -7,6 +7,7 @@ from .views import (
     AISettingsView,
     # Applicant Views
     PublicJobListView,
+    PublicApplicationViewSet,
     ApplicantApplicationListView,
     ApplicantApplicationDetailView,
     ApplicantApplyView,
@@ -27,6 +28,7 @@ urlpatterns = [
     
     # Public job listings (for applicants)
     path('public/jobs/', PublicJobListView.as_view(), name='public-jobs'),
+    path('public/apply/', PublicApplicationViewSet.as_view(), name='public-apply'),
     
     # Applicant-specific routes
     path('applicant/applications/', ApplicantApplicationListView.as_view(), name='applicant-applications'),
