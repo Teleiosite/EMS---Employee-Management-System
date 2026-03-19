@@ -71,11 +71,12 @@ class Command(BaseCommand):
         from apps.employees.models import Department, Designation, EmployeeProfile
 
         # Delete null-tenant depts that conflict with existing tenant-owned ones by name
-        existing_dept_names = Department.objects.filter(tenant=tenant).values_list('name', flat=True)
+        # list() forces evaluation before the update query runs (avoids deferred subquery conflict)
+        existing_dept_names = list(Department.objects.filter(tenant=tenant).values_list('name', flat=True))
         Department.objects.filter(tenant__isnull=True, name__in=existing_dept_names).delete()
         fixed_depts = Department.objects.filter(tenant__isnull=True).update(tenant=tenant)
 
-        existing_desig_titles = Designation.objects.filter(tenant=tenant).values_list('title', flat=True)
+        existing_desig_titles = list(Designation.objects.filter(tenant=tenant).values_list('title', flat=True))
         Designation.objects.filter(tenant__isnull=True, title__in=existing_desig_titles).delete()
         fixed_desig = Designation.objects.filter(tenant__isnull=True).update(tenant=tenant)
 
