@@ -23,8 +23,9 @@ const EmployeeLeaves: React.FC = () => {
   const { showToast } = useToast();
 
   // Form State
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    type: '',
+    type: '', // will store the leave_type ID
     startDate: '',
     endDate: '',
     reason: ''
@@ -49,6 +50,12 @@ const EmployeeLeaves: React.FC = () => {
       const u = JSON.parse(storedUser);
       setUser(u);
       fetchLeaves();
+      leavesApi.listTypes().then(types => {
+          setLeaveTypes(types);
+          if (types.length > 0) {
+              setFormData(f => ({ ...f, type: types[0].id.toString() }));
+          }
+      }).catch(console.error);
     } else {
       setLoading(false);
     }
@@ -60,13 +67,12 @@ const EmployeeLeaves: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // Let's assume we use leave_type = 1 as general/default for now since the frontend form is just a text input
-      // Ideally we should have a dropdown for leave types. 
-      const types = await leavesApi.listTypes();
-      const fallBackTypeId = types.length > 0 ? parseInt(types[0].id) : 1;
+      if (!formData.type) {
+         throw new Error("Please select a leave type. If none are available, contact HR.");
+      }
 
       const newLeave = await leavesApi.createRequest({
-        leave_type: fallBackTypeId, // Defaulting to the first available leave type
+        leave_type: parseInt(formData.type),
         start_date: formData.startDate,
         end_date: formData.endDate,
         reason: formData.reason
@@ -127,14 +133,17 @@ const EmployeeLeaves: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Leave Type</label>
-              <input
-                type="text"
+              <select
                 required
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                placeholder="e.g. Sick Leave, Casual Leave"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-              />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+              >
+                {leaveTypes.map(lt => (
+                    <option key={lt.id} value={lt.id}>{lt.name}</option>
+                ))}
+                {leaveTypes.length === 0 && <option value="">No Leave Types Available</option>}
+              </select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

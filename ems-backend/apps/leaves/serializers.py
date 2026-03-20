@@ -38,7 +38,11 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveRequest
         fields = '__all__'
-        read_only_fields = ('tenant',)
+        read_only_fields = ('tenant', 'duration_days')
+        extra_kwargs = {
+            'employee': {'required': False},
+            'duration_days': {'required': False}
+        }
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
