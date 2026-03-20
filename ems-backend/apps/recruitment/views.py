@@ -295,9 +295,16 @@ class ApplicantApplyView(generics.CreateAPIView):
     
     def create(self, request, *args, **kwargs):
         job_id = request.data.get('job')
-        
+        if not job_id:
+            return Response({'error': 'Job is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            job = JobPosting.objects.get(id=job_id)
+        except JobPosting.DoesNotExist:
+            return Response({'error': 'Job not found.'}, status=status.HTTP_404_NOT_FOUND)
+            
         # Check if already applied
-        if Candidate.objects.filter(user=request.user, job_id=job_id, tenant=resolve_tenant(request)).exists():
+        if Candidate.objects.filter(user=request.user, job_id=job_id, tenant=job.tenant).exists():
             return Response(
                 {'error': 'You have already applied for this position.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -305,7 +312,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        candidate = serializer.save(tenant=resolve_tenant(request))
+        candidate = serializer.save(tenant=job.tenant)
         
         # Trigger AI resume parsing
         if candidate.resume:

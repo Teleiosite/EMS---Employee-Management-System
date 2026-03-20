@@ -132,7 +132,7 @@ class ApplicantApplicationSerializer(serializers.ModelSerializer):
         validated_data['full_name'] = f"{user.first_name} {user.last_name}".strip() or user.email
         validated_data['email'] = user.email
         validated_data['status'] = 'APPLIED'
-        validated_data['tenant'] = getattr(user, 'tenant', None)
+        validated_data['tenant'] = job.tenant if job else None
         
         # Get phone from profile if exists
         if hasattr(user, 'applicant_profile') and user.applicant_profile:
