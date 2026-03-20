@@ -1,7 +1,15 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from ems_core.utils_email import send_email_in_background
-from .models import Candidate, JobPosting, ApplicantProfile, AISettings
+from .models import Candidate, JobPosting, ApplicantProfile, AISettings, CandidateStatusHistory
+
+
+class CandidateStatusHistorySerializer(serializers.ModelSerializer):
+    """Timeline of application status changes"""
+    class Meta:
+        model = CandidateStatusHistory
+        fields = ['status', 'message', 'created_at']
+        read_only_fields = fields
 
 
 class JobPostingSerializer(serializers.ModelSerializer):
@@ -68,13 +76,13 @@ class JobPostingPublicSerializer(serializers.ModelSerializer):
 
 class CandidateSerializer(serializers.ModelSerializer):
     """Full candidate details for Admin/HR - includes AI analysis"""
-    job_title = serializers.CharField(source='job.title', read_only=True)
     job_department = serializers.CharField(source='job.department', read_only=True)
+    status_history = CandidateStatusHistorySerializer(many=True, read_only=True)
     
     class Meta:
         model = Candidate
         fields = '__all__'
-        read_only_fields = ('tenant',)
+        read_only_fields = ('tenant', 'status_history')
 
 
 class CandidateListSerializer(serializers.ModelSerializer):
@@ -94,12 +102,13 @@ class ApplicantCandidateSerializer(serializers.ModelSerializer):
     job_title = serializers.CharField(source='job.title', read_only=True)
     job_department = serializers.CharField(source='job.department', read_only=True)
     status_message = serializers.SerializerMethodField()
+    status_history = CandidateStatusHistorySerializer(many=True, read_only=True)
     
     class Meta:
         model = Candidate
         fields = [
             'id', 'job', 'job_title', 'job_department',
-            'status', 'status_message', 'applied_at',
+            'status', 'status_message', 'status_history', 'applied_at',
             'interview_scheduled_at', 'interview_location'
         ]
         read_only_fields = fields

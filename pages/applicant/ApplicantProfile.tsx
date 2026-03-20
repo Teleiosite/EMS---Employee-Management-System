@@ -361,6 +361,62 @@ const ApplicantProfile: React.FC = () => {
         )}
       </div>
 
+      {/* AI Parsed Summary */}
+      {profile?.resume_parsed_data && Object.keys(profile.resume_parsed_data).length > 0 && (
+        <div className="bg-orange-50 rounded-xl border border-orange-200 p-6">
+          <h2 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-orange-600" /> AI-Parsed Resume Summary
+          </h2>
+          <p className="text-sm text-orange-700 mb-6">
+            We've extracted these details from your resume to help you build your profile faster. 
+            Review and add them to your profile below.
+          </p>
+
+          <div className="space-y-6">
+            {profile.resume_parsed_data.skills && profile.resume_parsed_data.skills.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Detected Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile.resume_parsed_data.skills.map(skill => (
+                    <span key={skill} className="px-2 py-1 bg-white border border-orange-200 rounded text-xs text-orange-700">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {profile.resume_parsed_data.experience && profile.resume_parsed_data.experience.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Work History</h3>
+                <div className="space-y-2">
+                  {profile.resume_parsed_data.experience.map((exp, i) => (
+                    <div key={i} className="text-sm">
+                      <p className="font-bold text-orange-900">{exp.title}</p>
+                      <p className="text-orange-700">{exp.company} {exp.duration ? `• ${exp.duration}` : ''}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Education</h3>
+                <div className="space-y-2">
+                  {profile.resume_parsed_data.education.map((edu, i) => (
+                    <div key={i} className="text-sm">
+                      <p className="font-bold text-orange-900">{edu.degree}</p>
+                      <p className="text-orange-700">{edu.school} {edu.year ? `• ${edu.year}` : ''}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Skills */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">

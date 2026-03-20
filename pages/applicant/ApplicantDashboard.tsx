@@ -15,6 +15,34 @@ import {
 import { applicantApi, Application, ApplicantProfile } from '../../services/applicantApi';
 import { User } from '../../types';
 
+const ApplicationTimeline: React.FC<{ history: Application['status_history'] }> = ({ history }) => {
+  if (!history || history.length === 0) return null;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Application Timeline</h4>
+      <div className="relative pl-6 border-l-2 border-gray-100 space-y-6">
+        {history.map((item, idx) => (
+          <div key={idx} className="relative">
+            <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full border-2 border-white bg-orange-500 shadow-sm" />
+            <div className="flex flex-col">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm font-bold text-gray-800">
+                  {applicantApi.getStatusLabel(item.status as any)}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {new Date(item.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-sm text-gray-500 line-clamp-2">{item.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const StatusBadge: React.FC<{ status: Application['status'] }> = ({ status }) => {
   const color = applicantApi.getStatusColor(status);
   const label = applicantApi.getStatusLabel(status);
@@ -248,6 +276,8 @@ const ApplicantDashboard: React.FC = () => {
                       </p>
                     </div>
                   )}
+
+                  <ApplicationTimeline history={app.status_history} />
                 </div>
               ))}
             </div>
@@ -321,6 +351,58 @@ const ApplicantDashboard: React.FC = () => {
               >
                 Find Jobs
               </button>
+            </div>
+          </div>
+
+          {/* Notifications Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-orange-500" />
+                Notifications
+              </h2>
+              {safeApplications.some(a => a.status_history && a.status_history.length > 0) && (
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {safeApplications.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No new notifications.</p>
+              ) : (
+                safeApplications
+                  .filter(a => a.status_history && a.status_history.length > 0)
+                  .map(a => (
+                    <div key={`notif-${a.id}`} className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                      <p className="text-xs font-bold text-orange-800 line-clamp-1">
+                        {a.job_title}
+                      </p>
+                      <p className="text-xs text-orange-700 mt-1">
+                        Your application status was updated to {applicantApi.getStatusLabel(a.status)}.
+                      </p>
+                      <p className="text-[10px] text-orange-400 mt-1">
+                        {new Date(a.applied_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                  .slice(0, 3)
+              )}
+              
+              {/* Recent Jobs Notification */}
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs font-bold text-blue-800 flex items-center gap-1">
+                  <Briefcase className="w-3 h-3" /> New Opportunity
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Check out the latest job openings on the Careers page!
+                </p>
+                <button 
+                  onClick={() => navigate('/applicant/jobs')}
+                  className="text-[10px] text-blue-600 font-bold mt-2 hover:underline"
+                >
+                  View Jobs &rarr;
+                </button>
+              </div>
             </div>
           </div>
         </div>

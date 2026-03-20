@@ -21,6 +21,12 @@ export interface PublicJob {
     created_at: string;
 }
 
+export interface StatusHistory {
+    status: string;
+    message: string;
+    created_at: string;
+}
+
 export interface Application {
     id: number;
     job: number;
@@ -31,6 +37,7 @@ export interface Application {
     applied_at: string;
     interview_scheduled_at: string | null;
     interview_location: string;
+    status_history?: StatusHistory[];
 }
 
 export interface ApplicantProfile {

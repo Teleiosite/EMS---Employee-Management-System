@@ -153,67 +153,91 @@ const JobApplication: React.FC = () => {
             <p className="text-sm text-gray-500 mt-1">Please fill out the details below to apply.</p>
           </div>
           <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={formData.fullName}
-                  onChange={e => setFormData({...formData, fullName: e.target.value})}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                  <input
-                    type="text"
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Resume (PDF)</label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-500 transition-colors">
-                  <div className="space-y-1 text-center">
-                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600 justify-center">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                        <span>Upload a file</span>
-                        <input type="file" className="sr-only" accept=".pdf" onChange={handleFileChange} required />
-                      </label>
-                    </div>
-                    <p className="text-xs text-gray-500">{resume ? resume.name : 'PDF up to 10MB'}</p>
+            {!localStorage.getItem('user') ? (
+              <div className="text-center py-6">
+                <div className="bg-indigo-50 rounded-xl p-8 border border-indigo-100">
+                  <h3 className="text-lg font-bold text-indigo-900 mb-2">Join us to apply</h3>
+                  <p className="text-indigo-700 mb-6">Create an account to track your application progress and get updates on this role.</p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                      onClick={() => navigate(`/login?redirect=${encodeURIComponent(window.location.hash.replace('#', ''))}`)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-md"
+                    >
+                      Sign In / Register
+                    </button>
+                    <Link
+                      to={`/careers/${tenantSlug}`}
+                      className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium transition-colors"
+                    >
+                      Browse Other Jobs
+                    </Link>
                   </div>
                 </div>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    value={formData.fullName}
+                    onChange={e => setFormData({...formData, fullName: e.target.value})}
+                  />
+                </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {submitting ? 'Submitting Application...' : 'Submit Application'}
-                </button>
-              </div>
-            </form>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-50"
+                      value={formData.email}
+                      readOnly
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input
+                      type="text"
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-3 px-4 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Resume (PDF)</label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-500 transition-colors">
+                    <div className="space-y-1 text-center">
+                      <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600 justify-center">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                          <span>Upload a file</span>
+                          <input type="file" className="sr-only" accept=".pdf" onChange={handleFileChange} required />
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500">{resume ? resume.name : 'PDF up to 10MB'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className={`w-full flex justify-center py-4 px-4 border border-transparent rounded-md shadow-sm text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    {submitting ? 'Submitting Application...' : 'Submit Application'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

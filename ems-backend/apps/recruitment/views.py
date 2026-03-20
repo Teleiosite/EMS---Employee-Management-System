@@ -8,7 +8,7 @@ from django.db.models import Q
 
 from apps.core.permissions import IsAdminOrHRManager, IsApplicant, IsApplicantOwner
 from apps.core.tenancy import resolve_tenant
-from .models import Candidate, JobPosting, ApplicantProfile, AISettings
+from .models import Candidate, JobPosting, ApplicantProfile, AISettings, CandidateStatusHistory
 from .serializers import (
     CandidateSerializer,
     CandidateListSerializer,
@@ -111,6 +111,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
         candidate.reviewed_at = timezone.now()
         serializer.save()
         
+        # Record history
+        CandidateStatusHistory.objects.create(
+            candidate=candidate,
+            status=candidate.status,
+            message=candidate.status_message or f"Status updated to {candidate.get_status_display()}"
+        )
+        
         return Response(CandidateSerializer(candidate).data)
     
     @action(detail=True, methods=['post'])
@@ -123,6 +130,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
         candidate.interview_notes = request.data.get('notes', '')
         candidate.status_message = "We'd like to meet you! Check your email for interview details."
         candidate.save()
+        
+        # Record history
+        CandidateStatusHistory.objects.create(
+            candidate=candidate,
+            status='INTERVIEWING',
+            message=f"Interview scheduled for {candidate.interview_scheduled_at.strftime('%Y-%m-%d %H:%M')} at {candidate.interview_location}"
+        )
         return Response(CandidateSerializer(candidate).data)
     
     @action(detail=True, methods=['post'])
@@ -132,6 +146,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
         candidate.status = 'HIRED'
         candidate.status_message = "Congratulations! We're excited to have you join our team."
         candidate.save()
+        
+        # Record history
+        CandidateStatusHistory.objects.create(
+            candidate=candidate,
+            status='HIRED',
+            message=candidate.status_message
+        )
         return Response(CandidateSerializer(candidate).data)
     
     @action(detail=True, methods=['post'])
@@ -145,6 +166,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
         )
         candidate.hr_notes = request.data.get('notes', candidate.hr_notes)
         candidate.save()
+        
+        # Record history
+        CandidateStatusHistory.objects.create(
+            candidate=candidate,
+            status='REJECTED',
+            message=candidate.status_message
+        )
         return Response(CandidateSerializer(candidate).data)
 
     @action(detail=True, methods=['post'])
@@ -293,6 +321,13 @@ class ApplicantApplyView(generics.CreateAPIView):
                  candidate.save()
              except Exception as e:
                  print(f"Error parsing resume: {e}")
+        
+        # Record initial history
+        CandidateStatusHistory.objects.create(
+            candidate=candidate,
+            status='APPLIED',
+            message="Application submitted successfully."
+        )
         
         return Response(
             ApplicantCandidateSerializer(candidate).data,

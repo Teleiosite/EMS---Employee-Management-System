@@ -145,12 +145,21 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-2">
           <button 
-            onClick={() => navigate('/register')}
-            className="text-orange-600 hover:text-orange-800 text-sm font-medium hover:underline"
+            type="button"
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-orange-600 hover:text-orange-800 text-sm font-medium hover:underline block w-full"
           >
-            Not on EMS? <span className="font-bold">Register your company workspace</span>
+            {isLogin ? "Don't have an account? Create an Applicant Account" : "Already have an account? Sign In"}
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => navigate('/register')}
+            className="text-gray-500 hover:text-gray-700 text-xs font-medium hover:underline"
+          >
+            Not on EMS? <span className="font-bold text-orange-600">Register your company workspace</span>
           </button>
         </div>
 
