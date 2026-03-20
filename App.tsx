@@ -13,8 +13,6 @@ import ApplicantLayout from './components/ApplicantLayout'; // Applicant Layout
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import CompanyRegister from './pages/CompanyRegister';
-import PublicCareers from './pages/public/PublicCareers';
-import JobApplication from './pages/public/JobApplication';
 
 // Host (Super Admin) Pages
 import HostDashboard from './pages/host/HostDashboard';
@@ -63,8 +61,8 @@ const App: React.FC = () => {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<CompanyRegister />} />
-          <Route path="/careers/:tenantSlug" element={<PublicCareers />} />
-          <Route path="/jobs/:jobId/:tenantSlug" element={<JobApplication />} />
+          <Route path="/careers/:tenantSlug" element={<Navigate to="/login" replace />} />
+          <Route path="/jobs/:jobId/:tenantSlug" element={<Navigate to="/login" replace />} />
 
           {/* ============================================ */}
           {/* HOST ROUTE - Super Admin only               */}

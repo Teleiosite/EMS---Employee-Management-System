@@ -34,12 +34,12 @@ const Login: React.FC = () => {
           } else if (user.role === UserRole.EMPLOYEE) {
             navigate('/employee');
           } else {
-            navigate(redirectUrl || '/applicant');
+            navigate('/applicant');
           }
       } else {
         await registerApplicantWithBackend(name, email, password);
         await loginWithBackend(email, password);
-        navigate(redirectUrl || '/applicant');
+        navigate('/applicant');
       }
     } catch (backendError) {
       if (isLogin) {
@@ -51,7 +51,7 @@ const Login: React.FC = () => {
           navigate('/employee');
         } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
           localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
-          navigate(redirectUrl || '/applicant');
+          navigate('/applicant');
         } else {
           setError(backendError instanceof Error ? backendError.message : 'Invalid email or password.');
         }
