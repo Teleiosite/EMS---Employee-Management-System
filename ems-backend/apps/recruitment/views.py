@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
 from django.db.models import Q
 
@@ -339,7 +339,7 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
     """Applicant's profile management"""
     serializer_class = ApplicantProfileSerializer
     permission_classes = [IsAuthenticated, IsApplicant]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_object(self):
         # Get or create profile for the applicant
