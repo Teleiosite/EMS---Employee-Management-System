@@ -1,4 +1,6 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from ems_core.utils_email import send_email_in_background
 from .models import Candidate, JobPosting, ApplicantProfile, AISettings
 
 
@@ -14,22 +16,31 @@ class JobPostingSerializer(serializers.ModelSerializer):
         
         # Dispatch background emails to all active employees if job is OPEN
         if job.status == 'OPEN':
-            from django.contrib.auth import get_user_model
-            from ems_core.utils_email import send_email_in_background
-            
-            User = get_user_model()
-            employee_emails = list(User.objects.filter(is_active=True, role='EMPLOYEE').values_list('email', flat=True))
-            
-            if employee_emails:
-                formatted_dept = job.department or 'General'
-                subject = f"Internal Job Opening: {job.title} ({formatted_dept})"
-                message = f"Hello Team,\n\nWe are excited to announce a new internal job opening!\n\nRole: {job.title}\nDepartment: {formatted_dept}\nLocation: {job.location}\nType: {job.employment_type}\n\nDescription:\n{job.description}\n\nLog in to the EMS Dashboard to apply or refer a candidate.\n\nBest,\nHR Management"
+            try:
+                User = get_user_model()
+                # Only email employees belonging to the SAME company/tenant
+                employee_emails = list(User.objects.filter(
+                    tenant=job.tenant,
+                    is_active=True, 
+                    role='EMPLOYEE'
+                ).values_list('email', flat=True))
                 
-                send_email_in_background(
-                    subject=subject,
-                    message=message,
-                    recipient_list=employee_emails
-                )
+                if employee_emails:
+                    formatted_dept = job.department or 'General'
+                    subject = f"Internal Job Opening: {job.title} ({formatted_dept})"
+                    message = f"Hello Team,\n\nWe are excited to announce a new internal job opening!\n\nRole: {job.title}\nDepartment: {formatted_dept}\nLocation: {job.location}\nType: {job.employment_type}\n\nDescription:\n{job.description}\n\nLog in to the EMS Dashboard to apply or refer a candidate.\n\nBest,\nHR Management"
+                    
+                    send_email_in_background(
+                        subject=subject,
+                        message=message,
+                        recipient_list=employee_emails
+                    )
+            except Exception as e:
+                # Log email errors but DON'T crash the request. The job is already created.
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to dispatch internal job opening emails: {str(e)}")
+                
         return job
 
 
