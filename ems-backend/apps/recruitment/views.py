@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Q
 
 from apps.core.permissions import IsAdminOrHRManager, IsApplicant, IsApplicantOwner
+from apps.core.tenancy import resolve_tenant
 from .models import Candidate, JobPosting, ApplicantProfile, AISettings
 from .serializers import (
     CandidateSerializer,
@@ -35,7 +36,7 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return JobPosting.objects.none()
             
@@ -46,7 +47,7 @@ class JobPostingViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
 
 
 class AISettingsView(generics.RetrieveUpdateAPIView):
@@ -73,7 +74,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return Candidate.objects.none()
 
@@ -93,7 +94,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-ai_fit_score', '-applied_at')
 
     def perform_create(self, serializer):
-        serializer.save(tenant=getattr(self.request, 'tenant', None))
+        serializer.save(tenant=resolve_tenant(self.request))
     
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
@@ -268,7 +269,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         job_id = request.data.get('job')
         
         # Check if already applied
-        if Candidate.objects.filter(user=request.user, job_id=job_id, tenant=getattr(request, 'tenant', None)).exists():
+        if Candidate.objects.filter(user=request.user, job_id=job_id, tenant=resolve_tenant(request)).exists():
             return Response(
                 {'error': 'You have already applied for this position.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -276,7 +277,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        candidate = serializer.save(tenant=getattr(request, 'tenant', None))
+        candidate = serializer.save(tenant=resolve_tenant(request))
         
         # Trigger AI resume parsing
         if candidate.resume:
@@ -309,7 +310,7 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
         # Get or create profile for the applicant
         profile, created = ApplicantProfile.objects.get_or_create(
             user=self.request.user,
-            defaults={'tenant': getattr(self.request, 'tenant', None)}
+            defaults={'tenant': resolve_tenant(self.request)}
         )
         return profile
     
@@ -350,7 +351,7 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
     def get_object(self):
         profile, created = ApplicantProfile.objects.get_or_create(
             user=self.request.user,
-            defaults={'tenant': getattr(self.request, 'tenant', None)}
+            defaults={'tenant': resolve_tenant(self.request)}
         )
         return profile
     
