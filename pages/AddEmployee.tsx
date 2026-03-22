@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
-import { employeesApi, departmentsApi } from '../services/employeesApi';
+import { employeesApi, departmentsApi, designationsApi, DesignationType } from '../services/employeesApi';
 import api from '../services/api';
 import { Department } from '../types';
 
@@ -39,12 +39,14 @@ const AddEmployee: React.FC = () => {
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [designations, setDesignations] = useState<DesignationType[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDepts, setLoadingDepts] = useState(true);
+  const [loadingDesignations, setLoadingDesignations] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Fetch departments on mount
+  // Fetch departments and designations on mount
   useEffect(() => {
     const fetchDepartments = async () => {
       setLoadingDepts(true);
@@ -53,13 +55,25 @@ const AddEmployee: React.FC = () => {
         setDepartments(data);
       } catch (err) {
         console.error('Failed to fetch departments:', err);
-        // Continue without departments - they can be added later
       } finally {
         setLoadingDepts(false);
       }
     };
 
+    const fetchDesignations = async () => {
+      setLoadingDesignations(true);
+      try {
+        const data = await designationsApi.list();
+        setDesignations(data);
+      } catch (err) {
+        console.error('Failed to fetch designations:', err);
+      } finally {
+        setLoadingDesignations(false);
+      }
+    };
+
     fetchDepartments();
+    fetchDesignations();
   }, []);
 
   // Fetch employee data for edit mode
@@ -154,7 +168,8 @@ const AddEmployee: React.FC = () => {
           base_salary: parseFloat(formData.salary),
           phone_number: formData.phoneNumber,
           address: formData.address,
-          department: formData.department ? parseInt(formData.department) : null,
+          department_id: formData.department ? parseInt(formData.department) : null,
+          designation_id: formData.designation ? parseInt(formData.designation) : null,
         });
         setSuccess('Employee updated successfully!');
         setTimeout(() => navigate('/admin/employees'), 1500);
@@ -177,7 +192,8 @@ const AddEmployee: React.FC = () => {
           joining_date: formData.joiningDate,
           phone_number: formData.phoneNumber || '',
           address: formData.address || '',
-          department: formData.department ? parseInt(formData.department) : undefined,
+          department_id: formData.department ? parseInt(formData.department) : undefined,
+          designation_id: formData.designation ? parseInt(formData.designation) : undefined,
           status: 'ACTIVE',
         });
 
@@ -305,6 +321,23 @@ const AddEmployee: React.FC = () => {
                   No departments found. <button type="button" onClick={() => navigate('/admin/departments/new')} className="text-orange-600 underline">Add a department first</button>
                 </p>
               )}
+            </div>
+
+            {/* Designation */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Designation</label>
+              <select
+                name="designation"
+                value={formData.designation}
+                onChange={handleChange}
+                disabled={loadingDesignations}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-gray-600"
+              >
+                <option value="">Select Designation (Optional)</option>
+                {designations.map(des => (
+                  <option key={des.id} value={des.id}>{des.title}</option>
+                ))}
+              </select>
             </div>
 
             {/* Salary */}

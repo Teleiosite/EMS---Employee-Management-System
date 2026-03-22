@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
 from apps.core.tenancy import resolve_tenant
-from .models import Department, EmployeeProfile
-from .serializers import DepartmentSerializer, EmployeeProfileSerializer
+from .models import Department, Designation, EmployeeProfile
+from .serializers import DepartmentSerializer, DesignationSerializer, EmployeeProfileSerializer
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
@@ -21,6 +21,21 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         if not user.is_superuser and not tenant:
             return Department.objects.none()
         return Department.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=resolve_tenant(self.request))
+
+class DesignationViewSet(viewsets.ModelViewSet):
+    queryset = Designation.objects.all()
+    serializer_class = DesignationSerializer
+    permission_classes = [IsAdminOrHRManager]
+
+    def get_queryset(self):
+        user = self.request.user
+        tenant = resolve_tenant(self.request)
+        if not user.is_superuser and not tenant:
+            return Designation.objects.none()
+        return Designation.objects.filter(tenant=tenant)
 
     def perform_create(self, serializer):
         serializer.save(tenant=resolve_tenant(self.request))

@@ -15,6 +15,12 @@ interface BackendDepartment {
     budget: string | null;
 }
 
+interface BackendDesignation {
+    id: number;
+    title: string;
+    description: string | null;
+}
+
 interface BackendEmployeeProfile {
     id: number;
     user: {
@@ -63,6 +69,19 @@ const transformEmployee = (emp: BackendEmployeeProfile): EmployeeProfile & { nam
     email: emp.user.email,
 });
 
+// Transform backend designation to frontend format
+export interface DesignationType {
+    id: string;
+    title: string;
+    description?: string;
+}
+
+const transformDesignation = (des: BackendDesignation): DesignationType => ({
+    id: String(des.id),
+    title: des.title,
+    description: des.description || undefined,
+});
+
 // ==================== DEPARTMENTS ====================
 
 export const departmentsApi = {
@@ -97,6 +116,40 @@ export const departmentsApi = {
     },
 };
 
+// ==================== DESIGNATIONS ====================
+
+export const designationsApi = {
+    // Get all designations
+    list: async (): Promise<DesignationType[]> => {
+        const response = await api.get<PaginatedResponse<BackendDesignation> | BackendDesignation[]>('/employees/designations/');
+        const results = Array.isArray(response) ? response : response.results;
+        return results.map(transformDesignation);
+    },
+
+    // Get single designation
+    get: async (id: string): Promise<DesignationType> => {
+        const response = await api.get<BackendDesignation>(`/employees/designations/${id}/`);
+        return transformDesignation(response);
+    },
+
+    // Create designation
+    create: async (data: { title: string; description?: string }): Promise<DesignationType> => {
+        const response = await api.post<BackendDesignation>('/employees/designations/', data);
+        return transformDesignation(response);
+    },
+
+    // Update designation
+    update: async (id: string, data: { title?: string; description?: string }): Promise<DesignationType> => {
+        const response = await api.patch<BackendDesignation>(`/employees/designations/${id}/`, data);
+        return transformDesignation(response);
+    },
+
+    // Delete designation
+    delete: async (id: string): Promise<void> => {
+        await api.delete(`/employees/designations/${id}/`);
+    },
+};
+
 // ==================== EMPLOYEES ====================
 
 export const employeesApi = {
@@ -116,8 +169,8 @@ export const employeesApi = {
     // Create employee profile (requires user to exist first)
     create: async (data: {
         user_id: string; // User UUID — sent as 'user_id' to match backend serializer
-        department?: number;
-        designation?: number;
+        department_id?: number;
+        designation_id?: number;
         employee_id: string;
         base_salary: number;
         joining_date: string;
@@ -131,8 +184,8 @@ export const employeesApi = {
 
     // Update employee
     update: async (id: string, data: Partial<{
-        department: number | null;
-        designation: number | null;
+        department_id: number | null;
+        designation_id: number | null;
         base_salary: number;
         phone_number: string;
         address: string;
