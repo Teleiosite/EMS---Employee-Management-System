@@ -87,8 +87,8 @@ const AddEmployee: React.FC = () => {
             firstName: employee.name.split(' ')[0] || '',
             lastName: employee.name.split(' ').slice(1).join(' ') || '',
             email: employee.email,
-            department: employee.department || '',
-            designation: employee.designation || '',
+            department: employee.department !== 'Unassigned' ? departments.find(d => d.name === employee.department)?.id || '' : '',
+            designation: employee.designation !== 'Not Set' ? employee.designation : '',
             salary: employee.baseSalary.toString(),
             joiningDate: employee.joiningDate,
             phoneNumber: '',
@@ -162,6 +162,19 @@ const AddEmployee: React.FC = () => {
     setSuccess(null);
 
     try {
+      let finalDesignationId: number | undefined | null = null;
+      if (formData.designation && formData.designation.trim() !== '') {
+         const typedTitle = formData.designation.trim();
+         const existing = designations.find(d => d.title.toLowerCase() === typedTitle.toLowerCase());
+         if (existing) {
+             finalDesignationId = parseInt(existing.id);
+         } else {
+             // Create it on the fly
+             const newDes = await designationsApi.create({ title: typedTitle });
+             finalDesignationId = parseInt(newDes.id);
+         }
+      }
+
       if (isEditMode && id) {
         // Update existing employee
         await employeesApi.update(id, {
@@ -169,7 +182,7 @@ const AddEmployee: React.FC = () => {
           phone_number: formData.phoneNumber,
           address: formData.address,
           department_id: formData.department ? parseInt(formData.department) : null,
-          designation_id: formData.designation ? parseInt(formData.designation) : null,
+          designation_id: finalDesignationId,
         });
         setSuccess('Employee updated successfully!');
         setTimeout(() => navigate('/admin/employees'), 1500);
@@ -193,7 +206,7 @@ const AddEmployee: React.FC = () => {
           phone_number: formData.phoneNumber || '',
           address: formData.address || '',
           department_id: formData.department ? parseInt(formData.department) : undefined,
-          designation_id: formData.designation ? parseInt(formData.designation) : undefined,
+          designation_id: finalDesignationId || undefined,
           status: 'ACTIVE',
         });
 
@@ -326,18 +339,21 @@ const AddEmployee: React.FC = () => {
             {/* Designation */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Designation</label>
-              <select
+              <input
+                type="text"
                 name="designation"
                 value={formData.designation}
                 onChange={handleChange}
+                list="designation-options"
                 disabled={loadingDesignations}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-gray-600"
-              >
-                <option value="">Select Designation (Optional)</option>
+                placeholder="e.g. Software Engineer"
+              />
+              <datalist id="designation-options">
                 {designations.map(des => (
-                  <option key={des.id} value={des.id}>{des.title}</option>
+                  <option key={des.id} value={des.title} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
             {/* Salary */}
