@@ -72,11 +72,12 @@ const EmployeeLeaves: React.FC = () => {
       }
 
       const newLeave = await leavesApi.createRequest({
-        leave_type: parseInt(formData.type),
+        leave_type_name_input: formData.type,
         start_date: formData.startDate,
         end_date: formData.endDate,
         reason: formData.reason
       });
+
 
       setMyLeaves(prev => [newLeave, ...prev]);
       setFormData({ type: '', startDate: '', endDate: '', reason: '' });
@@ -133,18 +134,28 @@ const EmployeeLeaves: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Leave Type</label>
-              <select
+              <input
+                type="text"
                 required
+                name="type"
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
-              >
+                list="leave-type-options"
+                placeholder="e.g. Annual Leave, Sick Leave..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-gray-600"
+              />
+              <datalist id="leave-type-options">
                 {leaveTypes.map(lt => (
-                    <option key={lt.id} value={lt.id}>{lt.name}</option>
+                  <option key={lt.id} value={lt.name} />
                 ))}
-                {leaveTypes.length === 0 && <option value="">No Leave Types Available</option>}
-              </select>
+              </datalist>
+              {leaveTypes.length === 0 && !loading && (
+                <p className="text-xs text-amber-600">
+                  Tip: You can type any leave type name here (e.g. "Personal Leave").
+                </p>
+              )}
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">

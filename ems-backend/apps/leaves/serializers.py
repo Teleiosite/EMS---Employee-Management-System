@@ -23,36 +23,64 @@ class LeavePolicyWindowSerializer(serializers.ModelSerializer):
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
-    leave_type_name = serializers.CharField(source='leave_type.name', read_only=True)
+    leave_type_name = serializers.SerializerMethodField()
 
     class Meta:
         model = LeaveBalance
         fields = '__all__'
         read_only_fields = ('tenant',)
 
+    def get_leave_type_name(self, obj):
+        return obj.leave_type.name if obj.leave_type else 'General'
+
+
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
-    leave_type_name = serializers.CharField(source='leave_type.name', read_only=True)
+    leave_type_name = serializers.SerializerMethodField()
+    
+    # Allow passing name directly for "Open" leave types
+    leave_type_name_input = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = LeaveRequest
         fields = '__all__'
         read_only_fields = ('tenant', 'duration_days')
         extra_kwargs = {
+            'leave_type': {'required': False},
             'employee': {'required': False},
             'duration_days': {'required': False}
         }
 
+    def get_leave_type_name(self, obj):
+        return obj.leave_type.name if obj.leave_type else 'General'
+
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        request = self.context.get('request')
+        tenant = resolve_tenant(request) if request else None
 
         employee = attrs.get('employee') or getattr(self.instance, 'employee', None)
-        if not employee and self.context.get('request'):
-            request_user = self.context['request'].user
-            employee = getattr(request_user, 'employee_profile', None)
+        if not employee and request:
+            employee = getattr(request.user, 'employee_profile', None)
+            attrs['employee'] = employee
 
-        leave_type = attrs.get('leave_type') or getattr(self.instance, 'leave_type', None)
+        # Resolve leave_type from name input if provided
+        leave_name = attrs.pop('leave_type_name_input', None)
+        leave_type = attrs.get('leave_type')
+
+        if leave_name and tenant:
+            leave_type, _ = LeaveType.objects.get_or_create(
+                tenant=tenant,
+                name=leave_name,
+                defaults={'max_days_per_year': 30} # Default 30 days for new types
+            )
+            attrs['leave_type'] = leave_type
+        
+        if not leave_type:
+            leave_type = getattr(self.instance, 'leave_type', None)
+
         start_date = attrs.get('start_date') or getattr(self.instance, 'start_date', None)
         end_date = attrs.get('end_date') or getattr(self.instance, 'end_date', None)
 
@@ -64,19 +92,21 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             duration_days = (end_date - start_date).days + 1
             attrs['duration_days'] = duration_days
 
-            request = self.context.get('request')
-            tenant = getattr(request, 'tenant', None) if request else None
-            balance = LeaveBalance.objects.filter(
+            # Auto-initialize balance if missing
+            balance, created = LeaveBalance.objects.get_or_create(
                 tenant=tenant,
                 employee=employee,
                 leave_type=leave_type,
                 year=year,
-            ).first()
-            if not balance:
-                raise serializers.ValidationError(
-                    {'leave_type': f'No leave balance configured for {leave_type.name} ({year}).'}
-                )
+                defaults={
+                    'available_days': Decimal(str(leave_type.max_days_per_year)),
+                    'used_days': Decimal('0.0')
+                }
+            )
 
+            # NOTE: We are NOT blocking the request if balance is insufficient
+            # per user request for "Open" leave management.
+            # We just track it.
             pending_or_approved = LeaveRequest.objects.filter(
                 tenant=tenant,
                 employee=employee,
@@ -90,12 +120,12 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             already_applied_days = sum(float(req.duration_days) for req in pending_or_approved)
             remaining = float(balance.available_days) - float(balance.used_days) - already_applied_days
 
-            if duration_days > remaining:
-                raise serializers.ValidationError(
-                    {'duration_days': f'Insufficient leave balance. Requested {duration_days} days, remaining {remaining:.1f} days.'}
-                )
+            # Just add a warning field or info if we wanted, but for now we just allow it.
+            # if duration_days > remaining:
+            #     pass 
 
         return attrs
+
 
     @transaction.atomic
     def update(self, instance, validated_data):
