@@ -4,7 +4,9 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.employees.models import EmployeeProfile
+from apps.core.tenancy import resolve_tenant
 from .models import LeaveBalance, LeavePolicyWindow, LeaveRequest, LeaveType
+
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
