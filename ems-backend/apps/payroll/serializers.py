@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from .models import PayrollRun, Payslip, TaxSlab
+from .models import (
+    PayrollRun, Payslip, TaxSlab, SalaryComponent, SalaryStructure, 
+    SalaryStructureComponent, PayslipComponent
+)
+
 
 
 class PayrollRunSerializer(serializers.ModelSerializer):
@@ -8,35 +12,74 @@ class PayrollRunSerializer(serializers.ModelSerializer):
         model = PayrollRun
         fields = '__all__'
         read_only_fields = ('tenant',)
-        read_only_fields = ('tenant',)
-        read_only_fields = ('tenant',)
 
 
-class TaxSlabSerializer(serializers.ModelSerializer):
+class SalaryComponentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TaxSlab
+        model = SalaryComponent
         fields = '__all__'
+        read_only_fields = ('tenant',)
+
+
+class SalaryStructureComponentSerializer(serializers.ModelSerializer):
+    component_name = serializers.CharField(source='component.name', read_only=True)
+    component_type = serializers.CharField(source='component.component_type', read_only=True)
+
+    class Meta:
+        model = SalaryStructureComponent
+        fields = ('id', 'component', 'component_name', 'component_type', 'value')
+
+
+class SalaryStructureSerializer(serializers.ModelSerializer):
+    components = SalaryStructureComponentSerializer(many=True, required=False)
+
+    class Meta:
+        model = SalaryStructure
+        fields = ('id', 'employee', 'effective_date', 'components')
+
+    def create(self, validated_data):
+        components_data = validated_data.pop('components', [])
+        salary_structure = SalaryStructure.objects.create(**validated_data)
+        for comp_data in components_data:
+            SalaryStructureComponent.objects.create(salary_structure=salary_structure, **comp_data)
+        return salary_structure
+
+    def update(self, instance, validated_data):
+        components_data = validated_data.pop('components', None)
+        instance.effective_date = validated_data.get('effective_date', instance.effective_date)
+        instance.save()
+
+        if components_data is not None:
+            # Simple approach: clear and recreate components
+            instance.components.all().delete()
+            for comp_data in components_data:
+                SalaryStructureComponent.objects.create(salary_structure=instance, **comp_data)
+        
+        return instance
+
+
+
+class PayslipComponentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayslipComponent
+        fields = ['id', 'name', 'component_type', 'value']
 
 
 class PayslipSerializer(serializers.ModelSerializer):
-    employee_name = serializers.SerializerMethodField()
-    employee_designation = serializers.SerializerMethodField()
+    employee_name = serializers.ReadOnlyField(source='employee.user.get_full_name')
+    employee_id_str = serializers.ReadOnlyField(source='employee.employee_id')
+    designation = serializers.ReadOnlyField(source='employee.designation.title')
+    breakdown = PayslipComponentSerializer(many=True, read_only=True)
     payroll_month = serializers.SerializerMethodField()
     payroll_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Payslip
-        fields = '__all__'
-
-    def get_employee_name(self, obj):
-        if obj.employee and obj.employee.user:
-            return f"{obj.employee.user.first_name} {obj.employee.user.last_name}".strip()
-        return 'Unknown'
-
-    def get_employee_designation(self, obj):
-        if obj.employee and obj.employee.designation:
-            return obj.employee.designation.title
-        return 'N/A'
+        fields = [
+            'id', 'payroll_run', 'employee', 'employee_name', 'employee_id_str',
+            'designation', 'gross_salary', 'total_deductions', 'tax_deduction',
+            'net_salary', 'breakdown', 'payroll_month', 'payroll_status'
+        ]
 
     def get_payroll_month(self, obj):
         if obj.payroll_run and obj.payroll_run.month:
@@ -47,3 +90,4 @@ class PayslipSerializer(serializers.ModelSerializer):
         if obj.payroll_run:
             return obj.payroll_run.status
         return None
+

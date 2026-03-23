@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { employeesApi, departmentsApi, designationsApi, DesignationType } from '../services/employeesApi';
+import CompensationTab from '../components/CompensationTab';
+
 import api from '../services/api';
 import { Department } from '../types';
 
@@ -45,6 +47,8 @@ const AddEmployee: React.FC = () => {
   const [loadingDesignations, setLoadingDesignations] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'general' | 'compensation'>('general');
+
 
   // Fetch departments and designations on mount
   useEffect(() => {
@@ -262,8 +266,37 @@ const AddEmployee: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Tab Switcher */}
+        {isEditMode && (
+          <div className="flex border-b border-gray-100">
+            <button
+              onClick={() => setActiveTab('general')}
+              className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
+                activeTab === 'general' 
+                ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
+                : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              General Info
+            </button>
+            <button
+              onClick={() => setActiveTab('compensation')}
+              className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
+                activeTab === 'compensation' 
+                ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
+                : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Compensation
+            </button>
+          </div>
+        )}
+
+        <div className="p-6">
+          {activeTab === 'general' ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* First Name */}
             <div className="space-y-2">
@@ -469,7 +502,15 @@ const AddEmployee: React.FC = () => {
             </button>
           </div>
         </form>
+          ) : (
+            <CompensationTab 
+                employeeId={id!} 
+                baseSalary={parseFloat(formData.salary) || 0} 
+            />
+          )}
+        </div>
       </div>
+
     </div>
   );
 };

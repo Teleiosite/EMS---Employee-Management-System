@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2, UserPlus, Upload, FileCheck, AlertTriangle, X } from 'lucide-react';
+
 import { employeesApi, ApiError } from '../services/employeesApi';
 import { EmployeeProfile } from '../types';
 
@@ -14,6 +15,13 @@ const Employees: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Import State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
+
 
   // Fetch employees on mount
   useEffect(() => {
@@ -88,17 +96,22 @@ const Employees: React.FC = () => {
           )}
         </div>
         <div className="flex gap-2">
-          <button type="button" className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <Filter className="w-4 h-4" /> Filter
+          <button 
+            type="button" 
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all hover:border-orange-200"
+          >
+            <Upload className="w-4 h-4 text-orange-500" /> Bulk Import
           </button>
           <button
             type="button"
             onClick={() => navigate('/admin/employees/new')}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
           >
-            + Add Employee
+            <UserPlus className="w-4 h-4" /> Add Employee
           </button>
         </div>
+
       </div>
 
       {/* Search Bar */}
@@ -233,7 +246,122 @@ const Employees: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <Upload className="w-5 h-5 text-orange-500" />
+                Bulk Employee Migration
+              </h3>
+              <button 
+                onClick={() => { setShowImportModal(false); setImportResult(null); setImportFile(null); }}
+                className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-8">
+              {!importResult ? (
+                <div className="space-y-6">
+                  <div className="p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 text-center space-y-4 hover:border-orange-200 hover:bg-orange-50/30 transition-all cursor-pointer relative group">
+                    <input 
+                      type="file" 
+                      accept=".csv, .xlsx, .xls"
+                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
+                      <Upload className="w-8 h-8 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 font-bold">
+                        {importFile ? importFile.name : 'Click to upload or drag & drop'}
+                      </p>
+                      <p className="text-gray-500 text-sm mt-1">Supports CSV, Excel (.xlsx, .xls)</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl space-y-2">
+                    <p className="text-xs font-bold text-amber-800 flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5" /> IMPORTANT
+                    </p>
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      Your file should contain columns for: <strong>First Name, Last Name, Email, Department, Designation, and Base Salary</strong>. New departments and designations will be created automatically.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        if (!importFile) return;
+                        setImporting(true);
+                        try {
+                          const res = await employeesApi.bulkImport(importFile);
+                          setImportResult({ success: res.success_count, errors: res.errors });
+                          // Refresh list
+                          const data = await employeesApi.list();
+                          setEmployeeList(data);
+                        } catch (err: any) {
+                          alert(err.message || "Import failed.");
+                        } finally {
+                          setImporting(false);
+                        }
+                      }}
+                      disabled={!importFile || importing}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      {importing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileCheck className="w-5 h-5" />}
+                      Start Migration
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-6 animate-in zoom-in-95">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto border-4 border-green-50 shadow-inner">
+                    <FileCheck className="w-10 h-10 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-2xl font-black text-gray-900">Migration Completed</h4>
+                    <p className="text-gray-500 mt-2">
+                      Successfully imported <span className="font-bold text-green-600">{importResult.success}</span> employees.
+                    </p>
+                  </div>
+
+                  {importResult.errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-left">
+                      <p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" /> Errors Found ({importResult.errors.length})
+                      </p>
+                      <ul className="text-xs text-red-700 space-y-1 max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                        {importResult.errors.map((err, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="opacity-50">•</span>
+                            <span>{err}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => { setShowImportModal(false); setImportResult(null); setImportFile(null); }}
+                    className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-black transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
+
   );
 };
 

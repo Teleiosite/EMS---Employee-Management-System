@@ -64,3 +64,11 @@ class Payslip(models.Model):
 
     class Meta:
         unique_together = ('payroll_run', 'employee')
+
+
+class PayslipComponent(models.Model):
+    payslip = models.ForeignKey(Payslip, on_delete=models.CASCADE, related_name='breakdown')
+    name = models.CharField(max_length=100)
+    component_type = models.CharField(max_length=20) # EARNING or DEDUCTION
+    value = models.DecimalField(max_digits=12, decimal_places=2)
+

@@ -2,6 +2,9 @@ from apps.core.tenancy import resolve_tenant
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Department, Designation, EmployeeProfile
+# Forward reference to avoid circular import if needed, but here we just import
+from apps.payroll.serializers import SalaryStructureSerializer
+
 
 User = get_user_model()
 
@@ -32,6 +35,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     user = NestedUserSerializer(read_only=True)
     department = DepartmentSerializer(read_only=True)
     designation = DesignationSerializer(read_only=True)
+    salary_structure = SalaryStructureSerializer(read_only=True)
+
 
     # Accept write IDs for create/update
     user_id = serializers.PrimaryKeyRelatedField(

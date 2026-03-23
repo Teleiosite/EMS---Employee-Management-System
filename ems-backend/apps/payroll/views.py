@@ -6,15 +6,22 @@ from rest_framework.decorators import action
 
 from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
 from apps.core.tenancy import resolve_tenant
-from .models import PayrollRun, Payslip, TaxSlab
-from .serializers import PayrollRunSerializer, PayslipSerializer, TaxSlabSerializer
+from .models import PayrollRun, Payslip, TaxSlab, SalaryComponent, SalaryStructure, PayslipComponent
+from .serializers import (
+
+    PayrollRunSerializer, PayslipSerializer, TaxSlabSerializer,
+    SalaryComponentSerializer, SalaryStructureSerializer
+)
+
 from .pdf_generator import generate_payslip_pdf
 
 
 def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_ids=None) -> None:
     """Auto-generate a Payslip for the given employees (or all active if no IDs provided)."""
     from apps.employees.models import EmployeeProfile
-    qs = EmployeeProfile.objects.filter(status='ACTIVE', tenant=tenant).select_related('user', 'designation')
+    from .models import SalaryStructure, SalaryStructureComponent
+
+    qs = EmployeeProfile.objects.filter(status='ACTIVE', tenant=tenant).select_related('user', 'designation', 'salary_structure')
     if employee_ids:
         qs = qs.filter(id__in=employee_ids)
 
@@ -23,21 +30,66 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
         # Skip if a payslip already exists for this employee/run pair
         if Payslip.objects.filter(payroll_run=payroll_run, employee=employee).exists():
             continue
-        gross = Decimal(str(employee.base_salary))
-        deduction = round(gross * Decimal('0.10'), 2)
-        tax = round(gross * Decimal('0.05'), 2)
-        net = gross - deduction - tax
-        payslips.append(Payslip(
+
+        base_salary = Decimal(str(employee.base_salary))
+        total_earnings = Decimal('0.00')
+        total_deductions = Decimal('0.00')
+        
+        # Check for SalaryStructure
+        try:
+            structure = employee.salary_structure
+            components = structure.components.select_related('component').all()
+            
+            for struct_comp in components:
+                val = Decimal(str(struct_comp.value))
+                if struct_comp.component.component_type == 'EARNING':
+                    total_earnings += val
+                else:
+                    total_deductions += val
+        except SalaryStructure.DoesNotExist:
+            # Fallback to hardcoded defaults (10% deduction, 5% tax)
+            total_deductions = (base_salary * Decimal('0.10')).quantize(Decimal('0.00'))
+            # We'll treat the legacy "tax" as a deduction for simplicity in this fallback
+            total_deductions += (base_salary * Decimal('0.05')).quantize(Decimal('0.00'))
+
+        gross = base_salary + total_earnings
+
+        net = gross - total_deductions
+        
+        # Note: In a real system, tax might be a separate component. 
+        # Here we bundle it into deductions unless explicitly split in the structure.
+        
+        ps = Payslip(
             tenant=tenant,
             payroll_run=payroll_run,
             employee=employee,
             gross_salary=gross,
-            total_deductions=deduction,
-            tax_deduction=tax,
+            total_deductions=total_deductions,
+            tax_deduction=Decimal('0.00'),
             net_salary=net,
-        ))
+        )
+        # Store components to create after saving ps
+        ps._pending_components = []
+        if 'structure' in locals() and structure:
+            for struct_comp in components:
+                ps._pending_components.append({
+                    'name': struct_comp.component.name,
+                    'component_type': struct_comp.component.component_type,
+                    'value': struct_comp.value
+                })
+        
+        payslips.append(ps)
+
     if payslips:
-        Payslip.objects.bulk_create(payslips)
+        # We need to save them one by one or get the IDs after bulk_create to link components
+        # Since we need to link PayslipComponents, we'll create Payslips and then their children
+        for ps in payslips:
+            components_to_create = ps._pending_components # Temporary storage
+            ps.save()
+            for comp_data in components_to_create:
+                PayslipComponent.objects.create(payslip=ps, **comp_data)
+
+
 
 
 class PayrollRunViewSet(viewsets.ModelViewSet):
@@ -103,3 +155,30 @@ class PayslipViewSet(viewsets.ReadOnlyModelViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="payslip_{payslip.id}.pdf"'
         return response
+
+
+class SalaryComponentViewSet(viewsets.ModelViewSet):
+    queryset = SalaryComponent.objects.all()
+    serializer_class = SalaryComponentSerializer
+    permission_classes = [IsAdminOrHRManager]
+
+    def get_queryset(self):
+        tenant = resolve_tenant(self.request)
+        return SalaryComponent.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=resolve_tenant(self.request))
+
+
+class SalaryStructureViewSet(viewsets.ModelViewSet):
+    queryset = SalaryStructure.objects.all()
+    serializer_class = SalaryStructureSerializer
+    permission_classes = [IsAdminOrHRManager]
+
+    def get_queryset(self):
+        tenant = resolve_tenant(self.request)
+        return SalaryStructure.objects.filter(tenant=tenant)
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=resolve_tenant(self.request))
+

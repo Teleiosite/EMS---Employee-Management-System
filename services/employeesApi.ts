@@ -199,6 +199,23 @@ export const employeesApi = {
     delete: async (id: string): Promise<void> => {
         await api.delete(`/employees/profiles/${id}/`);
     },
+
+    // Bulk import employees
+    bulkImport: async (file: File): Promise<{ detail: string; success_count: number; error_count: number; errors: string[] }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return await api.postFormData<{ detail: string; success_count: number; error_count: number; errors: string[] }>(
+            '/employees/profiles/bulk-import/',
+            formData
+        );
+    },
+
+    // Get current user's employee profile
+    getMe: async (): Promise<EmployeeProfile & { name: string; email: string }> => {
+        const response = await api.get<BackendEmployeeProfile>('/employees/profiles/me/');
+        return transformEmployee(response);
+    },
 };
+
 
 export { ApiError };

@@ -175,6 +175,38 @@ export const payrollApi = {
     deleteTaxSlab: async (id: string): Promise<void> => {
         await api.delete(`/payroll/tax-slabs/${id}/`);
     },
+
+    // ==================== SALARY COMPONENTS ====================
+
+    listSalaryComponents: async (): Promise<any[]> => {
+        return await api.get<any[]>('/payroll/salary-components/');
+    },
+
+    createSalaryComponent: async (data: any): Promise<any> => {
+        return await api.post<any>('/payroll/salary-components/', data);
+    },
+
+    // ==================== SALARY STRUCTURES ====================
+
+    getSalaryStructure: async (employeeId: string): Promise<any> => {
+        // Typically we'd filter by employee, but for simplicity we assume the ProfileSerializer handles it 
+        // OR we just get it by the profile ID if it exists.
+        // Actually, let's just use the nested field in EmployeeProfile for reading,
+        // and this for updating/creating if needed.
+        return await api.get<any>(`/payroll/salary-structures/?employee=${employeeId}`);
+    },
+
+    saveSalaryStructure: async (data: { employee: number; effective_date: string; components: any[] }): Promise<any> => {
+        // If it exists, update; if not, create.
+        // For simplicity, we'll try to find any existing structure first or just use a dedicated endpoint if we had one.
+        // But the backend viewset is standard.
+        return await api.post<any>('/payroll/salary-structures/', data);
+    },
+
+    updateSalaryStructure: async (id: number, data: any): Promise<any> => {
+        return await api.patch<any>(`/payroll/salary-structures/${id}/`, data);
+    },
 };
+
 
 export default payrollApi;
