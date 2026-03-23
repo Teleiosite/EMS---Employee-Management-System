@@ -21,6 +21,14 @@ class SalaryComponentSerializer(serializers.ModelSerializer):
         read_only_fields = ('tenant',)
 
 
+class TaxSlabSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxSlab
+        fields = '__all__'
+        read_only_fields = ('tenant',)
+
+
+
 class SalaryStructureComponentSerializer(serializers.ModelSerializer):
     component_name = serializers.CharField(source='component.name', read_only=True)
     component_type = serializers.CharField(source='component.component_type', read_only=True)
