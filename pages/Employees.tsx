@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2, UserPlus, Upload, FileCheck, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, MoreVertical, Mail, Edit, Trash2, Loader2, UserPlus, Upload, FileCheck, AlertTriangle, X, Download } from 'lucide-react';
+
 
 import { employeesApi, ApiError } from '../services/employeesApi';
 import { EmployeeProfile } from '../types';
@@ -84,6 +85,21 @@ const Employees: React.FC = () => {
     emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const downloadTemplate = () => {
+    const headers = ['first_name', 'last_name', 'email', 'password', 'department', 'designation', 'base_salary', 'joining_date', 'phone_number', 'address'];
+    const sampleRow = ['John', 'Doe', 'john.doe@company.com', 'SecurePass123', 'Engineering', 'Software Engineer', '50000', new Date().toISOString().split('T')[0], '+1234567890', '123 Main St'];
+    const csvContent = [headers.join(','), sampleRow.join(',')].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'employee_import_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -290,8 +306,15 @@ const Employees: React.FC = () => {
                       <AlertTriangle className="w-3.5 h-3.5" /> IMPORTANT
                     </p>
                     <p className="text-[11px] text-amber-700 leading-relaxed">
-                      Your file should contain columns for: <strong>First Name, Last Name, Email, Department, Designation, and Base Salary</strong>. New departments and designations will be created automatically.
+                      Required columns: <strong>first_name, last_name, email, password, department, designation, base_salary, joining_date</strong>. New departments and designations are created automatically.
                     </p>
+                    <button
+                      type="button"
+                      onClick={downloadTemplate}
+                      className="mt-2 flex items-center gap-2 text-xs text-orange-600 hover:text-orange-700 font-bold underline-offset-2 hover:underline transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download Template CSV
+                    </button>
                   </div>
 
                   <div className="flex gap-3">

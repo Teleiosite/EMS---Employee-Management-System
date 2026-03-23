@@ -83,6 +83,17 @@ const Payroll: React.FC = () => {
     }
   };
 
+  const handleDeleteComponent = async (compId: number) => {
+    if (!window.confirm('Are you sure you want to delete this salary component?')) return;
+    try {
+        await payrollApi.deleteSalaryComponent(compId);
+        showToast('Component deleted', 'info');
+        fetchComponents();
+    } catch (err: any) {
+        showToast(err.message || 'Failed to delete component', 'error');
+    }
+  };
+
 
   const toggleActionMenu = (id: string) => {
     setActiveActionId(activeActionId === id ? null : id);
@@ -355,7 +366,7 @@ const Payroll: React.FC = () => {
                                 >
                                     <Edit className="w-4 h-4" />
                                 </button>
-                                <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg shadow-sm transition-all">
+                <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg shadow-sm transition-all" onClick={() => handleDeleteComponent(comp.id)}>
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>

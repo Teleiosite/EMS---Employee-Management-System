@@ -179,27 +179,36 @@ export const payrollApi = {
     // ==================== SALARY COMPONENTS ====================
 
     listSalaryComponents: async (): Promise<any[]> => {
-        return await api.get<any[]>('/payroll/salary-components/');
+        const response = await api.get<any[] | { results: any[]; count: number }>('/payroll/salary-components/');
+        // Handle both paginated and non-paginated responses
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray((response as any).results)) return (response as any).results;
+        return [];
     },
 
-    createSalaryComponent: async (data: any): Promise<any> => {
+    saveSalaryComponent: async (data: any): Promise<any> => {
         return await api.post<any>('/payroll/salary-components/', data);
+    },
+
+    updateSalaryComponent: async (id: number, data: any): Promise<any> => {
+        return await api.patch<any>(`/payroll/salary-components/${id}/`, data);
+    },
+
+    deleteSalaryComponent: async (id: number): Promise<void> => {
+        await api.delete(`/payroll/salary-components/${id}/`);
     },
 
     // ==================== SALARY STRUCTURES ====================
 
     getSalaryStructure: async (employeeId: string): Promise<any> => {
-        // Typically we'd filter by employee, but for simplicity we assume the ProfileSerializer handles it 
-        // OR we just get it by the profile ID if it exists.
-        // Actually, let's just use the nested field in EmployeeProfile for reading,
-        // and this for updating/creating if needed.
-        return await api.get<any>(`/payroll/salary-structures/?employee=${employeeId}`);
+        const response = await api.get<any>(`/payroll/salary-structures/?employee=${employeeId}`);
+        // Handle both paginated and non-paginated responses
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray((response as any).results)) return (response as any).results;
+        return [];
     },
 
     saveSalaryStructure: async (data: { employee: number; effective_date: string; components: any[] }): Promise<any> => {
-        // If it exists, update; if not, create.
-        // For simplicity, we'll try to find any existing structure first or just use a dedicated endpoint if we had one.
-        // But the backend viewset is standard.
         return await api.post<any>('/payroll/salary-structures/', data);
     },
 

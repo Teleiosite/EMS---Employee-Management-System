@@ -268,30 +268,33 @@ const AddEmployee: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Tab Switcher */}
-        {isEditMode && (
-          <div className="flex border-b border-gray-100">
-            <button
-              onClick={() => setActiveTab('general')}
-              className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
-                activeTab === 'general' 
-                ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
-                : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              General Info
-            </button>
-            <button
-              onClick={() => setActiveTab('compensation')}
-              className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
-                activeTab === 'compensation' 
-                ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
-                : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Compensation
-            </button>
-          </div>
-        )}
+        <div className="flex border-b border-gray-100">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
+              activeTab === 'general' 
+              ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
+              : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            General Info
+          </button>
+          <button
+            onClick={() => isEditMode && setActiveTab('compensation')}
+            disabled={!isEditMode}
+            title={!isEditMode ? 'Save the employee first to manage compensation' : undefined}
+            className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 ${
+              activeTab === 'compensation' 
+              ? 'border-orange-500 text-orange-600 bg-orange-50/30' 
+              : !isEditMode
+              ? 'border-transparent text-gray-200 cursor-not-allowed'
+              : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Compensation {!isEditMode && <span className="text-xs font-normal text-gray-300 ml-1">(save first)</span>}
+          </button>
+        </div>
+
 
         <div className="p-6">
           {activeTab === 'general' ? (
