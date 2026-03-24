@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Loader2, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { employeesApi, departmentsApi, designationsApi, DesignationType } from '../services/employeesApi';
 import CompensationTab from '../components/CompensationTab';
 
@@ -24,7 +24,9 @@ interface FormData {
 const AddEmployee: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditMode = !!id;
+
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -47,7 +49,10 @@ const AddEmployee: React.FC = () => {
   const [loadingDesignations, setLoadingDesignations] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'general' | 'compensation'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'compensation'>(
+    searchParams.get('tab') === 'compensation' ? 'compensation' : 'general'
+  );
+
 
 
   // Fetch departments and designations on mount
@@ -202,7 +207,7 @@ const AddEmployee: React.FC = () => {
 
         // Step 2: Create the employee profile
         const employeeId = `EMP${Date.now().toString().slice(-6)}`;
-        await employeesApi.create({
+        const newEmployee = await employeesApi.create({
           user_id: registerResponse.id,
           employee_id: employeeId,
           base_salary: parseFloat(formData.salary),
@@ -214,8 +219,10 @@ const AddEmployee: React.FC = () => {
           status: 'ACTIVE',
         });
 
-        setSuccess('Employee added successfully!');
-        setTimeout(() => navigate('/admin/employees'), 1500);
+        setSuccess('Employee created! Setting up compensation...');
+        // Navigate directly to compensation tab for the new employee
+        setTimeout(() => navigate(`/admin/employees/edit/${newEmployee.id}?tab=compensation`), 800);
+
       }
     } catch (err: any) {
       console.error('Failed to save employee:', err);
@@ -294,7 +301,6 @@ const AddEmployee: React.FC = () => {
             Compensation {!isEditMode && <span className="text-xs font-normal text-gray-300 ml-1">(save first)</span>}
           </button>
         </div>
-
 
         <div className="p-6">
           {activeTab === 'general' ? (
@@ -494,7 +500,7 @@ const AddEmployee: React.FC = () => {
               className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isEditMode ? 'Update Employee' : 'Add Employee'}
+              {isEditMode ? 'Update Employee' : <><span>Next: Set Up Compensation</span><ArrowRight className="w-4 h-4" /></>}
             </button>
             <button
               type="button"

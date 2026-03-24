@@ -10,7 +10,8 @@ interface Props {
 }
 
 interface NewComponentForm {
-    component: string;
+    name: string;
+    component_type: 'EARNING' | 'DEDUCTION';
     value: string;
 }
 
@@ -24,7 +25,7 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
 
     // Form for adding new component to list
     const [showAddForm, setShowAddForm] = useState(false);
-    const [newComp, setNewComp] = useState<NewComponentForm>({ component: '', value: '' });
+    const [newComp, setNewComp] = useState<NewComponentForm>({ name: '', component_type: 'EARNING', value: '' });
 
     useEffect(() => {
         fetchData();
@@ -54,23 +55,32 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
     };
 
     const handleAddItem = async () => {
-        if (!newComp.component || !newComp.value) {
-            showToast('Please select a component and enter an amount.', 'error');
+        if (!newComp.name.trim() || !newComp.value) {
+            showToast('Please enter a component name and amount.', 'error');
             return;
         }
 
-        const componentObj = allComponents.find(c => c.id.toString() === newComp.component);
-        if (!componentObj) return;
+        // Check if we have a matching global component to link; otherwise use inline name
+        const matchedGlobal = allComponents.find(
+            c => c.name.toLowerCase() === newComp.name.trim().toLowerCase()
+        );
 
-        const newItem = {
-            component: parseInt(newComp.component),
-            component_name: componentObj.name,
-            component_type: componentObj.component_type,
-            value: parseFloat(newComp.value) || 0
-        };
+        const newItem = matchedGlobal
+            ? {
+                component: matchedGlobal.id,
+                component_name: matchedGlobal.name,
+                component_type: matchedGlobal.component_type,
+                value: parseFloat(newComp.value) || 0
+              }
+            : {
+                component_name: newComp.name.trim(),
+                component_type: newComp.component_type,
+                value: parseFloat(newComp.value) || 0,
+                // No linked global component — will be saved as an inline entry
+              };
 
         setItems([...items, newItem]);
-        setNewComp({ component: '', value: '' });
+        setNewComp({ name: '', component_type: 'EARNING', value: '' });
         setShowAddForm(false);
     };
 
@@ -85,7 +95,9 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                 employee: parseInt(employeeId),
                 effective_date: new Date().toISOString().split('T')[0],
                 components: items.map(item => ({
-                    component: item.component,
+                    ...(item.component ? { component: item.component } : {}),
+                    component_name: item.component_name,
+                    component_type: item.component_type,
                     value: item.value
                 }))
             };
@@ -195,46 +207,85 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                             Add Allowance or Deduction
                         </button>
                     ) : (
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row items-end gap-4 animate-in fade-in slide-in-from-top-2">
-                            <div className="flex-1 space-y-1 w-full">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Select Component</label>
-                                <select
-                                    value={newComp.component}
-                                    onChange={(e) => setNewComp({ ...newComp, component: e.target.value })}
-                                    className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                                >
-                                    <option value="">-- Choose Component --</option>
-                                    {allComponents.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name} ({c.component_type})</option>
-                                    ))}
-                                </select>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                            <div className="grid sm:grid-cols-2 gap-3">
+                                {/* Component Name */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Component Name</label>
+                                    <input
+                                        type="text"
+                                        list="comp-suggestions"
+                                        value={newComp.name}
+                                        onChange={(e) => setNewComp({ ...newComp, name: e.target.value })}
+                                        placeholder="e.g. Housing Allowance"
+                                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                    />
+                                    <datalist id="comp-suggestions">
+                                        {allComponents.map(c => (
+                                            <option key={c.id} value={c.name} />
+                                        ))}
+                                    </datalist>
+                                </div>
+
+                                {/* Amount */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={newComp.value}
+                                        onChange={(e) => setNewComp({ ...newComp, value: e.target.value })}
+                                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-right font-bold"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-1 w-full sm:w-32">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</label>
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={newComp.value}
-                                    onChange={(e) => setNewComp({ ...newComp, value: e.target.value })}
-                                    className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-right font-bold"
-                                />
+
+                            {/* Type toggle */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Type</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewComp({ ...newComp, component_type: 'EARNING' })}
+                                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-bold text-sm transition-all ${
+                                            newComp.component_type === 'EARNING'
+                                            ? 'border-green-500 bg-green-50 text-green-700'
+                                            : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        + Earning / Allowance
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewComp({ ...newComp, component_type: 'DEDUCTION' })}
+                                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-bold text-sm transition-all ${
+                                            newComp.component_type === 'DEDUCTION'
+                                            ? 'border-red-500 bg-red-50 text-red-700'
+                                            : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        − Deduction
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-2 w-full sm:w-auto">
+
+                            <div className="flex gap-2 pt-1">
                                 <button
                                     onClick={handleAddItem}
-                                    className="flex-1 sm:flex-none bg-orange-500 text-white px-4 py-2.5 rounded-lg font-bold hover:bg-orange-600 transition-all"
+                                    className="flex-1 sm:flex-none bg-orange-500 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-orange-600 transition-all"
                                 >
                                     Add
                                 </button>
                                 <button
                                     onClick={() => setShowAddForm(false)}
-                                    className="flex-1 sm:flex-none bg-white text-gray-500 border border-gray-200 px-4 py-2.5 rounded-lg font-bold hover:bg-gray-100 transition-all"
+                                    className="flex-1 sm:flex-none bg-white text-gray-500 border border-gray-200 px-6 py-2.5 rounded-lg font-bold hover:bg-gray-100 transition-all"
                                 >
                                     Cancel
                                 </button>
                             </div>
                         </div>
                     )}
+
                 </div>
 
                 {/* Summary Card */}
