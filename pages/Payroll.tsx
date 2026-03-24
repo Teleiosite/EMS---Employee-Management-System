@@ -349,42 +349,74 @@ const Payroll: React.FC = () => {
       </div>
     ) : (
 
-          <div className="p-6">
+          <div className="p-8">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {components.map((comp) => (
-                    <div key={comp.id} className="bg-gray-50 border border-gray-200 rounded-2xl p-6 transition-all hover:shadow-lg hover:border-orange-200 group">
-                        <div className="flex justify-between items-start mb-4">
-                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                                comp.component_type === 'EARNING' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                            }`}>
-                                {comp.component_type}
-                            </span>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
-                                    onClick={() => { setEditingComp(comp); setCompFormData({ name: comp.name, component_type: comp.component_type, description: comp.description || '' }); setShowCompModal(true); }}
-                                    className="p-1.5 text-gray-400 hover:text-orange-500 hover:bg-white rounded-lg shadow-sm transition-all"
-                                >
-                                    <Edit className="w-4 h-4" />
-                                </button>
-                <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg shadow-sm transition-all" onClick={() => handleDeleteComponent(comp.id)}>
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                {components.map((comp) => {
+                    const isEarning = comp.component_type === 'EARNING';
+                    return (
+                        <div key={comp.id} className="relative group overflow-hidden bg-white border border-gray-100 rounded-3xl p-6 transition-all hover:shadow-2xl hover:shadow-orange-100 hover:-translate-y-1">
+                            {/* Decorative Background Icon */}
+                            <div className={`absolute -right-4 -bottom-4 opacity-[0.03] transform rotate-12 transition-transform group-hover:scale-125 group-hover:rotate-0`}>
+                                {isEarning ? <PlusCircle className="w-32 h-32 text-green-600" /> : <Settings className="w-32 h-32 text-red-600" />}
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className={`p-3 rounded-2xl ${isEarning ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                        {isEarning ? <PlusCircle className="w-6 h-6" /> : <Settings className="w-6 h-6" />}
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                                        isEarning ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                    }`}>
+                                        {comp.component_type}
+                                    </span>
+                                </div>
+                                <h4 className="text-xl font-black text-gray-900 mb-2 group-hover:text-orange-600 transition-colors uppercase tracking-tight">{comp.name}</h4>
+                                <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] font-medium leading-relaxed mb-6">{comp.description || 'Global salary component for payroll generation.'}</p>
+                                
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                    <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Used in Structures</span>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => { 
+                                                setEditingComp(comp); 
+                                                setCompFormData({ name: comp.name, component_type: comp.component_type, description: comp.description || '' }); 
+                                                setShowCompModal(true); 
+                                            }}
+                                            className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" onClick={() => handleDeleteComponent(comp.id)}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-1">{comp.name}</h4>
-                        <p className="text-sm text-gray-500 line-clamp-2">{comp.description || 'No description provided.'}</p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             {components.length === 0 && !loadingComps && (
-                <div className="text-center py-20 border-2 border-dashed border-gray-100 rounded-3xl">
-                    <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-400 font-medium">No salary components defined yet.</p>
+                <div className="text-center py-32 bg-gray-50/50 rounded-[3rem] border-4 border-dashed border-gray-100">
+                    <div className="relative inline-block mb-6">
+                        <Settings className="w-20 h-20 text-gray-200 animate-pulse" />
+                        <PlusCircle className="w-8 h-8 text-orange-400 absolute -bottom-2 -right-2 bg-white rounded-full shadow-lg" />
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tighter mb-2">No Components Defined</h3>
+                    <p className="text-gray-400 font-medium max-w-sm mx-auto mb-8">Ready to start configuring? Create your first global salary component now!</p>
+                    <button 
+                        onClick={() => { setEditingComp(null); setCompFormData({ name: '', component_type: 'EARNING', description: '' }); setShowCompModal(true); }}
+                        className="bg-white text-orange-600 font-bold px-8 py-3 rounded-2xl shadow-xl shadow-orange-500/10 border border-orange-100 hover:bg-orange-500 hover:text-white transition-all flex items-center gap-2 mx-auto"
+                    >
+                        <Plus className="w-5 h-5" /> Start Configuration
+                    </button>
                 </div>
             )}
             {loadingComps && (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                <div className="flex flex-col items-center justify-center py-32">
+                    <Loader2 className="w-12 h-12 animate-spin text-orange-500 mb-4" />
+                    <span className="text-gray-400 font-black uppercase tracking-widest text-xs">Fetching Definitions...</span>
                 </div>
             )}
           </div>
@@ -402,27 +434,48 @@ const Payroll: React.FC = () => {
                             <X className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>
-                    <div className="p-6 space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Component Name</label>
+                    <div className="p-6 space-y-5">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Quick Select Templates</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { name: 'Housing', type: 'EARNING' },
+                                    { name: 'Transport', type: 'EARNING' },
+                                    { name: 'Pension', type: 'DEDUCTION' },
+                                    { name: 'Income Tax', type: 'DEDUCTION' }
+                                ].map(template => (
+                                    <button
+                                        key={template.name}
+                                        type="button"
+                                        onClick={() => setCompFormData({ ...compFormData, name: template.name, component_type: template.type as any })}
+                                        className="px-3 py-1.5 rounded-xl border border-gray-100 bg-white text-xs font-bold text-gray-600 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50 transition-all shadow-sm"
+                                    >
+                                        + {template.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Component Name</label>
                             <input
                                 required
                                 value={compFormData.name}
                                 onChange={(e) => setCompFormData({ ...compFormData, name: e.target.value })}
-                                className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                                className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all font-bold text-gray-800"
                                 placeholder="e.g. Housing Allowance"
                             />
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Type</label>
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Component Type</label>
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setCompFormData({ ...compFormData, component_type: 'EARNING' })}
-                                    className={`py-2 px-4 rounded-xl border-2 font-bold transition-all ${
+                                    className={`py-3 px-4 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all ${
                                         compFormData.component_type === 'EARNING' 
-                                        ? 'border-green-500 bg-green-50 text-green-700' 
-                                        : 'border-gray-100 text-gray-400 hover:border-gray-200'
+                                        ? 'border-green-500 bg-green-50 text-green-700 shadow-lg shadow-green-500/10' 
+                                        : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-100'
                                     }`}
                                 >
                                     Earning
@@ -430,23 +483,23 @@ const Payroll: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setCompFormData({ ...compFormData, component_type: 'DEDUCTION' })}
-                                    className={`py-2 px-4 rounded-xl border-2 font-bold transition-all ${
+                                    className={`py-3 px-4 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all ${
                                         compFormData.component_type === 'DEDUCTION' 
-                                        ? 'border-red-500 bg-red-50 text-red-700' 
-                                        : 'border-gray-100 text-gray-400 hover:border-gray-200'
+                                        ? 'border-red-500 bg-red-50 text-red-700 shadow-lg shadow-red-500/10' 
+                                        : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-100'
                                     }`}
                                 >
                                     Deduction
                                 </button>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Description (Optional)</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description (Optional)</label>
                             <textarea
                                 value={compFormData.description}
                                 onChange={(e) => setCompFormData({ ...compFormData, description: e.target.value })}
-                                className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none h-20 resize-none"
-                                placeholder="Details about this component..."
+                                className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none h-24 resize-none transition-all text-sm font-medium text-gray-600"
+                                placeholder="Describe the purpose of this component..."
                             />
                         </div>
                     </div>

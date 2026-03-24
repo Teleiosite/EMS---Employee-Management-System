@@ -201,24 +201,26 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                     {!showAddForm ? (
                         <button
                             onClick={() => setShowAddForm(true)}
-                            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50/30 transition-all font-medium"
+                            className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-100 rounded-[2rem] text-gray-400 hover:border-orange-200 hover:text-orange-600 hover:bg-orange-50/30 transition-all font-black uppercase tracking-widest text-xs group"
                         >
-                            <PlusCircle className="w-5 h-5" />
+                            <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             Add Allowance or Deduction
                         </button>
                     ) : (
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
-                            <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="bg-white border-2 border-orange-100 rounded-[2rem] p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 shadow-xl overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+                            <div className="grid sm:grid-cols-2 gap-4">
                                 {/* Component Name */}
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Component Name</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Label Name</label>
                                     <input
                                         type="text"
                                         list="comp-suggestions"
+                                        autoFocus
                                         value={newComp.name}
                                         onChange={(e) => setNewComp({ ...newComp, name: e.target.value })}
-                                        placeholder="e.g. Housing Allowance"
-                                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                        placeholder="e.g. Health Allowance"
+                                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none font-bold text-gray-800 transition-all"
                                     />
                                     <datalist id="comp-suggestions">
                                         {allComponents.map(c => (
@@ -228,40 +230,43 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                                 </div>
 
                                 {/* Amount */}
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</label>
-                                    <input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={newComp.value}
-                                        onChange={(e) => setNewComp({ ...newComp, value: e.target.value })}
-                                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-right font-bold"
-                                    />
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Recurring Amount</label>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</div>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={newComp.value}
+                                            onChange={(e) => setNewComp({ ...newComp, value: e.target.value })}
+                                            className="w-full p-3 pl-8 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none font-black text-gray-900 transition-all"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Type toggle */}
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Type</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Classification</label>
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setNewComp({ ...newComp, component_type: 'EARNING' })}
-                                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-bold text-sm transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
                                             newComp.component_type === 'EARNING'
-                                            ? 'border-green-500 bg-green-50 text-green-700'
-                                            : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                            ? 'border-green-500 bg-green-50 text-green-700 shadow-lg shadow-green-500/10'
+                                            : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200'
                                         }`}
                                     >
-                                        + Earning / Allowance
+                                        + Allowance
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setNewComp({ ...newComp, component_type: 'DEDUCTION' })}
-                                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-bold text-sm transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
                                             newComp.component_type === 'DEDUCTION'
-                                            ? 'border-red-500 bg-red-50 text-red-700'
-                                            : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                            ? 'border-red-500 bg-red-50 text-red-700 shadow-lg shadow-red-500/10'
+                                            : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200'
                                         }`}
                                     >
                                         − Deduction
@@ -269,16 +274,16 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 pt-1">
+                            <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={handleAddItem}
-                                    className="flex-1 sm:flex-none bg-orange-500 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-orange-600 transition-all"
+                                    className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-500 transition-all shadow-xl shadow-gray-900/10 hover:shadow-orange-500/20"
                                 >
-                                    Add
+                                    Add Entry
                                 </button>
                                 <button
                                     onClick={() => setShowAddForm(false)}
-                                    className="flex-1 sm:flex-none bg-white text-gray-500 border border-gray-200 px-6 py-2.5 rounded-lg font-bold hover:bg-gray-100 transition-all"
+                                    className="px-6 py-3 bg-white text-gray-400 border border-gray-100 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -290,44 +295,49 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
 
                 {/* Summary Card */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Calculator className="w-24 h-24" />
-                        </div>
-                        <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6 border-b border-gray-700 pb-2">Payslip Preview</h4>
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 text-gray-800 shadow-2xl relative overflow-hidden group">
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-[5rem] -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500"></div>
                         
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-400">Monthly Base Salary</span>
-                                <span className="font-medium">${baseSalary.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-400">Total Allowances</span>
-                                <span className="text-green-400 font-medium">+{earnings.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                                <span className="text-gray-300 font-bold uppercase text-[10px] tracking-widest">Gross Salary</span>
-                                <span className="text-xl font-extrabold">${gross.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm pt-4">
-                                <span className="text-gray-400">Total Deductions</span>
-                                <span className="text-red-400 font-medium">-{deductions.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center pt-6 mt-4 border-t-2 border-orange-500/30">
-                                <span className="text-orange-400 font-black uppercase text-xs tracking-widest">Estimated Net</span>
-                                <div className="text-right">
-                                    <span className="text-3xl font-black text-white">${net.toLocaleString()}</span>
-                                    <p className="text-[10px] text-gray-500 mt-1 italic">Calculated per month</p>
+                        <div className="relative z-10">
+                            <h4 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8 border-b border-gray-50 pb-4">Net Pay Estimation</h4>
+                            
+                            <div className="space-y-5">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Base Salary</span>
+                                    <span className="font-black text-gray-900">${baseSalary.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Total Benefits</span>
+                                    <span className="text-green-500 font-black">+{earnings.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center py-5 border-y border-gray-50 my-2">
+                                    <span className="text-gray-900 font-black uppercase text-xs tracking-widest">Gross Pay</span>
+                                    <span className="text-2xl font-black text-gray-900 tracking-tighter">${gross.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Deductions</span>
+                                    <span className="text-red-500 font-black">-{deductions.toLocaleString()}</span>
+                                </div>
+                                
+                                <div className="pt-8 mt-4 border-t-4 border-orange-500 flex flex-col items-end">
+                                    <span className="text-orange-500 font-black uppercase text-[10px] tracking-[0.4em] mb-1">Take-Home Pay</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-5xl font-black text-gray-900 tracking-tighter">${net.toLocaleString()}</span>
+                                        <span className="text-gray-400 text-[10px] font-bold uppercase">/mo</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                        <div className="flex gap-3">
-                            <ArrowRight className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-800 leading-relaxed">
-                                <strong>Note:</strong> Changes saved here will be automatically applied every month when you generate payroll for this employee. Use the Payroll page for one-time bonuses or adjustments.
+                    <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-6">
+                        <div className="flex gap-4">
+                            <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm text-orange-500 flex-shrink-0">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                            <p className="text-[11px] text-orange-800 font-medium leading-relaxed">
+                                <strong>System Note:</strong> Recurring structures are applied automatically during generation. For one-time bonuses, navigate to the Payroll processing module.
                             </p>
                         </div>
                     </div>
