@@ -53,6 +53,15 @@ const AddEmployee: React.FC = () => {
     searchParams.get('tab') === 'compensation' ? 'compensation' : 'general'
   );
 
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'compensation') {
+      setActiveTab('compensation');
+    } else if (tab === 'general') {
+      setActiveTab('general');
+    }
+  }, [searchParams]);
+
 
 
   // Fetch departments and designations on mount

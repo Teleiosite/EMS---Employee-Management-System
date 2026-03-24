@@ -37,7 +37,9 @@ class SalaryStructure(models.Model):
 
 class SalaryStructureComponent(models.Model):
     salary_structure = models.ForeignKey(SalaryStructure, on_delete=models.CASCADE, related_name='components')
-    component = models.ForeignKey(SalaryComponent, on_delete=models.CASCADE)
+    component = models.ForeignKey(SalaryComponent, on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
+    component_type = models.CharField(max_length=20, choices=SalaryComponent.COMPONENT_TYPES, null=True, blank=True)
     value = models.DecimalField(max_digits=12, decimal_places=2)
 
 

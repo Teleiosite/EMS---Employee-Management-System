@@ -30,12 +30,22 @@ class TaxSlabSerializer(serializers.ModelSerializer):
 
 
 class SalaryStructureComponentSerializer(serializers.ModelSerializer):
-    component_name = serializers.CharField(source='component.name', read_only=True)
-    component_type = serializers.CharField(source='component.component_type', read_only=True)
+    component_name = serializers.CharField(source='name', required=False, allow_null=True)
+    component_type = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = SalaryStructureComponent
-        fields = ('id', 'component', 'component_name', 'component_type', 'value')
+        fields = ('id', 'component', 'component_name', 'component_type', 'value', 'name')
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # If component is linked, use its name/type if custom ones are not set
+        if instance.component:
+            if not ret.get('component_name'):
+                ret['component_name'] = instance.component.name
+            if not ret.get('component_type'):
+                ret['component_type'] = instance.component.component_type
+        return ret
 
 
 class SalaryStructureSerializer(serializers.ModelSerializer):

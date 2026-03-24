@@ -42,7 +42,10 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
             
             for struct_comp in components:
                 val = Decimal(str(struct_comp.value))
-                if struct_comp.component.component_type == 'EARNING':
+                # Use direct fields if available, otherwise fallback to linked component
+                comp_type = struct_comp.component_type or (struct_comp.component.component_type if struct_comp.component else 'EARNING')
+                
+                if comp_type == 'EARNING':
                     total_earnings += val
                 else:
                     total_deductions += val
@@ -72,9 +75,11 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
         ps._pending_components = []
         if 'structure' in locals() and structure:
             for struct_comp in components:
+                comp_name = struct_comp.name or (struct_comp.component.name if struct_comp.component else 'Custom Component')
+                comp_type = struct_comp.component_type or (struct_comp.component.component_type if struct_comp.component else 'EARNING')
                 ps._pending_components.append({
-                    'name': struct_comp.component.name,
-                    'component_type': struct_comp.component.component_type,
+                    'name': comp_name,
+                    'component_type': comp_type,
                     'value': struct_comp.value
                 })
         
