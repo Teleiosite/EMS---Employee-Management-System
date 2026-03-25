@@ -17,7 +17,7 @@ class PayloadTests(APITestCase):
         )
         self.employee_user = User.objects.create_user(
             email='emp@example.com',
-            pass='password123',
+            password='password123',
             role='EMPLOYEE'
         )
         
