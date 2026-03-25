@@ -93,7 +93,10 @@ const AddPayroll: React.FC = () => {
   const totalDeductions = selectedEmployees.reduce((sum, e) => {
     if (!e.salaryStructure || !e.salaryStructure.components) return sum;
     const itemDeductions = e.salaryStructure.components
-      .filter((c: any) => c.component_type === 'DEDUCTION')
+      .filter((c: any) => {
+        const type = (c.component_type || c.type || '').toUpperCase();
+        return type === 'DEDUCTION';
+      })
       .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
     return sum + itemDeductions;
   }, 0);
@@ -101,7 +104,10 @@ const AddPayroll: React.FC = () => {
   const totalEarnings = selectedEmployees.reduce((sum, e) => {
     if (!e.salaryStructure || !e.salaryStructure.components) return sum;
     const itemEarnings = e.salaryStructure.components
-      .filter((c: any) => c.component_type === 'EARNING')
+      .filter((c: any) => {
+        const type = (c.component_type || c.type || '').toUpperCase();
+        return type === 'EARNING';
+      })
       .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
     return sum + itemEarnings;
   }, 0);
