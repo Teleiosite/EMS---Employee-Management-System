@@ -38,6 +38,7 @@ interface BackendEmployeeProfile {
     phone_number: string;
     address: string;
     status: string;
+    salary_structure: any | null;
 }
 
 interface PaginatedResponse<T> {
@@ -67,6 +68,7 @@ const transformEmployee = (emp: BackendEmployeeProfile): EmployeeProfile & { nam
     experience: 0, // Calculate from joining date if needed
     name: `${emp.user.first_name} ${emp.user.last_name}`.trim(),
     email: emp.user.email,
+    salaryStructure: emp.salary_structure || undefined,
 });
 
 // Transform backend designation to frontend format

@@ -33,6 +33,22 @@ export interface EmployeeProfile {
   status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
   baseSalary: number;
   experience: number;
+  salaryStructure?: SalaryStructure;
+}
+
+export interface SalaryStructureComponent {
+  id?: number;
+  component?: number;
+  component_name: string;
+  component_type: 'EARNING' | 'DEDUCTION';
+  value: number;
+}
+
+export interface SalaryStructure {
+  id: number;
+  employee: number;
+  effective_date: string;
+  components: SalaryStructureComponent[];
 }
 
 export interface AttendanceLog {

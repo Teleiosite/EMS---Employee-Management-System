@@ -50,10 +50,9 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
                 else:
                     total_deductions += val
         except SalaryStructure.DoesNotExist:
-            # Fallback to hardcoded defaults (10% deduction, 5% tax)
-            total_deductions = (base_salary * Decimal('0.10')).quantize(Decimal('0.00'))
-            # We'll treat the legacy "tax" as a deduction for simplicity in this fallback
-            total_deductions += (base_salary * Decimal('0.05')).quantize(Decimal('0.00'))
+            # If no structure is defined, we assume zero additional earnings or deductions
+            # beyond the base salary.
+            pass
 
         gross = base_salary + total_earnings
 

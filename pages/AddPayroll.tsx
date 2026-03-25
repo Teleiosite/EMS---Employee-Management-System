@@ -17,6 +17,7 @@ interface Employee {
   name: string;
   baseSalary: number;
   employeeId: string;
+  salaryStructure?: any;
 }
 
 const AddPayroll: React.FC = () => {
@@ -39,7 +40,13 @@ const AddPayroll: React.FC = () => {
         const data = await employeesApi.list();
         const active = data
           .filter((e) => e.status === 'ACTIVE')
-          .map((e) => ({ id: e.id, name: e.name, baseSalary: e.baseSalary, employeeId: e.employeeId }));
+          .map((e) => ({ 
+            id: e.id, 
+            name: e.name, 
+            baseSalary: e.baseSalary, 
+            employeeId: e.employeeId,
+            salaryStructure: e.salaryStructure
+          }));
         setEmployees(active);
         // Select all by default
         setSelectedIds(new Set(active.map((e) => e.id)));
@@ -78,7 +85,24 @@ const AddPayroll: React.FC = () => {
 
   const selectedEmployees = employees.filter((e) => selectedIds.has(e.id));
   const totalPayroll = selectedEmployees.reduce((sum, e) => sum + e.baseSalary, 0);
-  const estimatedDeductions = Math.round(totalPayroll * 0.15);
+  
+  const totalDeductions = selectedEmployees.reduce((sum, e) => {
+    if (!e.salaryStructure || !e.salaryStructure.components) return sum;
+    const itemDeductions = e.salaryStructure.components
+      .filter((c: any) => c.component_type === 'DEDUCTION')
+      .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
+    return sum + itemDeductions;
+  }, 0);
+
+  const totalEarnings = selectedEmployees.reduce((sum, e) => {
+    if (!e.salaryStructure || !e.salaryStructure.components) return sum;
+    const itemEarnings = e.salaryStructure.components
+      .filter((c: any) => c.component_type === 'EARNING')
+      .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
+    return sum + itemEarnings;
+  }, 0);
+
+  const netPayout = (totalPayroll + totalEarnings) - totalDeductions;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,12 +187,16 @@ const AddPayroll: React.FC = () => {
               <span className="font-medium">${totalPayroll.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
-              <span>Estimated deductions (15%)</span>
-              <span className="font-medium text-red-600">-${estimatedDeductions.toLocaleString()}</span>
+              <span>Total earnings</span>
+              <span className="font-medium text-green-600">+${totalEarnings.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Total deductions</span>
+              <span className="font-medium text-red-600">-${totalDeductions.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm font-bold text-gray-800 border-t border-orange-200 pt-2 mt-2">
               <span>Estimated net payout</span>
-              <span className="text-green-600">${(totalPayroll - estimatedDeductions).toLocaleString()}</span>
+              <span className="text-green-600">${netPayout.toLocaleString()}</span>
             </div>
           </div>
 
