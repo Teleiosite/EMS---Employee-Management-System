@@ -36,6 +36,8 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
         total_deductions = Decimal('0.00')
         
         # Check for SalaryStructure
+        structure = None
+        components = []
         try:
             structure = employee.salary_structure
             components = structure.components.select_related('component').all()
@@ -49,8 +51,8 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
                     total_earnings += val
                 else:
                     total_deductions += val
-        except SalaryStructure.DoesNotExist:
-            # If no structure is defined, we assume zero additional earnings or deductions
+        except Exception: # Broad catch to ensure payslip generation continues
+            # If no structure is defined or other error, we assume zero additional earnings or deductions
             # beyond the base salary.
             pass
 
@@ -72,7 +74,7 @@ def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_id
         )
         # Store components to create after saving ps
         ps._pending_components = []
-        if 'structure' in locals() and structure:
+        if structure:
             for struct_comp in components:
                 comp_name = struct_comp.name or (struct_comp.component.name if struct_comp.component else 'Custom Component')
                 comp_type = struct_comp.component_type or (struct_comp.component.component_type if struct_comp.component else 'EARNING')
