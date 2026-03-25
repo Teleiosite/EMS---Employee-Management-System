@@ -38,15 +38,19 @@ const AddPayroll: React.FC = () => {
       setLoadingEmployees(true);
       try {
         const data = await employeesApi.list();
+        console.log('Fetched employees list:', data);
         const active = data
           .filter((e) => e.status === 'ACTIVE')
-          .map((e) => ({ 
-            id: e.id, 
-            name: e.name, 
-            baseSalary: e.baseSalary, 
-            employeeId: e.employeeId,
-            salaryStructure: e.salaryStructure
-          }));
+          .map((e) => {
+            console.log(`Processing employee ${e.name} salary structure:`, e.salaryStructure);
+            return { 
+              id: e.id, 
+              name: e.name, 
+              baseSalary: e.baseSalary, 
+              employeeId: e.employeeId,
+              salaryStructure: e.salaryStructure
+            };
+          });
         setEmployees(active);
         // Select all by default
         setSelectedIds(new Set(active.map((e) => e.id)));

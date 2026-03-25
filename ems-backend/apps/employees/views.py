@@ -59,7 +59,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         if not user.is_superuser and not tenant:
             return EmployeeProfile.objects.none()
 
-        base_queryset = EmployeeProfile.objects.select_related('user', 'department', 'designation').filter(tenant=tenant)
+        base_queryset = EmployeeProfile.objects.select_related(
+            'user', 'department', 'designation', 'salary_structure'
+        ).prefetch_related(
+            'salary_structure__components'
+        ).filter(tenant=tenant)
 
         if getattr(user, 'role', None) in {'ADMIN', 'HR_MANAGER'}:
             return base_queryset
@@ -77,6 +81,15 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         if profile.user and not profile.user.tenant_id:
             profile.user.tenant = profile.tenant
             profile.user.save(update_fields=['tenant'])
+
+    def perform_destroy(self, instance):
+        # When deleting the profile, also delete the associated User object
+        # for a complete removal. The OneToOneField is on profile->user,
+        # but the user is the 'identity' we want to fully remove if the profile goes.
+        user = instance.user
+        instance.delete()
+        if user:
+            user.delete()
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='me')
     def me(self, request):

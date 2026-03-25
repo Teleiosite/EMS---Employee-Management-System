@@ -122,6 +122,10 @@ export const payrollApi = {
         return transformPayrollRun(response);
     },
 
+    deleteRun: async (id: string): Promise<void> => {
+        await api.delete(`/payroll/runs/${id}/`);
+    },
+
     // ==================== PAYSLIPS ====================
 
     listPayslips: async (params?: { employee?: string; payroll_run?: string }): Promise<PayrollRecord[]> => {
@@ -140,6 +144,10 @@ export const payrollApi = {
     getPayslip: async (id: string): Promise<PayrollRecord> => {
         const response = await api.get<BackendPayslip>(`/payroll/payslips/${id}/`);
         return transformPayslip(response);
+    },
+
+    deletePayslip: async (id: string): Promise<void> => {
+        await api.delete(`/payroll/payslips/${id}/`);
     },
 
     downloadPayslip: async (id: string): Promise<Blob> => {

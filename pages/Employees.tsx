@@ -71,10 +71,11 @@ const Employees: React.FC = () => {
     try {
       await employeesApi.delete(id);
       setEmployeeList(prev => prev.filter(emp => emp.id !== id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete employee:', err);
-      // Still remove from local state for demo
-      setEmployeeList(prev => prev.filter(emp => emp.id !== id));
+      const message = err.message || 'Failed to delete employee. Please try again.';
+      setError(message);
+      setTimeout(() => setError(null), 5000);
     } finally {
       setDeleting(null);
     }

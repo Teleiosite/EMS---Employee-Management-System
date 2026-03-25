@@ -108,12 +108,21 @@ const Payroll: React.FC = () => {
     navigate(`/admin/payroll/edit/${id}`);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this payroll record?")) {
-      setActiveActionId(null);
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this payroll record?")) {
+      return;
+    }
+
+    setActiveActionId(null); // Close the action menu immediately
+
+    try {
+      await payrollApi.deletePayslip(id);
       setPayrollData(prev => prev.filter(p => p.id !== id));
       setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
       showToast('Payroll record deleted', 'info');
+    } catch (err: any) {
+      console.error('Failed to delete payroll record:', err);
+      showToast(err.message || 'Failed to delete payroll record', 'error');
     }
   };
 
