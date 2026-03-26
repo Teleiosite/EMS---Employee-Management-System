@@ -158,10 +158,12 @@ Built with a **SaaS-first architecture**, EMS supports complete isolation betwee
 
 | Feature | Details |
 |---|---|
-| Payslip Generation | Admins create payslips with net/gross salary, tax, and deductions |
-| Employee Payslip View | Employees see their own payslip history |
+| Dynamic Compensation Setup | Per-employee salary structures with custom earnings and deductions via a **Compensation tab** |
+| Payroll Run Creation | Admins select employees and generate payslips for a given month in one click |
+| Live Payroll Summary | Real-time summary of gross salary, total earnings, total deductions and net payout before confirming |
+| Employee Payslip View | Employees see their own payslip history with a breakdown of all components |
 | Payroll Month Tracking | Payslips are tagged by month and year |
-| PDF-ready Structure | Data is structured for easy PDF export (via ReportLab) |
+| PDF Download | Payslip PDF generation via ReportLab |
 
 ### 📢 Announcements
 
@@ -701,6 +703,19 @@ All API endpoints are prefixed with `/api/`. JWT Bearer token is required for al
 - CSRF protection is enabled for all non-safe HTTP methods
 - IP whitelisting support available via `IP_WHITELIST_ENABLED=True`
 - SSL/TLS enforced via Let's Encrypt on all production traffic
+
+---
+
+## 🔮 Roadmap
+
+Features planned for upcoming releases:
+
+| Feature | Description | Status |
+|---|---|---|
+| **Interview Exam Builder** | Admins can create custom online assessments (MCQ / open-ended) and assign them to applicants as part of the hiring pipeline. Results are automatically scored and visible in the candidate profile. | 🗓️ Planned |
+| Performance Reviews | Structured quarterly/annual review cycles with goal tracking and manager feedback | 🗓️ Planned |
+| Smart Onboarding Checklist | Auto-generated onboarding task list for new hires (documents, training, tool access) | 🗓️ Planned |
+| Mobile App (React Native) | Native iOS/Android companion app for employees (clock-in, leave requests, payslips) | 🗓️ Planned |
 
 ---
 
