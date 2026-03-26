@@ -9,6 +9,7 @@ import { User } from '../types';
 import { leavesApi } from '../services/leavesApi';
 import { attendanceApi } from '../services/attendanceApi';
 import { announcementsApi } from '../services/announcementsApi';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardCardProps {
   title: string;
@@ -16,10 +17,14 @@ interface DashboardCardProps {
   icon: React.ElementType;
   colorClass: string;
   iconBgClass: string;
+  onClick?: () => void;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon: Icon, colorClass, iconBgClass }) => (
-  <div className={`${colorClass} rounded-xl p-6 shadow-sm text-white flex flex-col justify-between h-40 transition-transform hover:scale-[1.02]`}>
+const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon: Icon, colorClass, iconBgClass, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`${colorClass} w-full text-left rounded-xl p-6 shadow-sm text-white flex flex-col justify-between h-40 transition-all hover:scale-[1.02] hover:shadow-lg focus:outline-none ${onClick ? 'cursor-pointer' : ''}`}
+  >
     <div>
       <h3 className="font-medium text-white/90 text-sm md:text-base mb-1">{title}</h3>
       <div className="text-3xl font-bold">{value}</div>
@@ -27,10 +32,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon: Icon,
     <div className="self-end p-2 bg-white/20 rounded-lg backdrop-blur-sm">
       <Icon className="w-6 h-6 text-white" />
     </div>
-  </div>
+  </button>
 );
 
 const EmployeeDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [pendingLeaveRequests, setPendingLeaveRequests] = useState(0);
   const [approvedLeavesThisMonth, setApprovedLeavesThisMonth] = useState(0);
@@ -120,6 +126,7 @@ const EmployeeDashboard: React.FC = () => {
           icon={FileText}
           colorClass="bg-yellow-400"
           iconBgClass="bg-yellow-500"
+          onClick={() => navigate('/employee/leaves')}
         />
         <DashboardCard
           title="Approved Leaves (This Month)"
@@ -127,6 +134,7 @@ const EmployeeDashboard: React.FC = () => {
           icon={CheckSquare}
           colorClass="bg-green-500"
           iconBgClass="bg-green-600"
+          onClick={() => navigate('/employee/leaves')}
         />
         <DashboardCard
           title="Attendance (This Month)"
@@ -134,6 +142,7 @@ const EmployeeDashboard: React.FC = () => {
           icon={Clock}
           colorClass="bg-blue-500"
           iconBgClass="bg-blue-600"
+          onClick={() => navigate('/employee/attendance')}
         />
         <DashboardCard
           title="Announcements"
@@ -141,6 +150,7 @@ const EmployeeDashboard: React.FC = () => {
           icon={Megaphone}
           colorClass="bg-purple-500"
           iconBgClass="bg-purple-600"
+          onClick={() => navigate('/employee/announcements')}
         />
       </div>
 

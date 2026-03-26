@@ -10,6 +10,7 @@ import {
   DollarSign,
   Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { dashboardApi } from '../services/dashboardApi';
 import { DashboardStats } from '../types';
 
@@ -31,7 +32,8 @@ const StatCard: React.FC<{
   color: 'orange' | 'purple' | 'teal' | 'blue';
   icon: React.ElementType;
   loading?: boolean;
-}> = ({ title, value, color, icon: Icon, loading }) => {
+  onClick?: () => void;
+}> = ({ title, value, color, icon: Icon, loading, onClick }) => {
 
   const colorStyles = {
     orange: 'bg-orange-400',
@@ -41,7 +43,10 @@ const StatCard: React.FC<{
   };
 
   return (
-    <div className={`${colorStyles[color]} text-white rounded-xl p-6 shadow-md relative overflow-hidden transition-transform hover:scale-[1.02]`}>
+    <button 
+      onClick={onClick}
+      className={`w-full text-left ${colorStyles[color]} text-white rounded-xl p-6 shadow-md relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg focus:outline-none ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className="relative z-10">
         <p className="text-sm font-medium opacity-90 mb-1">{title}</p>
         {loading ? (
@@ -51,12 +56,12 @@ const StatCard: React.FC<{
         ) : (
           <h3 className="text-4xl font-bold mb-4">{value}</h3>
         )}
-        <button className="text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors">
+        <span className="inline-block text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors">
           View List
-        </button>
+        </span>
       </div>
       <Icon className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 w-24 h-24 transform translate-x-4" />
-    </div>
+    </button>
   );
 };
 
@@ -67,9 +72,13 @@ const InfoCard: React.FC<{
   iconColor: string;
   iconBg: string;
   loading?: boolean;
-}> = ({ title, value, icon: Icon, iconColor, iconBg, loading }) => {
+  onClick?: () => void;
+}> = ({ title, value, icon: Icon, iconColor, iconBg, loading, onClick }) => {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <button 
+      onClick={onClick}
+      className={`w-full text-left bg-white p-6 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-1 focus:outline-none ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex justify-between items-start mb-4">
         <div>
           <p className="text-sm text-gray-500 font-medium mb-1">{title}</p>
@@ -86,13 +95,14 @@ const InfoCard: React.FC<{
         </div>
       </div>
       <div className="text-right">
-        <button className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</button>
+        <span className="text-sm text-blue-600 font-medium hover:text-blue-700">View All</span>
       </div>
-    </div>
+    </button>
   );
 };
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +166,7 @@ const Dashboard: React.FC = () => {
           color="orange"
           icon={Users}
           loading={loading}
+          onClick={() => navigate('/admin/employees')}
         />
         <StatCard
           title="On Leave Today"
@@ -163,6 +174,7 @@ const Dashboard: React.FC = () => {
           color="purple"
           icon={Briefcase}
           loading={loading}
+          onClick={() => navigate('/admin/leaves')}
         />
         <StatCard
           title="Total Departments"
@@ -170,6 +182,7 @@ const Dashboard: React.FC = () => {
           color="teal"
           icon={Building2}
           loading={loading}
+          onClick={() => navigate('/admin/departments')}
         />
         <StatCard
           title="Pending Approvals"
@@ -177,6 +190,7 @@ const Dashboard: React.FC = () => {
           color="blue"
           icon={FileCheck}
           loading={loading}
+          onClick={() => navigate('/admin/leaves')}
         />
       </div>
 
@@ -189,6 +203,7 @@ const Dashboard: React.FC = () => {
           iconColor="text-green-600"
           iconBg="bg-green-100"
           loading={loading}
+          onClick={() => navigate('/admin/attendance')}
         />
         <InfoCard
           title="Total Announcements"
@@ -197,6 +212,7 @@ const Dashboard: React.FC = () => {
           iconColor="text-blue-600"
           iconBg="bg-blue-100"
           loading={loading}
+          onClick={() => navigate('/admin/announcements')}
         />
         <InfoCard
           title="Approved Leave"
@@ -205,6 +221,7 @@ const Dashboard: React.FC = () => {
           iconColor="text-yellow-600"
           iconBg="bg-yellow-100"
           loading={loading}
+          onClick={() => navigate('/admin/leaves')}
         />
         <InfoCard
           title="Pending Payrolls"
@@ -213,6 +230,7 @@ const Dashboard: React.FC = () => {
           iconColor="text-red-600"
           iconBg="bg-red-100"
           loading={loading}
+          onClick={() => navigate('/admin/payroll')}
         />
       </div>
     </div>
