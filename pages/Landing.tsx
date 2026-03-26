@@ -142,6 +142,50 @@ const Landing: React.FC = () => {
         </div>
       </div>
 
+      {/* About Section */}
+      <div id="about-section" className="bg-white py-20 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose EMS?</h2>
+            <p className="text-xl text-gray-500 max-w-3xl mx-auto">
+              We provide a complete, multi-tenant solution allowing agencies and businesses to manage their workforce flawlessly.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-10">
+            <div className="text-center p-6 rounded-2xl bg-orange-50 border border-orange-100">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-600">
+                <Users className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Everything in One Place</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Manage employees, attendance, leave requests, and payroll without constantly switching between different apps.
+              </p>
+            </div>
+            
+            <div className="text-center p-6 rounded-2xl bg-blue-50 border border-blue-100">
+              <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600">
+                <Shield className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Enterprise Security</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Your data is strictly isolated within your organization. We use industry standard security and encryption.
+              </p>
+            </div>
+            
+            <div className="text-center p-6 rounded-2xl bg-green-50 border border-green-100">
+              <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-green-600">
+                <Zap className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">AI-Powered Hiring</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Streamline recruitment with intelligent resume parsing that automatically scores candidates based on your requirements.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Careers Section */}
       <div id="careers-section" className="bg-gray-50 py-20 border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
