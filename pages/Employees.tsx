@@ -162,7 +162,6 @@ const Employees: React.FC = () => {
                   <th className="px-6 py-4 whitespace-nowrap">Department</th>
                   <th className="px-6 py-4 whitespace-nowrap">Designation</th>
                   <th className="px-6 py-4 whitespace-nowrap">Salary</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Experience</th>
                   <th className="px-6 py-4 whitespace-nowrap">Status</th>
                   <th className="px-6 py-4 text-right whitespace-nowrap">Action</th>
                 </tr>
@@ -185,7 +184,6 @@ const Employees: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-gray-600">{emp.department}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{emp.designation}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">${emp.baseSalary.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{emp.experience} Years</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${emp.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
