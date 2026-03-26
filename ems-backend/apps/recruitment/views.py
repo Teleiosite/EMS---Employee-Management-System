@@ -422,6 +422,25 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
             instance.years_of_experience = parsed_data.get('experience_years', 0)
             instance.headline = parsed_data.get('headline', '')
             instance.save()
+            
+            # Sync resume to existing applications for this user
+            from django.db.models import Q
+            candidates = Candidate.objects.filter(
+                Q(user=self.request.user) | Q(email__iexact=self.request.user.email)
+            )
+            for candidate in candidates:
+                if not candidate.resume:
+                    candidate.resume = instance.current_resume
+                    candidate.resume_file_name = instance.current_resume.name.split('/')[-1] if instance.current_resume.name else ''
+                
+                # Update AI analysis for the candidate
+                candidate.parsed_resume_data = parsed_data
+                analysis_results = analyze_candidate(candidate, candidate.job)
+                candidate.ai_fit_score = analysis_results['ai_fit_score']
+                candidate.ai_analysis = analysis_results['ai_analysis']
+                candidate.ai_skill_match = analysis_results['ai_skill_match']
+                candidate.save()
+                
         except Exception as e:
                 print(f"Error parsing profile resume: {e}")
         
