@@ -61,7 +61,8 @@ const CandidateDetail: React.FC = () => {
       showToast('Resume parsed successfully!', 'success');
     } catch (err: any) {
       console.error('Failed to parse resume:', err);
-      showToast('Failed to parse resume.', 'error');
+      const errorMessage = err.response?.data?.error || 'Failed to parse resume.';
+      showToast(errorMessage, 'error');
     } finally {
       setProcessing(false);
     }
@@ -154,8 +155,13 @@ const CandidateDetail: React.FC = () => {
               </div>
               <button
                 onClick={parseResume}
-                disabled={processing}
-                className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg text-sm font-medium transition-colors"
+                disabled={processing || !candidate.resume_file_name}
+                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  processing || !candidate.resume_file_name
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                }`}
+                title={!candidate.resume_file_name ? 'No resume attached to parse' : 'Re-Run AI Analysis'}
               >
                 {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                 Re-Run AI Analysis
