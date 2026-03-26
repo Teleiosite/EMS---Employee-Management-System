@@ -78,12 +78,6 @@ const CandidateList: React.FC = () => {
           <p className="text-gray-500">Manage recruitment pipeline and AI-screened talent.</p>
           {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
-        <button
-          onClick={() => navigate('/admin/recruitment/upload')}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
-        >
-          <Upload className="w-4 h-4" /> Upload New Resume
-        </button>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 shrink-0">

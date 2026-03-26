@@ -88,7 +88,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
       subItems: [
         { name: 'Job Postings', path: '/admin/recruitment/jobs' },
         { name: 'Candidate Dashboard', path: '/admin/recruitment/candidates' },
-        { name: 'Upload Resume', path: '/admin/recruitment/upload' },
         { name: 'AI Settings', path: '/admin/recruitment/ai-settings' }
       ]
     },

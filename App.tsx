@@ -32,7 +32,6 @@ import AddAnnouncement from './pages/AddAnnouncement';
 
 // Recruitment Pages (Admin Only)
 import CandidateList from './pages/recruitment/CandidateList';
-import UploadResume from './pages/recruitment/UploadResume';
 import CandidateDetail from './pages/recruitment/CandidateDetail';
 import JobList from './pages/recruitment/JobList';
 import AddJob from './pages/recruitment/AddJob';
@@ -134,7 +133,6 @@ const App: React.FC = () => {
               <Route path="jobs/edit/:id" element={<AddJob />} />
               <Route path="candidates" element={<CandidateList />} />
               <Route path="candidates/:id" element={<CandidateDetail />} />
-              <Route path="upload" element={<UploadResume />} />
               <Route path="ai-settings" element={<AISettings />} />
             </Route>
 
