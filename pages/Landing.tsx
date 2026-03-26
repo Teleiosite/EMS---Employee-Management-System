@@ -1,8 +1,19 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, ArrowRight, CheckCircle, Briefcase, MapPin, Clock } from 'lucide-react';
-import { jobRequirements } from '../services/mockData';
+import { Building, ArrowRight, CheckCircle, Briefcase, MapPin, Clock, Users, Shield, Zap } from 'lucide-react';
+import api from '../services/api';
+
+interface PublicJob {
+  id: string;
+  role_name: string;
+  department: string;
+  minimum_years_experience: number;
+  required_skills: string[];
+  tenant?: {
+    name: string;
+  };
+}
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +35,34 @@ const Landing: React.FC = () => {
     navigate('/login?redirect=/applicant/jobs');
   };
 
-  // Get only open jobs
-  const openJobs = jobRequirements.filter(job => job.status === 'OPEN');
+  const [jobs, setJobs] = useState<PublicJob[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch all public jobs across all companies
+    const fetchJobs = async () => {
+      try {
+        const response = await api.get('/recruitment/public/jobs/');
+        const results = Array.isArray(response) ? response : (response as any).results || [];
+        // Only show jobs that are OPEN
+        const openJobs = results.filter((job: any) => job.status === 'OPEN' || !job.status);
+        setJobs(openJobs);
+      } catch (err) {
+        console.error('Failed to fetch public jobs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const scrollToAbout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = document.getElementById('about-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
@@ -41,8 +78,8 @@ const Landing: React.FC = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" onClick={handlePlaceholderClick} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Home</a>
-              <a href="#" onClick={handlePlaceholderClick} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">About Us</a>
+              <a href="#" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Home</a>
+              <a href="#about" onClick={scrollToAbout} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">About Us</a>
               <a href="#careers" onClick={scrollToJobs} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Careers</a>
             </div>
 
@@ -116,17 +153,27 @@ const Landing: React.FC = () => {
           </div>
 
           <div className="grid gap-6 max-w-4xl mx-auto">
-            {openJobs.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading open positions...</p>
+              </div>
+            ) : jobs.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-200">
                 <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">No Open Positions</h3>
-                <p className="text-gray-500">Check back later for new opportunities.</p>
+                <p className="text-gray-500">Check back later for new opportunities across our companies.</p>
               </div>
             ) : (
-              openJobs.map((job) => (
+              jobs.map((job) => (
                 <div key={job.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
+                      {job.tenant && (
+                         <span className="text-sm font-semibold text-gray-900 border-r border-gray-300 pr-3 mr-1">
+                           {job.tenant.name}
+                         </span>
+                      )}
                       <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide">
                         {job.department}
                       </span>
@@ -144,7 +191,7 @@ const Landing: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {job.required_skills.slice(0, 4).map(skill => (
+                      {job.required_skills && job.required_skills.slice(0, 4).map(skill => (
                         <span key={skill} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
                           {skill}
                         </span>
