@@ -142,7 +142,8 @@ const ApplicantProfile: React.FC = () => {
       setResumeFile(null);
       showToast('Resume uploaded successfully!', 'success');
     } catch (err: any) {
-      showToast(err.message || 'Failed to upload resume', 'error');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to upload resume';
+      showToast(errorMessage, 'error');
     } finally {
       setIsUploadingResume(false);
     }

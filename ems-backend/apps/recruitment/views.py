@@ -442,6 +442,7 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
                 candidate.save()
                 
         except Exception as e:
-                print(f"Error parsing profile resume: {e}")
+            # We want to propagate this error to the frontend so the user knows why parsing failed
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(ApplicantProfileSerializer(instance).data)

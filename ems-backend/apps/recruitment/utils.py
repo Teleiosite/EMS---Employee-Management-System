@@ -32,11 +32,11 @@ def parse_resume(file):
                     text += extracted + "\n"
         except Exception as e:
             logger.error(f"Failed to read PDF: {e}")
-            return get_mock_resume_data(file.name)
+            raise ValueError("Failed to read document text. Please ensure you uploaded a valid, text-searchable PDF file (DOCX is currently not supported for AI Parsing).")
             
         if not text.strip():
-            logger.warning("No text extracted from PDF. Using mock data.")
-            return get_mock_resume_data(file.name)
+            logger.warning("No text extracted from PDF.")
+            raise ValueError("No text could be extracted from the PDF. It might be a scanned image.")
             
         # 3. Call Gemini API via REST request
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}"
@@ -56,8 +56,9 @@ def parse_resume(file):
         response = requests.post(url, headers=headers, json=payload)
         
         if not response.ok:
-            logger.error(f"Gemini API Error: {response.text}")
-            return get_mock_resume_data(file.name)
+            error_msg = f"Gemini API Error: {response.text}"
+            logger.error(error_msg)
+            raise ValueError(f"AI API returned an error: {response.status_code}")
             
         response_data = response.json()
         
@@ -68,11 +69,13 @@ def parse_resume(file):
             return parsed_json
         except (KeyError, IndexError, json.JSONDecodeError) as e:
             logger.error(f"Gemini returned invalid or missing JSON: {e}")
-            return get_mock_resume_data(file.name)
+            raise ValueError("The AI returned invalid format data. Please try again.")
             
+    except ValueError:
+        raise
     except Exception as e:
         logger.error(f"AI Parsing failed: {e}")
-        return get_mock_resume_data(file.name)
+        raise ValueError(f"An unexpected error occurred during AI parsing: {str(e)}")
 
 
 def get_mock_resume_data(filename):
