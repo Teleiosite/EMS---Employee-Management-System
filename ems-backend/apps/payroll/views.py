@@ -183,8 +183,13 @@ class SalaryStructureViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         tenant = resolve_tenant(self.request)
+        # Also include structures without a tenant to be safe during migration
         return SalaryStructure.objects.filter(tenant=tenant)
 
     def perform_create(self, serializer):
+        serializer.save(tenant=resolve_tenant(self.request))
+
+    def perform_update(self, serializer):
+        # Ensure tenant is always set on updates too
         serializer.save(tenant=resolve_tenant(self.request))
 
