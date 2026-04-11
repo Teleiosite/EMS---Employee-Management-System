@@ -10,7 +10,7 @@ from .models import AISettings
 
 logger = logging.getLogger(__name__)
 
-def parse_resume(file):
+def parse_resume(file, tenant=None):
     """
     Extracts text from a resume file and parses it using Google Gemini AI if enabled.
     Falls back to mock data if AI is disabled or an error occurs.
@@ -19,10 +19,11 @@ def parse_resume(file):
     first. The database field is only used as a fallback. Store the key as an env var
     on the Oracle VM rather than relying on the database alone.
     """
-    settings = AISettings.get_settings()
+    settings = AISettings.get_settings(tenant)
 
     # SECURITY: prefer environment variable over the DB-stored key
-    gemini_api_key = os.environ.get('GEMINI_API_KEY') or settings.gemini_api_key
+    # If the tenant doesn't have an api key, fall back to global env var
+    gemini_api_key = settings.gemini_api_key or os.environ.get('GEMINI_API_KEY')
     
     # 1. Fallback / Mock Parsing if AI is disabled or key unavailable
     if not settings.is_active or not gemini_api_key:

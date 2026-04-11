@@ -88,7 +88,8 @@ class AISettingsView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAdminOrHRManager]
 
     def get_object(self):
-        return AISettings.get_settings()
+        tenant = resolve_tenant(self.request)
+        return AISettings.get_settings(tenant)
 
 
 class CandidateViewSet(viewsets.ModelViewSet):
@@ -214,7 +215,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
             return Response({'error': 'No resume file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-             parsed_data = parse_resume(candidate.resume)
+             parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
              candidate.parsed_resume_data = parsed_data
              
              # Calculate Fit Score
@@ -277,7 +278,7 @@ class PublicApplicationViewSet(generics.CreateAPIView):
         if candidate.resume:
              try:
                  _validate_resume_file(candidate.resume)  # SECURITY: type + size check
-                 parsed_data = parse_resume(candidate.resume)
+                 parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
                  candidate.parsed_resume_data = parsed_data
                  
                  analysis_results = analyze_candidate(candidate, candidate.job)
@@ -349,7 +350,7 @@ class ApplicantApplyView(generics.CreateAPIView):
         # Trigger AI resume parsing
         if candidate.resume:
              try:
-                 parsed_data = parse_resume(candidate.resume)
+                 parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
                  candidate.parsed_resume_data = parsed_data
                  
                  # Calculate Fit Score
@@ -399,7 +400,7 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
             instance.resume_uploaded_at = timezone.now()
             # Trigger AI parsing
             try:
-                parsed_data = parse_resume(instance.current_resume)
+                parsed_data = parse_resume(instance.current_resume, tenant=instance.tenant)
                 instance.resume_parsed_data = parsed_data
                 
                 # Update Applicant Profile fields based on resume
@@ -444,7 +445,7 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
         
         # Trigger AI parsing
         try:
-            parsed_data = parse_resume(instance.current_resume)
+            parsed_data = parse_resume(instance.current_resume, tenant=instance.tenant)
             instance.resume_parsed_data = parsed_data
             
             # Update Applicant Profile fields based on resume

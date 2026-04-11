@@ -194,8 +194,10 @@ class ApplicantProfile(models.Model):
 
 class AISettings(models.Model):
     """
-    Singleton model to store API keys and settings for AI resume parsing.
+    Tenant-specific model to store API keys and settings for AI resume parsing.
+    Falls back to global env var if tenant does not provide a key.
     """
+    tenant = models.OneToOneField('core.Tenant', on_delete=models.CASCADE, related_name='ai_settings', null=True, blank=True)
     gemini_api_key = models.CharField(
         max_length=255, 
         blank=True, 
@@ -213,19 +215,22 @@ class AISettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Enforce singleton pattern
-        self.pk = 1
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_settings(cls):
-        settings, created = cls.objects.get_or_create(pk=1)
+    def get_settings(cls, tenant=None):
+        if tenant:
+            settings, created = cls.objects.get_or_create(tenant=tenant)
+            return settings
+        # Used as a fallback if no tenant is provided
+        settings, created = cls.objects.get_or_create(tenant=None)
         return settings
 
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         has_key = "Key Set" if self.gemini_api_key else "No Key"
-        return f"AI Parser Settings ({status} - {has_key})"
+        tenant_name = self.tenant.name if self.tenant else "Global"
+        return f"AI Parser Settings [{tenant_name}] ({status} - {has_key})"
 
 class CandidateStatusHistory(models.Model):
     """Tracks the timeline of application status changes"""
