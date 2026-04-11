@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Users, TrendingUp, ShieldCheck, AlertCircle, Calendar } from 'lucide-react';
-
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (isLocalhost ? 'http://localhost:8000/api' : '/api');
+import api from '../../services/api';
 
 interface TenantSummary {
   id: number;
@@ -26,14 +24,7 @@ const HostDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    fetch(`${API_BASE_URL}/core/host/stats/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => {
-        if (!r.ok) throw new Error('Access denied or endpoint unavailable.');
-        return r.json();
-      })
+    api.get<HostStats>('/core/host/stats/')
       .then(data => setStats(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
