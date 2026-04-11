@@ -1,9 +1,13 @@
 from decouple import config
 
-# Only enforce SSL if explicitly enabled (set to False for HTTP-only deployments)
-SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+# -----------------------------------------------------------------------
+# SSL — default is ON for production Oracle VM.
+# Override with SECURE_SSL_REDIRECT=False in your .env for local HTTP dev.
+# -----------------------------------------------------------------------
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
 
-# Cookie security — only enable when SSL is active
+# Cookie security — only set Secure flag when HTTPS is active
+JWT_COOKIE_SECURE = SECURE_SSL_REDIRECT   # httpOnly JWT cookie: Secure in prod, not in dev
 SESSION_COOKIE_SECURE = SECURE_SSL_REDIRECT
 CSRF_COOKIE_SECURE = SECURE_SSL_REDIRECT
 

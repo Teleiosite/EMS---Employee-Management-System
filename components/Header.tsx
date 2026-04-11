@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, Menu, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser as defaultUser } from '../services/mockData';
+import { useAuth } from './ProtectedRoute';
 import { User } from '../types';
 
 interface HeaderProps {
@@ -19,11 +20,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    navigate('/login');
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout(); // clears httpOnly cookies on backend + localStorage user
   };
 
   return (

@@ -1,4 +1,5 @@
 import io
+import secrets
 import pandas as pd
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -186,8 +187,28 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                             }
                         )
                         if created:
-                            user_obj.set_password('Ems12345!') # Default password
+                            # SECURITY: generate a unique random password per employee.
+                            # Never use a shared hardcoded default password.
+                            temp_password = secrets.token_urlsafe(12)
+                            user_obj.set_password(temp_password)
                             user_obj.save()
+                            # Notify the employee of their temporary password
+                            try:
+                                from ems_core.utils_email import send_email_in_background
+                                send_email_in_background(
+                                    subject='Your EMS Account Has Been Created',
+                                    message=(
+                                        f"Hello {first_name},\n\n"
+                                        f"An account has been created for you on the Employee Management System.\n\n"
+                                        f"Login email: {email}\n"
+                                        f"Temporary password: {temp_password}\n\n"
+                                        f"Please log in and change your password immediately.\n\n"
+                                        f"Best,\nHR Team"
+                                    ),
+                                    recipient_list=[email],
+                                )
+                            except Exception:
+                                pass  # Email failure must not roll back the import
 
                         # Create/Update Profile
                         base_salary = float(row[mapped_cols['base_salary']]) if mapped_cols['base_salary'] and pd.notna(row[mapped_cols['base_salary']]) else 0.0

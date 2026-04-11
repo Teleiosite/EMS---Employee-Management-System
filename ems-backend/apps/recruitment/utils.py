@@ -1,3 +1,4 @@
+import os
 import random
 import time
 import json
@@ -13,11 +14,18 @@ def parse_resume(file):
     """
     Extracts text from a resume file and parses it using Google Gemini AI if enabled.
     Falls back to mock data if AI is disabled or an error occurs.
+
+    SECURITY: The Gemini API key is read from the GEMINI_API_KEY environment variable
+    first. The database field is only used as a fallback. Store the key as an env var
+    on the Oracle VM rather than relying on the database alone.
     """
     settings = AISettings.get_settings()
+
+    # SECURITY: prefer environment variable over the DB-stored key
+    gemini_api_key = os.environ.get('GEMINI_API_KEY') or settings.gemini_api_key
     
-    # 1. Fallback / Mock Parsing if AI is disabled
-    if not settings.is_active or not settings.gemini_api_key:
+    # 1. Fallback / Mock Parsing if AI is disabled or key unavailable
+    if not settings.is_active or not gemini_api_key:
         logger.warning("AI Parsing is disabled or API key is missing. Using mock data.")
         return get_mock_resume_data(file.name)
         
@@ -39,7 +47,7 @@ def parse_resume(file):
             raise ValueError("No text could be extracted from the PDF. It might be a scanned image.")
             
         # 3. Call Gemini API via REST request
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
         
         full_prompt = f"{settings.prompt_template}\n\nResume Text:\n{text[:15000]}"
         

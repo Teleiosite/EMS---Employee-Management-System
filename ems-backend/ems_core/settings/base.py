@@ -82,7 +82,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'apps.authentication.cookie_auth.CookieJWTAuthentication',  # httpOnly cookie auth
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -113,6 +113,15 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+# --- JWT Cookie Configuration ---
+JWT_COOKIE_NAME = 'access_token'
+JWT_REFRESH_COOKIE_NAME = 'refresh_token'
+JWT_COOKIE_SAMESITE = 'Lax'   # 'Strict' is safest but breaks cross-port dev
+JWT_COOKIE_HTTPONLY = True
+JWT_ACCESS_COOKIE_MAX_AGE = 60 * 30           # 30 minutes (matches ACCESS_TOKEN_LIFETIME)
+JWT_REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7 # 7 days (matches REFRESH_TOKEN_LIFETIME)
+# JWT_COOKIE_SECURE is set in security.py (True in production, False in dev)
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'EMS API',
     'DESCRIPTION': 'Employee Management System API',
@@ -137,6 +146,7 @@ CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', cast=bool, default
 
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', cast=bool, default=False)
 CORS_ALLOWED_ORIGINS = [o.strip() for o in config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173').split(',') if o.strip()]
+CORS_ALLOW_CREDENTIALS = True   # Required so browser sends httpOnly cookies on cross-origin requests
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in config('CSRF_TRUSTED_ORIGINS', default='http://localhost:5173').split(',') if o.strip()]
 
 IP_WHITELIST_ENABLED = config('IP_WHITELIST_ENABLED', cast=bool, default=False)

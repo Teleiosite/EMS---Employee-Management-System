@@ -1,11 +1,14 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 from .serializers import (
     EmailTokenObtainPairSerializer,
@@ -28,13 +31,112 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
 
+def _set_auth_cookies(response, access_token: str, refresh_token: str = None):
+    """Attach JWT tokens as httpOnly cookies to a response."""
+    secure = getattr(settings, 'JWT_COOKIE_SECURE', True)
+    samesite = getattr(settings, 'JWT_COOKIE_SAMESITE', 'Lax')
+    access_max_age = getattr(settings, 'JWT_ACCESS_COOKIE_MAX_AGE', 60 * 30)       # 30 min
+    refresh_max_age = getattr(settings, 'JWT_REFRESH_COOKIE_MAX_AGE', 60 * 60 * 24 * 7)  # 7 days
+
+    response.set_cookie(
+        key=getattr(settings, 'JWT_COOKIE_NAME', 'access_token'),
+        value=access_token,
+        max_age=access_max_age,
+        httponly=True,
+        secure=secure,
+        samesite=samesite,
+        path='/',
+    )
+    if refresh_token:
+        response.set_cookie(
+            key=getattr(settings, 'JWT_REFRESH_COOKIE_NAME', 'refresh_token'),
+            value=refresh_token,
+            max_age=refresh_max_age,
+            httponly=True,
+            secure=secure,
+            samesite=samesite,
+            path='/api/auth/refresh/',  # scope refresh cookie to refresh endpoint only
+        )
+
+
+def _clear_auth_cookies(response):
+    """Delete JWT cookies from the client."""
+    response.delete_cookie(
+        key=getattr(settings, 'JWT_COOKIE_NAME', 'access_token'),
+        path='/',
+    )
+    response.delete_cookie(
+        key=getattr(settings, 'JWT_REFRESH_COOKIE_NAME', 'refresh_token'),
+        path='/api/auth/refresh/',
+    )
+
+
 class LoginView(TokenObtainPairView):
+    """Authenticate user and return JWT tokens as httpOnly cookies."""
     serializer_class = EmailTokenObtainPairSerializer
     permission_classes = [AllowAny]
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            raise
+
+        data = serializer.validated_data
+        access = data.get('access', '')
+        refresh = data.get('refresh', '')
+        user_data = data.get('user', {})
+
+        # Return ONLY user metadata — no tokens in the body
+        response = Response({'user': user_data}, status=status.HTTP_200_OK)
+        _set_auth_cookies(response, access_token=access, refresh_token=refresh)
+        return response
+
 
 class RefreshView(TokenRefreshView):
+    """Issue a new access token from the refresh cookie."""
     permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        refresh_cookie_name = getattr(settings, 'JWT_REFRESH_COOKIE_NAME', 'refresh_token')
+        refresh_token = request.COOKIES.get(refresh_cookie_name)
+
+        if not refresh_token:
+            return Response(
+                {'detail': 'Refresh token cookie not found.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Inject the cookie value into request.data for the parent serializer
+        request.data._mutable = True if hasattr(request.data, '_mutable') else None
+        try:
+            request.data['refresh'] = refresh_token
+        except AttributeError:
+            request.data = {'refresh': refresh_token}
+
+        try:
+            response = super().post(request, *args, **kwargs)
+        except (TokenError, InvalidToken) as e:
+            return Response({'detail': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if response.status_code == 200:
+            new_access = response.data.get('access', '')
+            # Strip tokens from the body
+            response.data = {'detail': 'Token refreshed.'}
+            _set_auth_cookies(response, access_token=new_access)
+
+        return response
+
+
+class LogoutView(APIView):
+    """Clear JWT cookies and invalidate the session."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        response = Response({'detail': 'Logged out successfully.'}, status=status.HTTP_200_OK)
+        _clear_auth_cookies(response)
+        return response
 
 
 class PasswordResetRequestView(APIView):
@@ -77,7 +179,9 @@ class EmailVerificationRequestView(APIView):
         user = request.user
         user.email_verification_token = generate_secure_token()
         user.save(update_fields=['email_verification_token'])
-        return Response({'detail': 'Verification token generated.', 'token': user.email_verification_token})
+        # SECURITY: Token is NOT returned in the response body.
+        # It must be delivered exclusively via email to prove inbox ownership.
+        return Response({'detail': 'A verification link has been sent to your email address.'})
 
 
 class EmailVerificationConfirmView(APIView):

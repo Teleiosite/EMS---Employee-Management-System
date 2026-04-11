@@ -31,11 +31,23 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'password', 'first_name', 'last_name', 'role')
 
+    # Roles that any anonymous user is allowed to self-register as.
+    # Everything else requires an authenticated ADMIN or HR_MANAGER.
+    SELF_REGISTER_ROLES = {'APPLICANT'}
+
     def validate_role(self, value):
         request = self.context.get('request')
-        if value != 'APPLICANT':
-            if not request or not request.user.is_authenticated or request.user.role not in {'ADMIN', 'HR_MANAGER'}:
-                raise serializers.ValidationError('Only ADMIN/HR can create non-applicant users.')
+        if value not in self.SELF_REGISTER_ROLES:
+            # Only ADMIN / HR_MANAGER can create privileged accounts
+            is_admin_or_hr = (
+                request
+                and request.user.is_authenticated
+                and request.user.role in {'ADMIN', 'HR_MANAGER'}
+            )
+            if not is_admin_or_hr:
+                raise serializers.ValidationError(
+                    f"Self-registration is only allowed for: {', '.join(self.SELF_REGISTER_ROLES)}."
+                )
         return value
 
     def validate_password(self, value):

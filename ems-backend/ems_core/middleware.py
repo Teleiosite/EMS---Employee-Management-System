@@ -10,8 +10,11 @@ class IPWhitelistMiddleware:
         if not getattr(settings, 'IP_WHITELIST_ENABLED', False):
             return self.get_response(request)
 
-        ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
-        ip = ip.split(',')[0].strip()
+        # SECURITY: Use REMOTE_ADDR only — this is set by Nginx after stripping
+        # any client-supplied X-Forwarded-For values.  Trusting X-Forwarded-For
+        # directly is spoofable by the client.
+        ip = request.META.get('REMOTE_ADDR', '')
+
         if ip not in settings.IP_WHITELIST:
             return JsonResponse({'detail': 'IP address not allowed.'}, status=403)
         return self.get_response(request)

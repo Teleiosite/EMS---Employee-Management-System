@@ -1,33 +1,44 @@
 /**
  * Base API utility for making authenticated requests to the backend.
- * Handles JWT token injection, automatic token refresh on 401, and response parsing.
+ *
+ * SECURITY (httpOnly cookie auth):
+ *  - JWT tokens live in httpOnly cookies set by the backend \u2014 JavaScript can never read them.
+ *  - All requests include `credentials: 'include'` so the browser automatically sends cookies.
+ *  - On 401, we POST to /auth/refresh/ (cookie sent automatically) to get a new access cookie.
+ *  - We no longer inject an Authorization header, so XSS cannot steal and replay tokens.
  */
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || (isLocalhost ? 'http://localhost:8000/api' : '/api');
+const isLocalhost =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  (isLocalhost ? 'http://localhost:8000/api' : '/api');
 
-// Get/set tokens in localStorage
-const getAuthToken = (): string | null => localStorage.getItem('accessToken');
-const getRefreshToken = (): string | null => localStorage.getItem('refreshToken');
-
-// Clear auth and redirect to login
-const handleLogout = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+// ---------------------------------------------------------------------------
+// Session logout helper \u2014 clear user metadata and redirect to login
+// ---------------------------------------------------------------------------
+const handleLogout = async () => {
+  try {
+    // Ask the backend to clear the httpOnly cookies
+    await fetch(`${API_BASE_URL}/auth/logout/`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // Ignore \u2014 still clear local state
+  }
   localStorage.removeItem('user');
-  window.location.href = '/login';
+  window.location.href = '/#/login';
 };
 
-// Try to refresh the access token — returns new access token or null
+// ---------------------------------------------------------------------------
+// Token refresh \u2014 POST to /auth/refresh/ with cookies (no body needed)
+// ---------------------------------------------------------------------------
 let isRefreshing = false;
-let refreshQueue: Array<(token: string | null) => void> = [];
+let refreshQueue: Array<(success: boolean) => void> = [];
 
-const refreshAccessToken = async (): Promise<string | null> => {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
-
+const refreshAccessToken = async (): Promise<boolean> => {
   if (isRefreshing) {
-    // Queue subsequent calls until refresh completes
     return new Promise((resolve) => {
       refreshQueue.push(resolve);
     });
@@ -37,52 +48,30 @@ const refreshAccessToken = async (): Promise<string | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh }),
+      credentials: 'include', // refresh cookie is sent automatically
     });
 
-    if (!response.ok) {
-      refreshQueue.forEach((cb) => cb(null));
-      refreshQueue = [];
-      handleLogout();
-      return null;
-    }
+    const success = response.ok;
+    refreshQueue.forEach((cb) => cb(success));
+    refreshQueue = [];
 
-    const data = await response.json();
-    const newToken: string = data.access;
-    localStorage.setItem('accessToken', newToken);
-    refreshQueue.forEach((cb) => cb(newToken));
-    refreshQueue = [];
-    return newToken;
+    if (!success) {
+      await handleLogout();
+    }
+    return success;
   } catch {
-    refreshQueue.forEach((cb) => cb(null));
+    refreshQueue.forEach((cb) => cb(false));
     refreshQueue = [];
-    handleLogout();
-    return null;
+    await handleLogout();
+    return false;
   } finally {
     isRefreshing = false;
   }
 };
 
-// Get headers with optional authentication
-const getHeaders = (authenticated: boolean = true, isFormData: boolean = false): HeadersInit => {
-  const headers: HeadersInit = {};
-
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  if (authenticated) {
-    const token = getAuthToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-  }
-
-  return headers;
-};
-
+// ---------------------------------------------------------------------------
 // Generic API error class
+// ---------------------------------------------------------------------------
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -95,33 +84,33 @@ export class ApiError extends Error {
   }
 }
 
-// Handle API response — auto-refreshes token on 401 and retries once
-const handleResponse = async <T>(response: Response, retryFn?: () => Promise<Response>): Promise<T> => {
-  if (response.status === 204) {
-    return {} as T;
-  }
+// ---------------------------------------------------------------------------
+// Response handler \u2014 retries once after a token refresh on 401
+// ---------------------------------------------------------------------------
+const handleResponse = async <T>(
+  response: Response,
+  retryFn?: () => Promise<Response>
+): Promise<T> => {
+  if (response.status === 204) return {} as T;
 
-  // Token expired — try to refresh and retry once
+  // Access token expired \u2014 try refresh then retry once
   if (response.status === 401 && retryFn) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
       const retried = await retryFn();
-      return handleResponse<T>(retried); // No retryFn on second attempt to avoid loops
+      return handleResponse<T>(retried); // no retryFn \u2014 avoids infinite loop
     }
-    // Refresh failed — already redirected to login
     throw new ApiError('Session expired. Please log in again.', 401);
   }
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    // Handle DRF field-level validation errors: {field: ["msg", ...], ...}
     const extractMessage = (d: any): string => {
       if (!d || typeof d !== 'object') return 'An error occurred';
       if (d.detail) return d.detail;
       if (d.message) return d.message;
       if (d.error) return d.error;
-      // Field-level errors — join them all
       const parts: string[] = [];
       for (const [key, val] of Object.entries(d)) {
         const msgs = Array.isArray(val) ? val.join(' ') : String(val);
@@ -135,29 +124,37 @@ const handleResponse = async <T>(response: Response, retryFn?: () => Promise<Res
   return data as T;
 };
 
-// Authenticated fetch with auto-retry on token expiry
-const authFetch = async (url: string, options: RequestInit): Promise<Response> => {
-  const response = await fetch(url, options);
-  return response;
+// ---------------------------------------------------------------------------
+// Base fetch wrapper \u2014 always includes credentials (cookies)
+// ---------------------------------------------------------------------------
+const buildHeaders = (isFormData = false): HeadersInit => {
+  const headers: HeadersInit = {};
+  if (!isFormData) headers['Content-Type'] = 'application/json';
+  return headers;
 };
 
-// API Methods
+const authFetch = (url: string, options: RequestInit): Promise<Response> =>
+  fetch(url, { ...options, credentials: 'include' });
+
+// ---------------------------------------------------------------------------
+// Public API object
+// ---------------------------------------------------------------------------
 export const api = {
-  get: async <T>(endpoint: string, authenticated: boolean = true): Promise<T> => {
+  get: async <T>(endpoint: string): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
-    const opts = (): RequestInit => ({ method: 'GET', headers: getHeaders(authenticated) });
+    const opts = (): RequestInit => ({ method: 'GET', headers: buildHeaders() });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  getBlob: async (endpoint: string, authenticated: boolean = true): Promise<Blob> => {
+  getBlob: async (endpoint: string): Promise<Blob> => {
     const url = `${API_BASE_URL}${endpoint}`;
-    const opts = (): RequestInit => ({ method: 'GET', headers: getHeaders(authenticated) });
+    const opts = (): RequestInit => ({ method: 'GET', headers: buildHeaders() });
     const response = await authFetch(url, opts());
 
     if (response.status === 401) {
-      const newToken = await refreshAccessToken();
-      if (newToken) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
         const retried = await authFetch(url, opts());
         if (!retried.ok) throw new ApiError('Download failed', retried.status);
         return retried.blob();
@@ -167,95 +164,93 @@ export const api = {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      const message = data.detail || data.message || data.error || 'An error occurred downloading the file';
-      throw new ApiError(message, response.status, data);
+      throw new ApiError(
+        data.detail || data.message || data.error || 'An error occurred downloading the file',
+        response.status,
+        data
+      );
     }
-
     return response.blob();
   },
 
-  post: async <T>(endpoint: string, data?: any, authenticated: boolean = true): Promise<T> => {
+  post: async <T>(endpoint: string, data?: any): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'POST',
-      headers: getHeaders(authenticated),
+      headers: buildHeaders(),
       body: data ? JSON.stringify(data) : undefined,
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  put: async <T>(endpoint: string, data: any, authenticated: boolean = true): Promise<T> => {
+  put: async <T>(endpoint: string, data: any): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'PUT',
-      headers: getHeaders(authenticated),
+      headers: buildHeaders(),
       body: JSON.stringify(data),
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  patch: async <T>(endpoint: string, data: any, authenticated: boolean = true): Promise<T> => {
+  patch: async <T>(endpoint: string, data: any): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'PATCH',
-      headers: getHeaders(authenticated),
+      headers: buildHeaders(),
       body: JSON.stringify(data),
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  delete: async <T>(endpoint: string, authenticated: boolean = true): Promise<T> => {
+  delete: async <T>(endpoint: string): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
-    const opts = (): RequestInit => ({ method: 'DELETE', headers: getHeaders(authenticated) });
+    const opts = (): RequestInit => ({ method: 'DELETE', headers: buildHeaders() });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  // For file uploads
-  upload: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+  upload: async <T>(endpoint: string, formData: FormData): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'POST',
-      headers: getHeaders(authenticated, true),
+      headers: buildHeaders(true),
       body: formData,
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  // POST with FormData
-  postFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+  postFormData: async <T>(endpoint: string, formData: FormData): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'POST',
-      headers: getHeaders(authenticated, true),
+      headers: buildHeaders(true),
       body: formData,
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  // PUT with FormData
-  putFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+  putFormData: async <T>(endpoint: string, formData: FormData): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'PUT',
-      headers: getHeaders(authenticated, true),
+      headers: buildHeaders(true),
       body: formData,
     });
     const response = await authFetch(url, opts());
     return handleResponse<T>(response, () => authFetch(url, opts()));
   },
 
-  // PATCH with FormData
-  patchFormData: async <T>(endpoint: string, formData: FormData, authenticated: boolean = true): Promise<T> => {
+  patchFormData: async <T>(endpoint: string, formData: FormData): Promise<T> => {
     const url = `${API_BASE_URL}${endpoint}`;
     const opts = (): RequestInit => ({
       method: 'PATCH',
-      headers: getHeaders(authenticated, true),
+      headers: buildHeaders(true),
       body: formData,
     });
     const response = await authFetch(url, opts());

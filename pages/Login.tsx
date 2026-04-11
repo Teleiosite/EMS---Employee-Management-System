@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building, Mail, Lock, User as UserIcon } from 'lucide-react';
-import { mockCredentials } from '../services/mockData';
 import { loginWithBackend, registerApplicantWithBackend } from '../services/authApi';
 import { UserRole } from '../types';
 
@@ -41,23 +40,8 @@ const Login: React.FC = () => {
         await loginWithBackend(email, password);
         navigate('/applicant');
       }
-    } catch (backendError) {
-      if (isLogin) {
-        if (email === mockCredentials.admin.email && password === mockCredentials.admin.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.admin.user));
-          navigate('/admin');
-        } else if (email === mockCredentials.employee.email && password === mockCredentials.employee.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.employee.user));
-          navigate('/employee');
-        } else if (email === mockCredentials.applicant.email && password === mockCredentials.applicant.password) {
-          localStorage.setItem('user', JSON.stringify(mockCredentials.applicant.user));
-          navigate('/applicant');
-        } else {
-          setError(backendError instanceof Error ? backendError.message : 'Invalid email or password.');
-        }
-      } else {
-        setError(backendError instanceof Error ? backendError.message : 'Sign up failed.');
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -162,15 +146,6 @@ const Login: React.FC = () => {
             Not on EMS? <span className="font-bold text-orange-600">Register your company workspace</span>
           </button>
         </div>
-
-        {isLogin && (
-          <div className="mt-8 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
-             <p className="mb-2 font-semibold">Demo Credentials:</p>
-             <p>Admin: <span className="font-mono">admin@ems.com</span> / admin123</p>
-             <p>Employee: <span className="font-mono">john.doe@ems.com</span> / 123</p>
-             <p>Applicant: <span className="font-mono">alice.j@example.com</span> / 123</p>
-          </div>
-        )}
       </div>
     </div>
   );

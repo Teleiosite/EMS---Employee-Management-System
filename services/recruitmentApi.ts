@@ -183,13 +183,15 @@ export const recruitmentApi = {
     // ==================== PUBLIC ENDPOINTS ====================
 
     getPublicJobs: async (tenantSlug: string): Promise<JobRequirement[]> => {
-        const response = await api.get<PaginatedResponse<BackendJobPosting> | BackendJobPosting[]>(`/recruitment/public/jobs/?tenant=${tenantSlug}`, false);
+        // Public endpoint — no auth cookie required; backend allows AllowAny
+        const response = await api.get<PaginatedResponse<BackendJobPosting> | BackendJobPosting[]>(`/recruitment/public/jobs/?tenant=${tenantSlug}`);
         const results = Array.isArray(response) ? response : response.results;
         return results.map(transformJobPosting);
     },
 
     submitPublicApplication: async (data: FormData): Promise<{ message: string; id: number }> => {
-        return await api.postFormData<{ message: string; id: number }>('/recruitment/public/apply/', data, false);
+        // Public endpoint — unauthenticated apply
+        return await api.postFormData<{ message: string; id: number }>('/recruitment/public/apply/', data);
     },
 
     // ==================== AI SETTINGS ====================

@@ -24,6 +24,37 @@ from .serializers import (
 from .utils import parse_resume, analyze_candidate
 
 
+# ---------------------------------------------------------------------------
+# SECURITY: Resume file validation
+# ---------------------------------------------------------------------------
+_ALLOWED_RESUME_EXTENSIONS = {'.pdf'}
+_MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def _validate_resume_file(file):
+    """
+    Raise a ValidationError if the uploaded file is not a PDF or exceeds 5 MB.
+    Call this before passing the file to parse_resume().
+    """
+    from rest_framework.exceptions import ValidationError
+    import os
+
+    if file is None:
+        return
+
+    ext = os.path.splitext(file.name)[-1].lower()
+    if ext not in _ALLOWED_RESUME_EXTENSIONS:
+        raise ValidationError(
+            f"Only PDF files are accepted for resume upload. Received: '{ext or 'no extension'}'."
+        )
+
+    if file.size > _MAX_RESUME_SIZE_BYTES:
+        max_mb = _MAX_RESUME_SIZE_BYTES // (1024 * 1024)
+        raise ValidationError(
+            f"Resume file exceeds the maximum allowed size of {max_mb} MB."
+        )
+
+
 # ============================================
 # ADMIN/HR VIEWS - Full access to recruitment
 # ============================================
@@ -231,8 +262,8 @@ class PublicApplicationViewSet(generics.CreateAPIView):
         except JobPosting.DoesNotExist:
             return Response({'error': 'Job not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        email = request.data.get('email')
-        if Candidate.objects.filter(email=email, job_id=job_id).exists():
+        email = request.data.get('email', '').strip().lower()  # normalise – prevents case-duplicate bypass
+        if Candidate.objects.filter(email__iexact=email, job_id=job_id).exists():
             return Response(
                 {'error': 'An application with this email already exists for this position.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -245,6 +276,7 @@ class PublicApplicationViewSet(generics.CreateAPIView):
         
         if candidate.resume:
              try:
+                 _validate_resume_file(candidate.resume)  # SECURITY: type + size check
                  parsed_data = parse_resume(candidate.resume)
                  candidate.parsed_resume_data = parsed_data
                  
