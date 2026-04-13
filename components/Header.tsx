@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, Menu, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser as defaultUser } from '../services/mockData';
-import { useAuth } from './ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 import { User } from '../types';
 
 interface HeaderProps {

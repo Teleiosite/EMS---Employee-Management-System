@@ -63,7 +63,7 @@ export const dashboardApi = {
         try {
             // Get today's attendance
             const today = new Date().toISOString().split('T')[0];
-            const attendance = await attendanceApi.list({ date: today });
+            const attendance = await attendanceApi.listLogs({ date: today });
             stats.presentToday = attendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
         } catch (e) {
             console.warn('Failed to fetch attendance for dashboard:', e);

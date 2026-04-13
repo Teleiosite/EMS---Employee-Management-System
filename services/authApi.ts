@@ -107,3 +107,51 @@ export const registerApplicantWithBackend = async (
   }
   return data;
 };
+
+/**
+ * Request a password reset link to be sent to the given email.
+ */
+export const requestPasswordReset = async (email: string) => {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset/request/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || 'Failed to request password reset.');
+  }
+  return data;
+};
+
+/**
+ * Confirm password reset using token from email
+ */
+export const confirmPasswordReset = async (token: string, password: string) => {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset/confirm/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || 'Failed to reset password.');
+  }
+  return data;
+};
+
+/**
+ * Confirm email address matching token from registration link
+ */
+export const confirmEmailVerification = async (token: string) => {
+  const response = await fetch(`${API_BASE_URL}/auth/email-verification/confirm/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || 'Failed to verify email.');
+  }
+  return data;
+};

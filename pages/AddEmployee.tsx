@@ -19,6 +19,7 @@ interface FormData {
   address: string;
   password: string;
   confirmPassword: string;
+  reportsTo: string;
 }
 
 const AddEmployee: React.FC = () => {
@@ -40,7 +41,10 @@ const AddEmployee: React.FC = () => {
     address: '',
     password: '',
     confirmPassword: '',
+    reportsTo: '',
   });
+
+  const [allEmployees, setAllEmployees] = useState<{ id: string; name: string }[]>([]);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<DesignationType[]>([]);
@@ -90,8 +94,18 @@ const AddEmployee: React.FC = () => {
       }
     };
 
+    const fetchAllEmployees = async () => {
+        try {
+            const data = await employeesApi.list();
+            setAllEmployees(data.map(e => ({ id: e.id, name: e.name })));
+        } catch (err) {
+            console.error('Failed to fetch employees for hierarchy:', err);
+        }
+    };
+
     fetchDepartments();
     fetchDesignations();
+    fetchAllEmployees();
   }, []);
 
   // Fetch employee data for edit mode
@@ -113,6 +127,7 @@ const AddEmployee: React.FC = () => {
             address: '',
             password: '',
             confirmPassword: '',
+            reportsTo: employee.reportsTo?.id || '',
           });
         } catch (err) {
           console.error('Failed to fetch employee:', err);
@@ -201,6 +216,7 @@ const AddEmployee: React.FC = () => {
           address: formData.address,
           department_id: formData.department ? parseInt(formData.department) : null,
           designation_id: finalDesignationId,
+          reports_to_id: formData.reportsTo ? parseInt(formData.reportsTo) : null,
         });
         setSuccess('Employee updated successfully!');
         setTimeout(() => navigate('/admin/employees'), 1500);
@@ -225,6 +241,7 @@ const AddEmployee: React.FC = () => {
           address: formData.address || '',
           department_id: formData.department ? parseInt(formData.department) : undefined,
           designation_id: finalDesignationId || undefined,
+          reports_to_id: formData.reportsTo ? parseInt(formData.reportsTo) : undefined,
           status: 'ACTIVE',
         });
 
@@ -405,6 +422,24 @@ const AddEmployee: React.FC = () => {
                   <option key={des.id} value={des.title} />
                 ))}
               </datalist>
+            </div>
+
+            {/* Reports To (Hierarchy) */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Reports To (Manager / Supervisor)</label>
+              <select
+                name="reportsTo"
+                value={formData.reportsTo}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-gray-600"
+              >
+                <option value="">Select Manager (Optional)</option>
+                {allEmployees
+                    .filter(e => e.id !== id) // Prevent self-reporting
+                    .map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Salary */}

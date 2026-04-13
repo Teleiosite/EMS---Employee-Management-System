@@ -91,6 +91,33 @@ class AISettingsView(generics.RetrieveUpdateAPIView):
         tenant = resolve_tenant(self.request)
         return AISettings.get_settings(tenant)
 
+    @action(detail=False, methods=['post'])
+    def test_connection(self, request):
+        """Verify the provided Gemini API key actually works."""
+        api_key = request.data.get('gemini_api_key')
+        if not api_key:
+            return Response({'error': 'API Key is required for testing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Simple reachability test using a dummy prompt
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": "Hello, respond with 'OK' if you can read this."}]}]
+        }
+        
+        try:
+            import requests
+            response = requests.post(url, json=payload, timeout=10)
+            if response.ok:
+                return Response({'success': True, 'message': 'API Key verified successfully!'})
+            else:
+                return Response({
+                    'success': False, 
+                    'error': f"API rejected the request: {response.status_code}",
+                    'details': response.text
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class CandidateViewSet(viewsets.ModelViewSet):
     """Admin/HR management of candidates - includes AI analysis"""
@@ -278,16 +305,13 @@ class PublicApplicationViewSet(generics.CreateAPIView):
         if candidate.resume:
              try:
                  _validate_resume_file(candidate.resume)  # SECURITY: type + size check
-                 parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
-                 candidate.parsed_resume_data = parsed_data
                  
-                 analysis_results = analyze_candidate(candidate, candidate.job)
-                 candidate.ai_fit_score = analysis_results['ai_fit_score']
-                 candidate.ai_analysis = analysis_results['ai_analysis']
-                 candidate.ai_skill_match = analysis_results['ai_skill_match']
-                 candidate.save()
+                 # Offload to background task
+                 from .tasks import process_resume_parsing_task
+                 process_resume_parsing_task.delay(candidate_id=candidate.id)
+                 
              except Exception as e:
-                 print(f"Error parsing resume via public endpoint: {e}")
+                 print(f"Error enqueuing resume parse task: {e}")
                  
         return Response(
             {'message': 'Application submitted successfully.', 'id': candidate.id},
@@ -347,20 +371,13 @@ class ApplicantApplyView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         candidate = serializer.save(tenant=job.tenant)
         
-        # Trigger AI resume parsing
+        # Trigger AI resume parsing (Background)
         if candidate.resume:
              try:
-                 parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
-                 candidate.parsed_resume_data = parsed_data
-                 
-                 # Calculate Fit Score
-                 analysis_results = analyze_candidate(candidate, candidate.job)
-                 candidate.ai_fit_score = analysis_results['ai_fit_score']
-                 candidate.ai_analysis = analysis_results['ai_analysis']
-                 candidate.ai_skill_match = analysis_results['ai_skill_match']
-                 candidate.save()
+                 from .tasks import process_resume_parsing_task
+                 process_resume_parsing_task.delay(candidate_id=candidate.id)
              except Exception as e:
-                 print(f"Error parsing resume: {e}")
+                 print(f"Error enqueuing resume parse task: {e}")
         
         # Record initial history
         CandidateStatusHistory.objects.create(
@@ -398,20 +415,14 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
         # If resume uploaded, update timestamp
         if 'current_resume' in request.FILES:
             instance.resume_uploaded_at = timezone.now()
-            # Trigger AI parsing
+            instance.save()
+            
+            # Trigger AI parsing (Background)
             try:
-                parsed_data = parse_resume(instance.current_resume, tenant=instance.tenant)
-                instance.resume_parsed_data = parsed_data
-                
-                # Update Applicant Profile fields based on resume
-                instance.skills = parsed_data.get('skills', [])
-                instance.education = parsed_data.get('education', [])
-                instance.experience = parsed_data.get('experience', [])
-                instance.years_of_experience = parsed_data.get('experience_years', 0)
-                instance.headline = parsed_data.get('headline', '')
-                instance.save()
+                from .tasks import process_resume_parsing_task
+                process_resume_parsing_task.delay(profile_id=instance.id)
             except Exception as e:
-                 print(f"Error parsing profile resume: {e}")
+                 print(f"Error enqueuing profile resume parse task: {e}")
         
         self.perform_update(serializer)
         return Response(serializer.data)
@@ -443,39 +454,11 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
         instance.resume_uploaded_at = timezone.now()
         instance.save()
         
-        # Trigger AI parsing
+        # Trigger AI parsing (Background)
         try:
-            parsed_data = parse_resume(instance.current_resume, tenant=instance.tenant)
-            instance.resume_parsed_data = parsed_data
-            
-            # Update Applicant Profile fields based on resume
-            instance.skills = parsed_data.get('skills', [])
-            instance.education = parsed_data.get('education', [])
-            instance.experience = parsed_data.get('experience', [])
-            instance.years_of_experience = parsed_data.get('experience_years', 0)
-            instance.headline = parsed_data.get('headline', '')
-            instance.save()
-            
-            # Sync resume to existing applications for this user
-            from django.db.models import Q
-            candidates = Candidate.objects.filter(
-                Q(user=self.request.user) | Q(email__iexact=self.request.user.email)
-            )
-            for candidate in candidates:
-                if not candidate.resume:
-                    candidate.resume = instance.current_resume
-                    candidate.resume_file_name = instance.current_resume.name.split('/')[-1] if instance.current_resume.name else ''
-                
-                # Update AI analysis for the candidate
-                candidate.parsed_resume_data = parsed_data
-                analysis_results = analyze_candidate(candidate, candidate.job)
-                candidate.ai_fit_score = analysis_results['ai_fit_score']
-                candidate.ai_analysis = analysis_results['ai_analysis']
-                candidate.ai_skill_match = analysis_results['ai_skill_match']
-                candidate.save()
-                
+            from .tasks import process_resume_parsing_task
+            process_resume_parsing_task.delay(profile_id=instance.id)
         except Exception as e:
-            # We want to propagate this error to the frontend so the user knows why parsing failed
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': f"Failed to enqueue parsing: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(ApplicantProfileSerializer(instance).data)

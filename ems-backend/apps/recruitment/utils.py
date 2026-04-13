@@ -15,20 +15,21 @@ def parse_resume(file, tenant=None):
     Extracts text from a resume file and parses it using Google Gemini AI if enabled.
     Falls back to mock data if AI is disabled or an error occurs.
 
-    SECURITY: The Gemini API key is read from the GEMINI_API_KEY environment variable
-    first. The database field is only used as a fallback. Store the key as an env var
-    on the Oracle VM rather than relying on the database alone.
+    BILLING: Tenants are strictly responsible for their own AI parsing costs.
+    The Gemini API key is fetched dynamically from each tenant's AISettings record.
+    If a tenant does not provide a key, AI parsing will safely fall back to mock data.
     """
     settings = AISettings.get_settings(tenant)
 
-    # SECURITY: prefer environment variable over the DB-stored key
-    # If the tenant doesn't have an api key, fall back to global env var
-    gemini_api_key = settings.gemini_api_key or os.environ.get('GEMINI_API_KEY')
+    # No global fallback is provided. If the tenant doesn't set a key, use mock data.
+    gemini_api_key = settings.gemini_api_key
     
     # 1. Fallback / Mock Parsing if AI is disabled or key unavailable
     if not settings.is_active or not gemini_api_key:
-        logger.warning("AI Parsing is disabled or API key is missing. Using mock data.")
-        return get_mock_resume_data(file.name)
+        logger.warning("AI Parsing is disabled or API key is missing. Returning empty parsed data.")
+        # Returning an empty dict prevents displaying misleading fake mock data.
+        # HR managers will rely entirely on the uploaded PDF resume instead.
+        return {}
         
     try:
         # 2. Extract Text from PDF
@@ -74,7 +75,16 @@ def parse_resume(file, tenant=None):
         # Parse the JSON response
         try:
             raw_text = response_data['candidates'][0]['content']['parts'][0]['text']
+            # Clean up markdown formatting if present
+            if raw_text.startswith('```json'):
+                raw_text = raw_text.split('```json')[1].split('```')[0].strip()
+            
             parsed_json = json.loads(raw_text)
+            
+            # Increment parse count
+            settings.resume_parse_count += 1
+            settings.save(update_fields=['resume_parse_count'])
+            
             return parsed_json
         except (KeyError, IndexError, json.JSONDecodeError) as e:
             logger.error(f"Gemini returned invalid or missing JSON: {e}")
@@ -129,14 +139,76 @@ def get_mock_resume_data(filename):
     }
 
 
+def semantic_analyze_candidate(candidate, job_posting, settings):
+    """
+    Calls Gemini to perform a deep semantic analysis of the candidate against the job.
+    Returns a structured analysis and fit score.
+    """
+    gemini_api_key = settings.gemini_api_key
+    if not gemini_api_key:
+        return None
+
+    # Limit text sizes to avoid token limits
+    resume_text = str(candidate.parsed_resume_data) if candidate.parsed_resume_data else "No resume data"
+    job_text = f"Title: {job_posting.title}\nDescription: {job_posting.description}\nSkills: {job_posting.required_skills}"
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
+    
+    analysis_prompt = f"""
+    Compare the following candidate profile against the job description.
+    Provide a semantic match analysis. Do NOT just match keywords; consider role relevance and transferable skills.
+    
+    Job Description:
+    {job_text[:5000]}
+    
+    Candidate Profile (JSON format):
+    {resume_text[:10000]}
+    
+    Return ONLY a JSON object with:
+    1. ai_fit_score: integer (0-100) representing overall semantic fit.
+    2. strengths: list of strings.
+    3. missing_skills: list of strings.
+    4. summary: a concise 2-sentence professional verdict.
+    """
+
+    try:
+        payload = {
+            "contents": [{"parts": [{"text": analysis_prompt}]}],
+            "generationConfig": {"responseMimeType": "application/json"}
+        }
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        if response.ok:
+            raw_text = response.json()['candidates'][0]['content']['parts'][0]['text']
+            # Clean up markdown
+            if '```json' in raw_text:
+                raw_text = raw_text.split('```json')[1].split('```')[0].strip()
+            
+            result = json.loads(raw_text)
+            return {
+                'ai_fit_score': Decimal(str(result.get('ai_fit_score', 0))),
+                'ai_analysis': {
+                    'strengths': result.get('strengths', []),
+                    'missing_skills': result.get('missing_skills', []),
+                    'experience_check': 'Analyzed',
+                    'summary': result.get('summary', 'Analysis completed.')
+                },
+                'ai_skill_match': result.get('strengths', [])
+            }
+    except Exception as e:
+        logger.error(f"Semantic analysis failed: {e}")
+    
+    return None
+
+
 def calculate_fit_score(candidate_skills, job_skills, candidate_exp, job_min_exp):
     """
-    Calculates a fit score between 0-100 based on skills and experience match.
+    Legacy keyword-based fallback for fit score.
     """
     if not job_skills:
-        return Decimal('50.00') # Neutral score if no skills required
+        return Decimal('50.00')
 
-    # 1. Skill Match (70% weight)
     job_skills_lower = [s.lower() for s in job_skills]
     cand_skills_lower = [s.lower() for s in candidate_skills]
     
@@ -146,15 +218,8 @@ def calculate_fit_score(candidate_skills, job_skills, candidate_exp, job_min_exp
     ]
     
     skill_score = (len(matched_skills) / len(job_skills)) * 100
+    exp_score = 100 if candidate_exp >= job_min_exp else (candidate_exp / max(1, job_min_exp)) * 100
     
-    # 2. Experience Match (30% weight)
-    exp_score = 0
-    if candidate_exp >= job_min_exp:
-        exp_score = 100
-    else:
-        exp_score = (candidate_exp / max(1, job_min_exp)) * 100
-        
-    # Weighted Average
     total_score = (skill_score * 0.7) + (exp_score * 0.3)
     return Decimal(str(round(min(100, max(0, total_score)), 2)))
 
@@ -162,8 +227,17 @@ def calculate_fit_score(candidate_skills, job_skills, candidate_exp, job_min_exp
 def analyze_candidate(candidate, job_posting):
     """
     Performs a full analysis of a candidate against a job posting.
-    Returns the update dict for the candidate instance.
+    Uses Semantic AI if available, else falls back to keyword matching.
     """
+    settings = AISettings.get_settings(candidate.tenant)
+    
+    # 1. Try Semantic AI first
+    if settings.is_active and settings.gemini_api_key:
+        semantic_result = semantic_analyze_candidate(candidate, job_posting, settings)
+        if semantic_result:
+            return semantic_result
+            
+    # 2. Fallback to Keyword Math
     parsed_data = candidate.parsed_resume_data or {}
     cand_skills = parsed_data.get('skills', [])
     cand_exp = parsed_data.get('experience_years', 0)
@@ -171,15 +245,13 @@ def analyze_candidate(candidate, job_posting):
     job_skills = job_posting.required_skills
     job_min_exp = job_posting.minimum_experience
     
-    # Calculate Score
     fit_score = calculate_fit_score(cand_skills, job_skills, cand_exp, job_min_exp)
     
-    # Generate Analysis
     analysis = {
         'strengths': [s for s in cand_skills if s.lower() in [js.lower() for js in job_skills]],
         'missing_skills': [s for s in job_skills if s.lower() not in [cs.lower() for cs in cand_skills]],
         'experience_check': 'Pass' if cand_exp >= job_min_exp else 'Below Requirement',
-        'summary': f"Candidate has {cand_exp} years of experience vs {job_min_exp} required."
+        'summary': f"Keyword match: Candidate has {cand_exp} years vs {job_min_exp} required."
     }
     
     return {

@@ -212,6 +212,10 @@ class AISettings(models.Model):
         default="Extract the following information from the resume and return ONLY a valid JSON object with keys: name (string), email (string), phone (string), skills (list of strings), experience_years (integer), headline (string), education (list of objects with degree, school, year), experience (list of objects with title, company, duration, description), summary (string overview).",
         help_text="System instructions for the AI on how to parse the resume"
     )
+    resume_parse_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Tracks the total number of resumes parsed by this tenant"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):

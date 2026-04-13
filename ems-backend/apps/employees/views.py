@@ -1,6 +1,10 @@
 import io
+import logging
 import secrets
 import pandas as pd
+
+logger = logging.getLogger(__name__)
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import viewsets, status
@@ -27,7 +31,11 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         # Strict Isolation: Non-superusers with None tenant see nothing
         if not user.is_superuser and not tenant:
             return Department.objects.none()
-        return Department.objects.filter(tenant=tenant)
+        return Department.objects.filter(tenant=tenant, is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
 
     def perform_create(self, serializer):
         serializer.save(tenant=resolve_tenant(self.request))
@@ -42,7 +50,11 @@ class DesignationViewSet(viewsets.ModelViewSet):
         tenant = resolve_tenant(self.request)
         if not user.is_superuser and not tenant:
             return Designation.objects.none()
-        return Designation.objects.filter(tenant=tenant)
+        return Designation.objects.filter(tenant=tenant, is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
 
     def perform_create(self, serializer):
         serializer.save(tenant=resolve_tenant(self.request))
@@ -64,7 +76,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             'user', 'department', 'designation', 'salary_structure'
         ).prefetch_related(
             'salary_structure__components'
-        ).filter(tenant=tenant)
+        ).filter(tenant=tenant, is_deleted=False)
 
         if getattr(user, 'role', None) in {'ADMIN', 'HR_MANAGER'}:
             return base_queryset
@@ -78,19 +90,28 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         return [IsSelfOrAdminOrHR()]
 
     def perform_create(self, serializer):
-        profile = serializer.save(tenant=resolve_tenant(self.request))
+        tenant = resolve_tenant(self.request)
+        if tenant.current_employee_count >= tenant.employee_limit:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(f"Employee limit reached for your current plan ({tenant.subscription_tier}). Please upgrade to add more.")
+            
+        profile = serializer.save(tenant=tenant)
         if profile.user and not profile.user.tenant_id:
             profile.user.tenant = profile.tenant
             profile.user.save(update_fields=['tenant'])
 
     def perform_destroy(self, instance):
-        # When deleting the profile, also delete the associated User object
-        # for a complete removal. The OneToOneField is on profile->user,
-        # but the user is the 'identity' we want to fully remove if the profile goes.
+        # Instead of destroying the data permanently, we soft-delete it safely
+        # shielding historical leave, payroll, and profile records from CASCADE constraints.
+        instance.is_deleted = True
+        instance.status = 'INACTIVE'
+        instance.save(update_fields=['is_deleted', 'status'])
+        
         user = instance.user
-        instance.delete()
         if user:
-            user.delete()
+            user.is_active = False
+            user.is_deleted = True
+            user.save(update_fields=['is_active', 'is_deleted'])
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='me')
     def me(self, request):
@@ -156,6 +177,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
 
             with transaction.atomic():
                 for index, row in df.iterrows():
+                    # Check limit per row
+                    if tenant.current_employee_count >= tenant.employee_limit:
+                        errors.append(f"Row {index + 1}: Employee limit reached. Upgrade your plan to import more.")
+                        continue
+
                     try:
                         email = str(row[mapped_cols['email']]).strip().lower()
                         if not email or email == 'nan': continue
@@ -188,32 +214,39 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                         )
                         if created:
                             # SECURITY: generate a unique random password per employee.
-                            # Never use a shared hardcoded default password.
                             temp_password = secrets.token_urlsafe(12)
                             user_obj.set_password(temp_password)
                             user_obj.save()
-                            # Notify the employee of their temporary password
+                            
+                            # Notify the employee of their account (Background Task)
                             try:
-                                from ems_core.utils_email import send_email_in_background
-                                send_email_in_background(
-                                    subject='Your EMS Account Has Been Created',
+                                from apps.core.tasks import send_email_task
+                                send_email_task.delay(
+                                    subject='Welcome to HireWix - Your Account is Ready',
                                     message=(
                                         f"Hello {first_name},\n\n"
-                                        f"An account has been created for you on the Employee Management System.\n\n"
-                                        f"Login email: {email}\n"
-                                        f"Temporary password: {temp_password}\n\n"
-                                        f"Please log in and change your password immediately.\n\n"
-                                        f"Best,\nHR Team"
+                                        f"Welcome to the team! An HR account has been created for you on the HireWix platform.\n\n"
+                                        f"Login Email: {email}\n"
+                                        f"Temporary Password: {temp_password}\n\n"
+                                        f"Please log in at your earliest convenience and update your password in the settings.\n\n"
+                                        f"Best Regards,\n"
+                                        f"HR Administration"
                                     ),
                                     recipient_list=[email],
                                 )
-                            except Exception:
-                                pass  # Email failure must not roll back the import
+                            except Exception as e:
+                                logger.error(f"Failed to enqueue welcome email: {e}")
 
                         # Create/Update Profile
                         base_salary = float(row[mapped_cols['base_salary']]) if mapped_cols['base_salary'] and pd.notna(row[mapped_cols['base_salary']]) else 0.0
                         emp_id = str(row[mapped_cols['employee_id']]).strip() if mapped_cols['employee_id'] and pd.notna(row[mapped_cols['employee_id']]) else f"EMP-{user_obj.id.hex[:6].upper()}"
                         joining_date = pd.to_datetime(row[mapped_cols['joining_date']]).date() if mapped_cols['joining_date'] and pd.notna(row[mapped_cols['joining_date']]) else pd.Timestamp.now().date()
+
+                        # Check for Employee ID collision within the same tenant
+                        existing_with_id = EmployeeProfile.objects.filter(tenant=tenant, employee_id=emp_id).exclude(user=user_obj).first()
+                        if existing_with_id:
+                            errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {existing_with_id.full_name}.")
+                            continue
 
                         EmployeeProfile.objects.update_or_create(
                             user=user_obj,

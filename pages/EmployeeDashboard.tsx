@@ -10,6 +10,7 @@ import { leavesApi } from '../services/leavesApi';
 import { attendanceApi } from '../services/attendanceApi';
 import { announcementsApi } from '../services/announcementsApi';
 import { useNavigate } from 'react-router-dom';
+import MoodWidget from '../components/employee/MoodWidget';
 
 interface DashboardCardProps {
   title: string;
@@ -116,6 +117,11 @@ const EmployeeDashboard: React.FC = () => {
           <Clock className="w-4 h-4" />
           {currentDate}
         </div>
+      </div>
+
+      {/* Daily Pulse Section */}
+      <div className="max-w-2xl">
+        <MoodWidget />
       </div>
 
       {/* Stats Cards */}

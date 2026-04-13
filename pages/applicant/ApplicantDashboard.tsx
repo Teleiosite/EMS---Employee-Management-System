@@ -230,7 +230,7 @@ const ApplicantDashboard: React.FC = () => {
           )}
 
           {safeApplications.length === 0 ? (
-            <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+            <div className="bg-white rounded-xl p-5 text-center border border-gray-200">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Briefcase className="w-8 h-8 text-gray-300" />
               </div>

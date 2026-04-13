@@ -74,7 +74,7 @@ const Landing: React.FC = () => {
               <div className="bg-orange-100 p-2 rounded-lg">
                 <Building className="w-6 h-6 text-orange-600" />
               </div>
-              <span className="text-xl font-bold text-orange-600 tracking-tight">EMS</span>
+              <span className="text-xl font-bold text-orange-600 tracking-tight">HireWix</span>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
@@ -127,7 +127,7 @@ const Landing: React.FC = () => {
              </button>
           </div>
 
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
              {[
                "Automated Payroll Processing",
                "Real-time Attendance Tracking",
@@ -146,13 +146,13 @@ const Landing: React.FC = () => {
       <div id="about-section" className="bg-white py-20 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose EMS?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose HireWix?</h2>
             <p className="text-xl text-gray-500 max-w-3xl mx-auto">
               We provide a complete, multi-tenant solution allowing agencies and businesses to manage their workforce flawlessly.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center p-6 rounded-2xl bg-orange-50 border border-orange-100">
               <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-600">
                 <Users className="w-7 h-7" />
@@ -199,7 +199,7 @@ const Landing: React.FC = () => {
           <div className="grid gap-6 max-w-4xl mx-auto">
             {loading ? (
               <div className="text-center py-12">
-                <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <div className="w-12 h-12 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-gray-500">Loading open positions...</p>
               </div>
             ) : jobs.length === 0 ? (

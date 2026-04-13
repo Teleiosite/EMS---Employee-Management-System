@@ -36,7 +36,16 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     designation = DesignationSerializer(read_only=True)
     salary_structure = SalaryStructureSerializer(read_only=True)
+    reports_to = serializers.SerializerMethodField()
 
+    def get_reports_to(self, obj):
+        if obj.reports_to:
+            return {
+                'id': obj.reports_to.id,
+                'name': obj.reports_to.full_name,
+                'designation': obj.reports_to.designation.title if obj.reports_to.designation else 'Not Set'
+            }
+        return None
 
     # Accept write IDs for create/update
     user_id = serializers.PrimaryKeyRelatedField(
@@ -48,6 +57,10 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     )
     designation_id = serializers.PrimaryKeyRelatedField(
         queryset=Designation.objects.all(), source='designation', write_only=True,
+        required=False, allow_null=True
+    )
+    reports_to_id = serializers.PrimaryKeyRelatedField(
+        queryset=EmployeeProfile.objects.all(), source='reports_to', write_only=True,
         required=False, allow_null=True
     )
 
@@ -65,3 +78,4 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         self.fields['user_id'].queryset = User.objects.filter(tenant=tenant)
         self.fields['department_id'].queryset = Department.objects.filter(tenant=tenant)
         self.fields['designation_id'].queryset = Designation.objects.filter(tenant=tenant)
+        self.fields['reports_to_id'].queryset = EmployeeProfile.objects.filter(tenant=tenant)

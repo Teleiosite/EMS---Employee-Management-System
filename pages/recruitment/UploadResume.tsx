@@ -126,7 +126,7 @@ const UploadResume: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Resume (PDF/DOCX)</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors relative">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center hover:bg-gray-50 transition-colors relative">
                 <input
                   type="file"
                   accept=".pdf,.docx,.doc"

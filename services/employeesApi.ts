@@ -39,6 +39,7 @@ interface BackendEmployeeProfile {
     address: string;
     status: string;
     salary_structure: any | null;
+    reports_to: { id: number; name: string; designation: string } | null;
 }
 
 interface PaginatedResponse<T> {
@@ -69,6 +70,11 @@ const transformEmployee = (emp: BackendEmployeeProfile): EmployeeProfile & { nam
     name: `${emp.user.first_name} ${emp.user.last_name}`.trim(),
     email: emp.user.email,
     salaryStructure: emp.salary_structure || undefined,
+    reportsTo: emp.reports_to ? {
+        id: String(emp.reports_to.id),
+        name: emp.reports_to.name,
+        designation: emp.reports_to.designation
+    } : undefined,
 });
 
 // Transform backend designation to frontend format
@@ -179,6 +185,7 @@ export const employeesApi = {
         phone_number?: string;
         address?: string;
         status?: string;
+        reports_to_id?: number | null;
     }): Promise<EmployeeProfile & { name: string; email: string }> => {
         const response = await api.post<BackendEmployeeProfile>('/employees/profiles/', data);
         return transformEmployee(response);
@@ -192,6 +199,7 @@ export const employeesApi = {
         phone_number: string;
         address: string;
         status: string;
+        reports_to_id: number | null;
     }>): Promise<EmployeeProfile & { name: string; email: string }> => {
         const response = await api.patch<BackendEmployeeProfile>(`/employees/profiles/${id}/`, data);
         return transformEmployee(response);

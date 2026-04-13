@@ -20,9 +20,8 @@ from .serializers import (
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _get_client_ip(request):
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded:
-        return x_forwarded.split(',')[0].strip()
+    # SECURITY: Do NOT trust HTTP_X_FORWARDED_FOR — it is client-controlled and spoofable.
+    # Use REMOTE_ADDR only. Nginx/load-balancer sets this to the real client IP.
     return request.META.get('REMOTE_ADDR', '0.0.0.0')
 
 

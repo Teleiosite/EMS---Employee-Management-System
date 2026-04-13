@@ -11,6 +11,7 @@ from .views import (
     RefreshView,
     RegisterView,
     TenantRegistrationView,
+    ImpersonateTenantView,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path('email-verification/confirm/', EmailVerificationConfirmView.as_view(), name='email-verification-confirm'),
     path('mfa/setup/', MFASetupView.as_view(), name='mfa-setup'),
     path('mfa/verify/', MFAVerifyView.as_view(), name='mfa-verify'),
+    path('impersonate/', ImpersonateTenantView.as_view(), name='impersonate'),
 ]

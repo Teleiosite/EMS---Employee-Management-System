@@ -201,18 +201,18 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                     {!showAddForm ? (
                         <button
                             onClick={() => setShowAddForm(true)}
-                            className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-100 rounded-[2rem] text-gray-400 hover:border-orange-200 hover:text-orange-600 hover:bg-orange-50/30 transition-all font-black uppercase tracking-widest text-xs group"
+                            className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-100 rounded-xl text-gray-400 hover:border-orange-200 hover:text-orange-600 hover:bg-orange-50/30 transition-all font-semibold text-sm tracking-wide text-xs group"
                         >
                             <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             Add Allowance or Deduction
                         </button>
                     ) : (
-                        <div className="bg-white border-2 border-orange-100 rounded-[2rem] p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 shadow-xl overflow-hidden relative">
+                        <div className="bg-white border-2 border-orange-100 rounded-xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 shadow-xl overflow-hidden relative">
                             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
                             <div className="grid sm:grid-cols-2 gap-4">
                                 {/* Component Name */}
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Label Name</label>
+                                    <label className="text-[10px] font-semibold text-gray-400 tracking-wide ml-1">Label Name</label>
                                     <input
                                         type="text"
                                         list="comp-suggestions"
@@ -231,7 +231,7 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
 
                                 {/* Amount */}
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Recurring Amount</label>
+                                    <label className="text-[10px] font-semibold text-gray-400 tracking-wide ml-1">Recurring Amount</label>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</div>
                                         <input
@@ -239,7 +239,7 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                                             placeholder="0.00"
                                             value={newComp.value}
                                             onChange={(e) => setNewComp({ ...newComp, value: e.target.value })}
-                                            className="w-full p-3 pl-8 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none font-black text-gray-900 transition-all"
+                                            className="w-full p-3 pl-8 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none font-semibold text-gray-900 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -247,12 +247,12 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
 
                             {/* Type toggle */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Classification</label>
+                                <label className="text-[10px] font-semibold text-gray-400 tracking-wide ml-1">Classification</label>
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setNewComp({ ...newComp, component_type: 'EARNING' })}
-                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-semibold text-[10px] uppercase tracking-[0.2em] transition-all ${
                                             newComp.component_type === 'EARNING'
                                             ? 'border-green-500 bg-green-50 text-green-700 shadow-lg shadow-green-500/10'
                                             : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200'
@@ -263,7 +263,7 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                                     <button
                                         type="button"
                                         onClick={() => setNewComp({ ...newComp, component_type: 'DEDUCTION' })}
-                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-semibold text-[10px] uppercase tracking-[0.2em] transition-all ${
                                             newComp.component_type === 'DEDUCTION'
                                             ? 'border-red-500 bg-red-50 text-red-700 shadow-lg shadow-red-500/10'
                                             : 'border-gray-50 bg-gray-50 text-gray-400 hover:border-gray-200'
@@ -277,13 +277,13 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={handleAddItem}
-                                    className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-500 transition-all shadow-xl shadow-gray-900/10 hover:shadow-orange-500/20"
+                                    className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-2xl font-semibold text-sm tracking-wide text-[10px] hover:bg-orange-500 transition-all shadow-xl shadow-gray-900/10 hover:shadow-orange-500/20"
                                 >
                                     Add Entry
                                 </button>
                                 <button
                                     onClick={() => setShowAddForm(false)}
-                                    className="px-6 py-3 bg-white text-gray-400 border border-gray-100 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all"
+                                    className="px-6 py-3 bg-white text-gray-400 border border-gray-100 rounded-2xl font-semibold text-sm tracking-wide text-[10px] hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -295,35 +295,35 @@ const CompensationTab: React.FC<Props> = ({ employeeId, baseSalary, onUpdate }) 
 
                 {/* Summary Card */}
                 <div className="space-y-6">
-                    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 text-gray-800 shadow-2xl relative overflow-hidden group">
+                    <div className="bg-white border border-gray-100 rounded-xl p-5 text-gray-800 shadow-2xl relative overflow-hidden group">
                         {/* Decorative background element */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-[5rem] -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500"></div>
                         
                         <div className="relative z-10">
-                            <h4 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8 border-b border-gray-50 pb-4">Net Pay Estimation</h4>
+                            <h4 className="text-gray-400 text-[10px] font-semibold uppercase text-sm tracking-wide tracking-[0.3em] mb-8 border-b border-gray-50 pb-4">Net Pay Estimation</h4>
                             
                             <div className="space-y-5">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Base Salary</span>
-                                    <span className="font-black text-gray-900">${baseSalary.toLocaleString()}</span>
+                                    <span className="text-gray-400 font-bold text-[10px] tracking-wide">Base Salary</span>
+                                    <span className="font-semibold text-gray-900">${baseSalary.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Total Benefits</span>
-                                    <span className="text-green-500 font-black">+{earnings.toLocaleString()}</span>
+                                    <span className="text-gray-400 font-bold text-[10px] tracking-wide">Total Benefits</span>
+                                    <span className="text-green-500 font-semibold">+{earnings.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-5 border-y border-gray-50 my-2">
-                                    <span className="text-gray-900 font-black uppercase text-xs tracking-widest">Gross Pay</span>
-                                    <span className="text-2xl font-black text-gray-900 tracking-tighter">${gross.toLocaleString()}</span>
+                                    <span className="text-gray-900 font-semibold uppercase text-sm tracking-wide text-xs tracking-widest">Gross Pay</span>
+                                    <span className="text-2xl font-semibold text-gray-900 tracking-tighter">${gross.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Deductions</span>
-                                    <span className="text-red-500 font-black">-{deductions.toLocaleString()}</span>
+                                    <span className="text-gray-400 font-bold text-[10px] tracking-wide">Deductions</span>
+                                    <span className="text-red-500 font-semibold">-{deductions.toLocaleString()}</span>
                                 </div>
                                 
                                 <div className="pt-8 mt-4 border-t-4 border-orange-500 flex flex-col items-end">
-                                    <span className="text-orange-500 font-black uppercase text-[10px] tracking-[0.4em] mb-1">Take-Home Pay</span>
+                                    <span className="text-orange-500 font-semibold uppercase text-sm tracking-wide text-[10px] tracking-[0.4em] mb-1">Take-Home Pay</span>
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-5xl font-black text-gray-900 tracking-tighter">${net.toLocaleString()}</span>
+                                        <span className="text-5xl font-semibold text-gray-900 tracking-tighter">${net.toLocaleString()}</span>
                                         <span className="text-gray-400 text-[10px] font-bold uppercase">/mo</span>
                                     </div>
                                 </div>

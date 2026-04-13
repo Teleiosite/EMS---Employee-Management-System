@@ -32,6 +32,13 @@ class TenantContextMiddleware:
         if user and user.is_authenticated:
             tenant = getattr(user, 'tenant', None)
             
+            # If tenant is suspended, block all non-superuser access
+            if tenant and not tenant.is_active and not user.is_superuser:
+                return JsonResponse({
+                    'detail': 'Your organization account has been suspended. Please contact the platform administrator.',
+                    'code': 'tenant_suspended'
+                }, status=403)
+            
             # Safety: If user is not a superuser but has no tenant, 
             # we should NOT let them fall into the global bucket unintentionally.
             if not user.is_superuser and not tenant:

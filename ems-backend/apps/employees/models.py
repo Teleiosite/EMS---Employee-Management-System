@@ -13,6 +13,7 @@ class Department(models.Model):
     description = models.TextField(blank=True, null=True)
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_departments')
     budget = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
 
     objects = TenantManager()
 
@@ -24,6 +25,7 @@ class Designation(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='designations')
     title = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    is_deleted = models.BooleanField(default=False)
 
     objects = TenantManager()
 
@@ -39,6 +41,8 @@ class EmployeeProfile(models.Model):
     phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     status = models.CharField(max_length=20, default='ACTIVE')
+    reports_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
+    is_deleted = models.BooleanField(default=False)
 
     objects = TenantManager()
 
@@ -55,3 +59,28 @@ class EmployeeProfile(models.Model):
     @property
     def full_name(self):
         return f"{self.user.first_name} {self.user.last_name}".strip()
+
+
+class EmployeeDocument(models.Model):
+    DOCUMENT_TYPES = [
+        ('PASSPORT', 'Passport'),
+        ('VISA', 'Visa'),
+        ('CONTRACT', 'Contract'),
+        ('ID_CARD', 'National ID'),
+        ('OTHER', 'Other'),
+    ]
+
+    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='employee_documents')
+    employee = models.ForeignKey(EmployeeProfile, on_delete=models.CASCADE, related_name='documents')
+    doc_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
+    title = models.CharField(max_length=255)
+    file = models.FileField(upload_to='employee/documents/')
+    expiry_date = models.DateField(null=True, blank=True)
+    is_notified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantManager()
+
+    def __str__(self):
+        return f"{self.employee.full_name} - {self.doc_type} ({self.title})"

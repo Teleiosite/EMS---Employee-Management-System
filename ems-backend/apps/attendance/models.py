@@ -54,7 +54,7 @@ class AttendancePolicy(models.Model):
 
     def save(self, *args, **kwargs):
         if self.is_active:
-            AttendancePolicy.objects.exclude(pk=self.pk).update(is_active=False)
+            AttendancePolicy.objects.filter(tenant=self.tenant).exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)
 
     @classmethod

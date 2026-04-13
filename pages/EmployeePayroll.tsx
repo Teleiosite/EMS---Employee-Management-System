@@ -50,8 +50,11 @@ const EmployeePayroll: React.FC = () => {
       a.download = `payslip_${record.month}_${record.year}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
     } catch (err: any) {
       console.error("Failed to download payslip:", err);
       setError("Failed to download payslip PDF.");

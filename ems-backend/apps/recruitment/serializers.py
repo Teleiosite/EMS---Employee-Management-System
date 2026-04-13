@@ -56,9 +56,10 @@ class AISettingsSerializer(serializers.ModelSerializer):
     """Settings for AI Resume Parsing"""
     class Meta:
         model = AISettings
-        fields = ['gemini_api_key', 'is_active', 'prompt_template']
+        fields = ['gemini_api_key', 'is_active', 'prompt_template', 'resume_parse_count']
         extra_kwargs = {
-            'gemini_api_key': {'write_only': True} # Don't expose key on GET
+            'gemini_api_key': {'write_only': True}, # Don't expose key on GET
+            'resume_parse_count': {'read_only': True}
         }
 
 

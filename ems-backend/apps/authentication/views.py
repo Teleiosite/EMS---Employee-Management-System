@@ -25,6 +25,11 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+# Imported for Host Command Center impersonation
+from apps.core.views import IsSuperUser
+from apps.core.models import Tenant
+from ems_core.utils_email import send_email_in_background
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -71,10 +76,14 @@ def _clear_auth_cookies(response):
     )
 
 
+from rest_framework.throttling import ScopedRateThrottle
+
 class LoginView(TokenObtainPairView):
     """Authenticate user and return JWT tokens as httpOnly cookies."""
     serializer_class = EmailTokenObtainPairSerializer
     permission_classes = [AllowAny]
+    throttle_scope = 'auth'
+    throttle_classes = TokenObtainPairView.throttle_classes + [ScopedRateThrottle]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -147,10 +156,20 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(email=serializer.validated_data['email']).first()
         if user:
-            user.password_reset_token = generate_secure_token()
+            token = generate_secure_token()
+            user.password_reset_token = token
             user.password_reset_expires = timezone.now() + timedelta(hours=1)
             user.save(update_fields=['password_reset_token', 'password_reset_expires'])
-        return Response({'detail': 'If the account exists, reset instructions were generated.'})
+            
+            origin = request.headers.get('origin', 'http://localhost:3000')
+            reset_link = f"{origin}/#/reset-password?token={token}"
+            
+            send_email_in_background(
+                subject='Password Reset Request - HireWix',
+                message=f"Hello {user.first_name},\n\nYou requested a password reset. Click the safe link below to set a new password:\n{reset_link}\n\nIf you did not request this, please ignore this email.\n\nBest,\nThe HireWix Team",
+                recipient_list=[user.email]
+            )
+        return Response({'detail': 'If the account exists, reset instructions were generated and emailed.'})
 
 
 class PasswordResetConfirmView(APIView):
@@ -177,10 +196,18 @@ class EmailVerificationRequestView(APIView):
 
     def post(self, request):
         user = request.user
-        user.email_verification_token = generate_secure_token()
+        token = generate_secure_token()
+        user.email_verification_token = token
         user.save(update_fields=['email_verification_token'])
-        # SECURITY: Token is NOT returned in the response body.
-        # It must be delivered exclusively via email to prove inbox ownership.
+        
+        origin = request.headers.get('origin', 'http://localhost:3000')
+        validation_link = f"{origin}/#/verify-email?token={token}"
+        
+        send_email_in_background(
+            subject='Verify Your Email - HireWix Portal',
+            message=f"Hello {user.first_name},\n\nPlease verify your email address by clicking the link below:\n{validation_link}\n\nBest,\nThe HireWix Team",
+            recipient_list=[user.email]
+        )
         return Response({'detail': 'A verification link has been sent to your email address.'})
 
 
@@ -233,9 +260,20 @@ class TenantRegistrationView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
+        # SECURITY: Honeypot trap to catch automated bots silently.
+        # Real humans will not see this field. Bots will blindly fill it out.
+        honeypot = request.data.get('company_website_url', '').strip()
+        if honeypot:
+            # Fake out the bot by returning a 201 Created instantly doing nothing
+            return Response(
+                {'detail': 'Registration successful. Check your email.'},
+                status=status.HTTP_201_CREATED,
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         created = serializer.save()
+
         return Response({
             'tenant_id': created['tenant'].id,
             'tenant_name': created['tenant'].name,
@@ -243,3 +281,55 @@ class TenantRegistrationView(generics.CreateAPIView):
             'admin_user_id': created['user'].id,
             'admin_email': created['user'].email,
         }, status=status.HTTP_201_CREATED)
+
+
+
+class ImpersonateTenantView(APIView):
+    """
+    Allows a SuperUser to impersonate the HR_MANAGER of a specific tenant.
+    Mints new JWT cookies for the target HR user.
+    """
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        tenant_id = request.data.get('tenant_id')
+        if not tenant_id:
+            return Response({'detail': 'tenant_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tenant = Tenant.objects.get(id=tenant_id)
+        except Tenant.DoesNotExist:
+            return Response({'detail': 'Tenant not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Find the primary target for this tenant (ADMIN or HR_MANAGER)
+        target_user = User.objects.filter(tenant=tenant, role='ADMIN', is_active=True).first()
+        if not target_user:
+            target_user = User.objects.filter(tenant=tenant, role='HR_MANAGER', is_active=True).first()
+        
+        if not target_user:
+            return Response({'detail': 'No active Administrator or HR Manager found for this tenant.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate tokens for the target user
+        refresh = RefreshToken.for_user(target_user)
+        
+        # Prepare response with user metadata
+        from .serializers import RegisterSerializer # Using simple metadata mapping
+        user_metadata = {
+            'id': str(target_user.id),
+            'email': target_user.email,
+            'first_name': target_user.first_name,
+            'last_name': target_user.last_name,
+            'role': target_user.role,
+        }
+        
+        response = Response({
+            'user': user_metadata,
+            'impersonating': True,
+            'target_tenant': tenant.name
+        }, status=status.HTTP_200_OK)
+
+        # SECURITY: Set httpOnly cookies for the impersonated user
+        _set_auth_cookies(response, access_token=str(refresh.access_token), refresh_token=str(refresh))
+        
+        return response
+

@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'apps.leaves',
     'apps.payroll',
     'apps.recruitment',
+    'apps.billing',
+    'apps.surveys',
     'apps.core',
 ]
 
@@ -42,6 +44,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'ems_core.middleware.IPWhitelistMiddleware',
+    'ems_core.middleware_audit.AuditLogMiddleware',
 ]
 
 ROOT_URLCONF = 'ems_core.urls'
@@ -61,13 +64,12 @@ TEMPLATES = [{
 
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql'),
-        'NAME': config('DB_NAME', default='ems'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='postgres'),
         'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='postgres'),
-        'HOST': config('DB_HOST', default='localhost'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default=''),  # Supabase Host
         'PORT': config('DB_PORT', default='5432'),
-        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', cast=int, default=60),
     }
 }
 
@@ -102,6 +104,8 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'user': config('THROTTLE_USER', default='300/hour'),
         'anon': config('THROTTLE_ANON', default='50/hour'),
+        'auth': '10/minute',     # Limit login attempts
+        'invite': '20/day',      # Limit invite generation
     },
 }
 
@@ -123,8 +127,8 @@ JWT_REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7 # 7 days (matches REFRESH_TOKEN_LI
 # JWT_COOKIE_SECURE is set in security.py (True in production, False in dev)
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'EMS API',
-    'DESCRIPTION': 'Employee Management System API',
+    'TITLE': 'HireWix API',
+    'DESCRIPTION': 'HireWix API',
     'VERSION': '1.0.0',
 }
 
@@ -135,8 +139,25 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+# Use Oracle Object Storage (S3-compatible) for Media if configured
+USE_S3 = config('USE_S3', cast=bool, default=False)
+
+if USE_S3:
+    INSTALLED_APPS += ['storages']
+    AWS_ACCESS_KEY_ID = config('AWS_S3_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_S3_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = config('AWS_S3_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')  # Oracle OCI S3-compatible endpoint
+    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.objectstorage.{AWS_S3_REGION_NAME}.oraclecloud.com/media/'
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -145,9 +166,9 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://redis:6
 CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', cast=bool, default=False)
 
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', cast=bool, default=False)
-CORS_ALLOWED_ORIGINS = [o.strip() for o in config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173').split(',') if o.strip()]
+CORS_ALLOWED_ORIGINS = [o.strip() for o in config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:3000').split(',') if o.strip()]
 CORS_ALLOW_CREDENTIALS = True   # Required so browser sends httpOnly cookies on cross-origin requests
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in config('CSRF_TRUSTED_ORIGINS', default='http://localhost:5173').split(',') if o.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in config('CSRF_TRUSTED_ORIGINS', default='http://localhost:5173,http://localhost:3000').split(',') if o.strip()]
 
 IP_WHITELIST_ENABLED = config('IP_WHITELIST_ENABLED', cast=bool, default=False)
 IP_WHITELIST = [ip.strip() for ip in config('IP_WHITELIST', default='127.0.0.1,::1').split(',') if ip.strip()]
@@ -157,8 +178,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)

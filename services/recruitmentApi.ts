@@ -180,6 +180,12 @@ export const recruitmentApi = {
         await api.delete(`/recruitment/candidates/${id}/`);
     },
 
+    uploadResume: async (candidateId: string, file: File): Promise<void> => {
+        const formData = new FormData();
+        formData.append('resume', file);
+        await api.postFormData(`/recruitment/candidates/${candidateId}/upload_resume/`, formData);
+    },
+
     // ==================== PUBLIC ENDPOINTS ====================
 
     getPublicJobs: async (tenantSlug: string): Promise<JobRequirement[]> => {
@@ -203,6 +209,10 @@ export const recruitmentApi = {
     updateAISettings: async (data: any): Promise<any> => {
         const response = await api.patch('/recruitment/ai-settings/', data);
         return response;
+    },
+
+    testAIConnection: async (apiKey: string): Promise<any> => {
+        return await api.post('/recruitment/ai-settings/test_connection/', { gemini_api_key: apiKey });
     },
 };
 

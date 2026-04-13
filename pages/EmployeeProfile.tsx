@@ -30,6 +30,7 @@ interface EmployeeProfileData {
     lastName: string;
     email: string;
     role: string;
+    reportsTo?: { id: string; name: string; designation: string } | null;
 }
 
 const EmployeeProfile: React.FC = () => {
@@ -67,6 +68,11 @@ const EmployeeProfile: React.FC = () => {
                     lastName: p.user?.last_name || '',
                     email: p.user?.email || '',
                     role: p.user?.role || '',
+                    reportsTo: p.reports_to ? {
+                        id: String(p.reports_to.id),
+                        name: p.reports_to.name,
+                        designation: p.reports_to.designation
+                    } : null,
                 });
             }
             setError(null);
@@ -114,37 +120,37 @@ const EmployeeProfile: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-gray-800">My Profile</h1>
-                <p className="text-gray-500">View your personal and employment details.</p>
+                <h1 className="text-xl font-bold text-gray-800">My Profile</h1>
+                <p className="text-sm text-gray-500">View your personal and employment details.</p>
             </div>
 
             {/* Profile Header Card */}
-            <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 overflow-hidden relative">
-                <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-amber-400 h-40 relative">
-                    <div className="absolute inset-0 bg-white/10 opacity-50" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+                <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-24 relative">
+                    <div className="absolute inset-0 bg-white/10 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
                 </div>
-                <div className="px-8 pb-8 relative z-10">
-                    <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-16">
-                        <div className="w-28 h-28 rounded-full bg-white border-4 border-white shadow-xl flex flex-shrink-0 items-center justify-center text-4xl font-extrabold text-orange-500 overflow-hidden relative">
+                <div className="px-6 pb-6 relative z-10">
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
+                        <div className="w-20 h-20 rounded-full bg-white border border-white shadow-md flex flex-shrink-0 items-center justify-center text-2xl font-bold text-orange-500 overflow-hidden relative">
                             {user?.avatarUrl ? (
                                 <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 displayName.charAt(0).toUpperCase()
                             )}
                         </div>
-                        <div className="flex-1 sm:pb-2">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-2">
-                                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{displayName}</h2>
+                        <div className="flex-1 sm:pb-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
+                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">{displayName}</h2>
                                 {profile && (
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${getStatusColor(profile.status)}`}>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${getStatusColor(profile.status)}`}>
                                         {profile.status.replace('_', ' ')}
                                     </span>
                                 )}
                             </div>
                             {profile && (
-                                <p className="text-gray-500 text-base flex items-center gap-2">
+                                <p className="text-gray-500 text-sm flex items-center gap-2">
                                     <span className="font-medium text-gray-700">{profile.designation}</span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                                     <span>{profile.department}</span>
                                 </p>
                             )}
@@ -154,16 +160,14 @@ const EmployeeProfile: React.FC = () => {
             </div>
 
             {profile ? (
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-4">
                     {/* Personal Information */}
-                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-8">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                            <div className="p-2.5 bg-orange-50 rounded-xl">
-                                <UserIcon className="w-6 h-6 text-orange-500" />
-                            </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                        <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <UserIcon className="w-5 h-5 text-orange-500" />
                             Personal Information
                         </h3>
-                        <div className="space-y-5">
+                        <div className="space-y-2">
                             <InfoRow icon={Mail} label="Email Address" value={profile.email} />
                             <InfoRow icon={Phone} label="Phone Number" value={profile.phoneNumber || 'Not provided'} />
                             <InfoRow icon={MapPin} label="Home Address" value={profile.address || 'Not provided'} />
@@ -172,14 +176,12 @@ const EmployeeProfile: React.FC = () => {
                     </div>
 
                     {/* Employment Details */}
-                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-8">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                            <div className="p-2.5 bg-orange-50 rounded-xl">
-                                <Briefcase className="w-6 h-6 text-orange-500" />
-                            </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                        <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Briefcase className="w-5 h-5 text-orange-500" />
                             Employment Details
                         </h3>
-                        <div className="space-y-5">
+                        <div className="space-y-2">
                             <InfoRow icon={Hash} label="Employee ID" value={profile.employeeId} />
                             <InfoRow icon={Building} label="Department" value={profile.department} />
                             <InfoRow icon={Briefcase} label="Designation" value={profile.designation} />
@@ -187,7 +189,7 @@ const EmployeeProfile: React.FC = () => {
                                 icon={Calendar}
                                 label="Joining Date"
                                 value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString('en-US', {
-                                    year: 'numeric', month: 'long', day: 'numeric'
+                                    year: 'numeric', month: 'short', day: 'numeric'
                                 }) : 'N/A'}
                             />
                             <InfoRow
@@ -195,14 +197,21 @@ const EmployeeProfile: React.FC = () => {
                                 label="Base Salary"
                                 value={`$${profile.baseSalary.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
                             />
+                            {profile.reportsTo && (
+                                <InfoRow 
+                                    icon={UserIcon} 
+                                    label="Reports To" 
+                                    value={`${profile.reportsTo.name} (${profile.reportsTo.designation})`} 
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                    <UserIcon className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">No Profile Found</h3>
-                    <p className="text-gray-500 mt-1">Your employee profile has not been set up yet. Contact an administrator.</p>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                    <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <h3 className="text-base font-medium text-gray-900">No Profile Found</h3>
+                    <p className="text-sm text-gray-500 mt-1">Your employee profile has not been set up yet. Contact an administrator.</p>
                 </div>
             )}
         </div>
@@ -210,13 +219,13 @@ const EmployeeProfile: React.FC = () => {
 };
 
 const InfoRow: React.FC<{ icon: React.ElementType; label: string; value: string }> = ({ icon: Icon, label, value }) => (
-    <div className="flex items-center gap-4 group p-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-        <div className="p-3 bg-white border border-gray-100 shadow-sm rounded-xl group-hover:bg-orange-50 group-hover:border-orange-100 group-hover:text-orange-500 transition-all duration-200">
-            <Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+    <div className="flex items-center gap-3 group p-2 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+        <div className="p-2 bg-white border border-gray-100 shadow-sm rounded-lg text-gray-400 group-hover:text-orange-500 group-hover:border-orange-200 transition-colors">
+            <Icon className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-0.5">{label}</p>
-            <p className="text-base text-gray-900 font-medium truncate">{value}</p>
+            <p className="text-xs text-gray-500 font-medium mb-0.5">{label}</p>
+            <p className="text-sm text-gray-900 font-medium truncate">{value}</p>
         </div>
     </div>
 );

@@ -14,6 +14,7 @@ const CompanyRegister: React.FC = () => {
     password: '',
     first_name: '',
     last_name: '',
+    company_website_url: '', // Honeypot trap
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +61,7 @@ const CompanyRegister: React.FC = () => {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-10 text-center max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl p-6 text-center max-w-md w-full">
           <div className="flex justify-center mb-4">
             <div className="bg-green-100 p-4 rounded-full">
               <CheckCircle className="w-12 h-12 text-green-500" />
@@ -85,11 +86,11 @@ const CompanyRegister: React.FC = () => {
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-gray-800">Create Your Company</h1>
-          <p className="text-gray-500 mt-2">Set up your EMS workspace in seconds</p>
+          <p className="text-gray-500 mt-2">Set up your HireWix workspace in seconds</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-5">
           {error && (
             <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -153,6 +154,20 @@ const CompanyRegister: React.FC = () => {
                 <input name="last_name" type="text" value={form.last_name} onChange={handleChange} placeholder="Doe"
                   className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent" />
               </div>
+            </div>
+
+            {/* Invisible Honeypot Trap (Anti-Bot) */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} aria-hidden="true">
+              <label htmlFor="company_website_url">Do not fill this out if you are human</label>
+              <input 
+                type="text" 
+                id="company_website_url" 
+                name="company_website_url" 
+                value={form.company_website_url} 
+                onChange={handleChange} 
+                tabIndex={-1} 
+                autoComplete="off" 
+              />
             </div>
 
             {/* Admin Email */}

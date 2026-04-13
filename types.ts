@@ -159,6 +159,7 @@ export interface Candidate {
   phone: string;
   skills: string[];
   years_of_experience: number;
+  resume?: string;
   resume_file_name: string;
   parsed_resume: ParsedResume;
   applied_role_id: string; // Links to JobRequirement

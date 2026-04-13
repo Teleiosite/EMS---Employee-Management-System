@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import Announcement
+from .models import Announcement, Tenant, AuditLog
+
+
+class TenantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tenant
+        fields = ['id', 'name', 'slug', 'is_active', 'subscription_tier', 'created_at']
+        read_only_fields = ['id', 'slug', 'created_at']
 
 
 class AnnouncementSerializer(serializers.ModelSerializer):
@@ -37,3 +44,16 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             )
             
         return announcement
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuditLog
+        fields = '__all__'
+
+    def get_user_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
+        return "System / Unknown"

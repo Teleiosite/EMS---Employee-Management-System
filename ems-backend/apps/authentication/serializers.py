@@ -17,10 +17,18 @@ LOCKOUT_MINUTES = 15
 
 class UserSerializer(serializers.ModelSerializer):
     tenant_slug = serializers.CharField(source='tenant.slug', read_only=True)
+    subscription_tier = serializers.CharField(source='tenant.subscription_tier', read_only=True)
+    employee_limit = serializers.IntegerField(source='tenant.employee_limit', read_only=True)
+    employee_count = serializers.IntegerField(source='tenant.current_employee_count', read_only=True)
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'tenant', 'tenant_slug', 'is_active', 'email_verified', 'mfa_enabled', 'is_superuser')
+        fields = (
+            'id', 'email', 'first_name', 'last_name', 'role', 
+            'tenant', 'tenant_slug', 'subscription_tier', 
+            'employee_limit', 'employee_count',
+            'is_active', 'email_verified', 'mfa_enabled', 'is_superuser'
+        )
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -68,13 +76,15 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        # Trigger Welcome Email in background
+        origin = request.headers.get('origin', 'http://localhost:3000') if request else 'http://localhost:3000'
+        validation_link = f"{origin}/#/verify-email?token={token}"
+
         if user.role == 'APPLICANT':
-            subject = 'Welcome to the Careers Portal!'
-            message = f"Hello {user.first_name},\n\nThank you for creating an account on our Careers Portal! You can now browse open roles and submit your applications.\n\nBest,\nTalent Acquisition Team"
+            subject = 'Verify Your Email - Careers Portal'
+            message = f"Hello {user.first_name},\n\nThank you for creating an account on our Careers Portal!\n\nPlease verify your email address to log in and submit applications by clicking the link below:\n{validation_link}\n\nBest,\nTalent Acquisition Team"
         else:
-            subject = 'Welcome to the EMS Portal!'
-            message = f"Hello {user.first_name},\n\nWelcome to the Employee Management System! Your account has been created.\n\nLogin email: {user.email}\n\nPlease log in and update your password.\n\nBest,\nHR Team"
+            subject = 'Verify Your Email - HireWix Portal'
+            message = f"Hello {user.first_name},\n\nWelcome to HireWix! Your account has been created.\n\nPlease verify your email address to log in by clicking the link below:\n{validation_link}\n\nBest,\nHR Team"
         
         send_email_in_background(
             subject=subject,
@@ -122,6 +132,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                     user.locked_until = timezone.now() + timedelta(minutes=LOCKOUT_MINUTES)
                 user.save(update_fields=['failed_login_attempts', 'locked_until'])
             raise serializers.ValidationError('Invalid credentials.')
+
+        if not getattr(auth_user, 'email_verified', True):
+            raise serializers.ValidationError('EMAIL_NOT_VERIFIED')
 
         if auth_user.mfa_enabled:
             code = self.initial_data.get('mfa_code')
@@ -199,6 +212,7 @@ class TenantRegistrationSerializer(serializers.Serializer):
             slug=validated_data['company_slug'],
             is_active=True,
         )
+        token = generate_secure_token()
         user = User.objects.create_user(
             email=validated_data['admin_email'],
             password=validated_data['password'],
@@ -207,12 +221,19 @@ class TenantRegistrationSerializer(serializers.Serializer):
             role='ADMIN',
             is_staff=True,
             is_active=True,
-            email_verified=True,
+            email_verified=False,
+            email_verification_token=token,
             tenant=tenant,
         )
-        # Trigger Welcome Email for the new company admin
-        subject = f"Welcome to EMS - {tenant.name} is ready!"
-        message = f"Hello {user.first_name},\n\nCongratulations! Your company workspace '{tenant.name}' has been successfully created on the Employee Management System.\n\nYou can now log in using your admin email: {user.email}\n\nStart by setting up your departments and inviting your team members.\n\nBest,\nThe EMS Team"
+        
+        # Get frontend origin from request or use default
+        request = self.context.get('request')
+        origin = request.headers.get('origin', 'http://localhost:3000') if request else 'http://localhost:3000'
+        validation_link = f"{origin}/#/verify-email?token={token}"
+
+        # Trigger Verification Email
+        subject = f"Verify your EMS Workspace: {tenant.name}"
+        message = f"Hello {user.first_name},\n\nYour company workspace '{tenant.name}' has been created on the Employee Management System.\n\nPlease verify your email address to access your dashboard by clicking the link below:\n{validation_link}\n\nBest,\nThe EMS Team"
         
         send_email_in_background(
             subject=subject,

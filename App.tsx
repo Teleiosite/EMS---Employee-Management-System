@@ -1,6 +1,8 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
+import { AuthProvider } from './context/AuthContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserRole } from './types';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -9,10 +11,13 @@ import Layout from './components/Layout'; // Admin Layout
 import EmployeeLayout from './components/EmployeeLayout'; // Employee Layout
 import ApplicantLayout from './components/ApplicantLayout'; // Applicant Layout
 
-// Public Pages
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import CompanyRegister from './pages/CompanyRegister';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import PublicCareers from './pages/PublicCareers';
 
 // Host (Super Admin) Pages
 import HostDashboard from './pages/host/HostDashboard';
@@ -29,6 +34,10 @@ import AddPayroll from './pages/AddPayroll';
 import AdminLeaves from './pages/AdminLeaves';
 import Announcements from './pages/Announcements';
 import AddAnnouncement from './pages/AddAnnouncement';
+import Billing from './pages/Billing';
+import OrganizationChart from './pages/OrganizationChart';
+import SurveyDashboard from './pages/SurveyDashboard';
+import AuditLogViewer from './pages/AuditLogViewer';
 
 // Recruitment Pages (Admin Only)
 import CandidateList from './pages/recruitment/CandidateList';
@@ -49,125 +58,150 @@ import EmployeeLeaves from './pages/EmployeeLeaves';
 import EmployeePayroll from './pages/EmployeePayroll';
 import EmployeeProfile from './pages/EmployeeProfile';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
+
 const App: React.FC = () => {
   return (
     <ToastProvider>
-      <Router>
-        <Routes>
-          {/* ============================================ */}
-          {/* PUBLIC ROUTES - No authentication required */}
-          {/* ============================================ */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<CompanyRegister />} />
-          <Route path="/careers/:tenantSlug" element={<Navigate to="/login" replace />} />
-          <Route path="/jobs/:jobId/:tenantSlug" element={<Navigate to="/login" replace />} />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              {/* ============================================ */}
+              {/* PUBLIC ROUTES - No authentication required */}
+              {/* ============================================ */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<CompanyRegister />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/careers/:tenantSlug" element={<PublicCareers />} />
+              <Route path="/jobs/:jobId/:tenantSlug" element={<PublicCareers />} />
 
-          {/* ============================================ */}
-          {/* HOST ROUTE - Super Admin only               */}
-          {/* ============================================ */}
-          <Route 
-            path="/host" 
-            element={
-              <ProtectedRoute requireSuperuser={true} allowedRoles={[]}>
-                <HostDashboard />
-              </ProtectedRoute>
-            } 
-          />
+              {/* ============================================ */}
+              {/* HOST ROUTE - Super Admin only               */}
+              {/* ============================================ */}
+              <Route 
+                path="/host" 
+                element={
+                  <ProtectedRoute requireSuperuser={true} allowedRoles={[]}>
+                    <HostDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
-          {/* ============================================ */}
-          {/* APPLICANT ROUTES - Only APPLICANT role */}
-          {/* ============================================ */}
-          <Route
-            path="/applicant"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
-                <ApplicantLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ApplicantDashboard />} />
-            <Route path="jobs" element={<JobBoard />} />
-            <Route path="profile" element={<ApplicantProfile />} />
-          </Route>
+              {/* ============================================ */}
+              {/* APPLICANT ROUTES - Only APPLICANT role */}
+              {/* ============================================ */}
+              <Route
+                path="/applicant"
+                element={
+                  <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
+                    <ApplicantLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ApplicantDashboard />} />
+                <Route path="jobs" element={<JobBoard />} />
+                <Route path="profile" element={<ApplicantProfile />} />
+              </Route>
 
-          {/* ============================================ */}
-          {/* ADMIN ROUTES - ADMIN and HR_MANAGER only */}
-          {/* Full access to all features including recruitment */}
-          {/* ============================================ */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.HR_MANAGER]}>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
+              {/* ============================================ */}
+              {/* ADMIN ROUTES - ADMIN and HR_MANAGER only */}
+              {/* Full access to all features including recruitment */}
+              {/* ============================================ */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.HR_MANAGER]}>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
 
-            {/* Employee Management */}
-            <Route path="employees" element={<Employees />} />
-            <Route path="employees/new" element={<AddEmployee />} />
-            <Route path="employees/edit/:id" element={<AddEmployee />} />
+                {/* Employee Management */}
+                <Route path="employees" element={<Employees />} />
+                <Route path="employees/new" element={<AddEmployee />} />
+                <Route path="employees/edit/:id" element={<AddEmployee />} />
 
-            {/* Department Management */}
-            <Route path="departments" element={<Departments />} />
-            <Route path="departments/new" element={<AddDepartment />} />
-            <Route path="departments/edit/:id" element={<AddDepartment />} />
+                {/* Department Management */}
+                <Route path="departments" element={<Departments />} />
+                <Route path="departments/new" element={<AddDepartment />} />
+                <Route path="departments/edit/:id" element={<AddDepartment />} />
 
-            {/* Attendance Management */}
-            <Route path="attendance" element={<AdminAttendance />} />
+                {/* Attendance Management */}
+                <Route path="attendance" element={<AdminAttendance />} />
 
-            {/* Payroll Management */}
-            <Route path="payroll" element={<Payroll />} />
-            <Route path="payroll/new" element={<AddPayroll />} />
-            <Route path="payroll/edit/:id" element={<AddPayroll />} />
+                {/* Payroll Management */}
+                <Route path="payroll" element={<Payroll />} />
+                <Route path="payroll/new" element={<AddPayroll />} />
+                <Route path="payroll/edit/:id" element={<AddPayroll />} />
 
-            {/* Leave Management */}
-            <Route path="leaves" element={<AdminLeaves />} />
+                {/* Leave Management */}
+                <Route path="leaves" element={<AdminLeaves />} />
 
-            {/* RECRUITMENT - Admin/HR Only (Employees cannot access) */}
-            <Route path="recruitment">
-              <Route path="jobs" element={<JobList />} />
-              <Route path="jobs/new" element={<AddJob />} />
-              <Route path="jobs/edit/:id" element={<AddJob />} />
-              <Route path="candidates" element={<CandidateList />} />
-              <Route path="candidates/:id" element={<CandidateDetail />} />
-              <Route path="ai-settings" element={<AISettings />} />
-            </Route>
+                {/* RECRUITMENT - Admin/HR Only (Employees cannot access) */}
+                <Route path="recruitment">
+                  <Route path="jobs" element={<JobList />} />
+                  <Route path="jobs/new" element={<AddJob />} />
+                  <Route path="jobs/edit/:id" element={<AddJob />} />
+                  <Route path="candidates" element={<CandidateList />} />
+                  <Route path="candidates/:id" element={<CandidateDetail />} />
+                  <Route path="ai-settings" element={<AISettings />} />
+                </Route>
 
-            {/* Announcements */}
-            <Route path="announcements" element={<Announcements />} />
-            <Route path="announcements/new" element={<AddAnnouncement />} />
-            <Route path="announcements/edit/:id" element={<AddAnnouncement />} />
-          </Route>
+                {/* Announcements */}
+                <Route path="announcements/new" element={<AddAnnouncement />} />
+                <Route path="announcements/edit/:id" element={<AddAnnouncement />} />
 
-          {/* ============================================ */}
-          {/* EMPLOYEE ROUTES - EMPLOYEE role only */}
-          {/* NO access to recruitment features */}
-          {/* ============================================ */}
-          <Route
-            path="/employee"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE]}>
-                <EmployeeLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<EmployeeDashboard />} />
-            <Route path="attendance" element={<Attendance />} />
-            <Route path="leaves" element={<EmployeeLeaves />} />
-            <Route path="payroll" element={<EmployeePayroll />} />
-            <Route path="announcements" element={<Announcements />} />
-            <Route path="profile" element={<EmployeeProfile />} />
-          </Route>
+                {/* Billing & Subscription */}
+                <Route path="billing" element={<Billing />} />
 
-          {/* ============================================ */}
-          {/* CATCH ALL - Redirect to landing */}
-          {/* ============================================ */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+                {/* Analytics & Transparency */}
+                <Route path="analytics">
+                  <Route path="org-chart" element={<OrganizationChart />} />
+                  <Route path="surveys" element={<SurveyDashboard />} />
+                  <Route path="audit-logs" element={<AuditLogViewer />} />
+                </Route>
+              </Route>
+
+              {/* ============================================ */}
+              {/* EMPLOYEE ROUTES - EMPLOYEE role only */}
+              {/* NO access to recruitment features */}
+              {/* ============================================ */}
+              <Route
+                path="/employee"
+                element={
+                  <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE]}>
+                    <EmployeeLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<EmployeeDashboard />} />
+                <Route path="attendance" element={<Attendance />} />
+                <Route path="leaves" element={<EmployeeLeaves />} />
+                <Route path="payroll" element={<EmployeePayroll />} />
+                <Route path="announcements" element={<Announcements />} />
+                <Route path="profile" element={<EmployeeProfile />} />
+              </Route>
+
+              {/* ============================================ */}
+              {/* CATCH ALL - Redirect to landing */}
+              {/* ============================================ */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
     </ToastProvider>
   );
 };

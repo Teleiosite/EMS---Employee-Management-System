@@ -1,451 +1,67 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, AlertTriangle, Settings, Loader2, Save, RefreshCw } from 'lucide-react';
-import { attendanceApi, AttendanceLog, AttendancePolicy } from '../services/attendanceApi';
-import { useToast } from '../context/ToastContext';
+import React, { useState } from 'react';
+import { Shield, AlertTriangle, Settings, ChevronRight } from 'lucide-react';
+
+// Sub-components
+import LiveLog from '../components/attendance/LiveLog';
+import SuspiciousActivity from '../components/attendance/SuspiciousActivity';
+import AttendanceSettings from '../components/attendance/AttendanceSettings';
 
 type Tab = 'log' | 'suspicious' | 'settings';
 
-const statusBadge = (s: string) => {
-  const map: Record<string, string> = {
-    PRESENT: 'bg-green-100 text-green-800',
-    LATE: 'bg-yellow-100 text-yellow-800',
-    ABSENT: 'bg-red-100 text-red-800',
-    HALF_DAY: 'bg-orange-100 text-orange-800',
-  };
-  return map[s] || 'bg-gray-100 text-gray-700';
-};
-
-const fmt = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
-
-// ─── Time Input Helper ───────────────────────────────────────────────────────
-const TimeInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; hint?: string }> = ({
-  label, value, onChange, hint,
-}) => (
-  <div className="space-y-1">
-    <label className="text-sm font-medium text-gray-700">{label}</label>
-    <input
-      type="time"
-      value={value.slice(0, 5)}
-      onChange={(e) => onChange(e.target.value + ':00')}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
-    />
-    {hint && <p className="text-xs text-gray-400">{hint}</p>}
-  </div>
-);
-
-// ─── Live Log Tab ────────────────────────────────────────────────────────────
-const LiveLog: React.FC = () => {
-  const [logs, setLogs] = useState<AttendanceLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await attendanceApi.listLogs({ date: filterDate });
-      setLogs(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filterDate]);
-
-  useEffect(() => { fetch(); }, [fetch]);
-
-  const filtered = logs.filter((l) =>
-    !search || (l.employee_name || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          placeholder="Search employee..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-        />
-        <input
-          type="date"
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-        />
-        <button onClick={fetch} className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Refresh">
-          <RefreshCw className="w-4 h-4 text-gray-600" />
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-          <span className="ml-2 text-gray-500">Loading...</span>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
-              <tr>
-                <th className="px-5 py-3">Employee</th>
-                <th className="px-5 py-3">Date</th>
-                <th className="px-5 py-3">Check In</th>
-                <th className="px-5 py-3">Check Out</th>
-                <th className="px-5 py-3">IP Address</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Flag</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="py-10 text-center text-gray-400">No records for this date.</td></tr>
-              ) : filtered.map((log) => (
-                <tr key={log.id} className={`hover:bg-gray-50 transition-colors ${log.is_suspicious ? 'bg-red-50' : ''}`}>
-                  <td className="px-5 py-3">
-                    <p className="font-medium text-gray-800">{log.employee_name || 'Unknown'}</p>
-                    <p className="text-xs text-gray-400">{log.employee_code}</p>
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">{log.date}</td>
-                  <td className="px-5 py-3 text-gray-600">{fmt(log.clock_in_timestamp)}</td>
-                  <td className="px-5 py-3 text-gray-600">{fmt(log.clock_out_timestamp)}</td>
-                  <td className="px-5 py-3 text-gray-500 font-mono text-xs">{log.clock_in_ip || '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadge(log.status)}`}>
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    {log.is_suspicious && (
-                      <span title={log.suspicious_reason} className="flex items-center gap-1 text-red-600 text-xs font-medium cursor-help">
-                        <AlertTriangle className="w-4 h-4" /> Suspicious
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Suspicious Activity Tab ─────────────────────────────────────────────────
-const SuspiciousActivity: React.FC = () => {
-  const [logs, setLogs] = useState<AttendanceLog[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    attendanceApi.listSuspicious().then(setLogs).catch(console.error).finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-100 rounded-xl">
-        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-        <p className="text-sm text-red-700">
-          These records were automatically flagged because the employee used an unrecognised device and IP address at the same time, or multiple employees clocked in from the same IP within 5 minutes.
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
-              <tr>
-                <th className="px-5 py-3">Employee</th>
-                <th className="px-5 py-3">Date</th>
-                <th className="px-5 py-3">Check In</th>
-                <th className="px-5 py-3">IP Address</th>
-                <th className="px-5 py-3">Device ID</th>
-                <th className="px-5 py-3">Reason</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-400">
-                    ✅ No suspicious activity detected.
-                  </td>
-                </tr>
-              ) : logs.map((log) => (
-                <tr key={log.id} className="bg-red-50 hover:bg-red-100 transition-colors">
-                  <td className="px-5 py-3">
-                    <p className="font-medium text-gray-800">{log.employee_name || 'Unknown'}</p>
-                    <p className="text-xs text-gray-400">{log.employee_code}</p>
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">{log.date}</td>
-                  <td className="px-5 py-3 text-gray-600">{fmt(log.clock_in_timestamp)}</td>
-                  <td className="px-5 py-3 font-mono text-xs text-gray-500">{log.clock_in_ip || '—'}</td>
-                  <td className="px-5 py-3 font-mono text-xs text-gray-500">{log.device_fingerprint || '—'}</td>
-                  <td className="px-5 py-3 text-red-700 text-xs max-w-xs">{log.suspicious_reason}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Settings Tab ────────────────────────────────────────────────────────────
-const AttendanceSettings: React.FC = () => {
-  const { showToast } = useToast();
-  const [policy, setPolicy] = useState<Partial<AttendancePolicy>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [ipInput, setIpInput] = useState('');
-
-  useEffect(() => {
-    attendanceApi.getPolicy()
-      .then((p) => {
-        setPolicy(p);
-        setIpInput(Array.isArray(p.allowed_ips) ? p.allowed_ips.join(', ') : '');
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const set = (field: keyof AttendancePolicy, val: any) =>
-    setPolicy((p) => ({ ...p, [field]: val }));
-
-  const useMyIp = async () => {
-    try {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const { ip } = await res.json();
-      const existing = ipInput ? ipInput + ', ' : '';
-      setIpInput(existing + ip);
-    } catch {
-      showToast('Could not detect your IP address', 'error');
-    }
-  };
-
-  const useMyLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        set('office_latitude', parseFloat(pos.coords.latitude.toFixed(6)));
-        set('office_longitude', parseFloat(pos.coords.longitude.toFixed(6)));
-        showToast('Office location set to your current position.', 'success');
-      },
-      () => showToast('Location permission denied. Enable it in your browser settings.', 'error'),
-      { timeout: 8000 }
-    );
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const ips = ipInput
-        .split(',')
-        .map((ip) => ip.trim())
-        .filter(Boolean);
-      const updated = await attendanceApi.updatePolicy({ ...policy, allowed_ips: ips });
-      setPolicy(updated);
-      setIpInput(Array.isArray(updated.allowed_ips) ? updated.allowed_ips.join(', ') : '');
-      showToast('Attendance policy saved!', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to save policy', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const EnforceSelect: React.FC<{ field: 'enforce_ip' | 'enforce_location' }> = ({ field }) => (
-    <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-700">Enforcement Mode</label>
-      <select
-        value={(policy[field] as string) || 'off'}
-        onChange={(e) => set(field, e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-white"
-      >
-        <option value="off">Off — no restriction</option>
-        <option value="flag">Flag — allow but alert admin</option>
-        <option value="block">Block — reject sign-in</option>
-      </select>
-    </div>
-  );
-
-  if (loading) return (
-    <div className="flex items-center justify-center py-16">
-      <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-    </div>
-  );
-
-  return (
-    <div className="max-w-2xl space-y-6">
-      {/* Check-In Window */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Check-In Window
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <TimeInput label="Opens at" value={policy.check_in_start || '07:00:00'} onChange={(v) => set('check_in_start', v)} hint="Earliest allowed sign-in" />
-          <TimeInput label="On-time deadline" value={policy.check_in_end || '09:00:00'} onChange={(v) => set('check_in_end', v)} hint="After this + grace = LATE" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Late grace period (minutes)</label>
-            <input type="number" min={0} max={60} value={policy.late_grace_minutes ?? 15}
-              onChange={(e) => set('late_grace_minutes', parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" />
-            <p className="text-xs text-gray-400">Minutes after deadline before status = LATE</p>
-          </div>
-          <TimeInput label="Absent if no sign-in by" value={policy.absent_if_no_checkin_by || '11:00:00'} onChange={(v) => set('absent_if_no_checkin_by', v)} hint="After this time = ABSENT" />
-        </div>
-      </div>
-
-      {/* Check-Out Window */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Check-Out Window
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <TimeInput label="Half-day if sign-out before" value={policy.half_day_if_checkout_before || '13:00:00'} onChange={(v) => set('half_day_if_checkout_before', v)} hint="Early checkout = HALF_DAY" />
-          <TimeInput label="Check-out opens at" value={policy.check_out_start || '16:00:00'} onChange={(v) => set('check_out_start', v)} hint="Earliest sign-out allowed" />
-        </div>
-        <TimeInput label="Expected end of work day" value={policy.check_out_end || '18:00:00'} onChange={(v) => set('check_out_end', v)} hint="For reporting purposes" />
-      </div>
-
-      {/* IP Security */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> IP Address Security
-        </h3>
-        <p className="text-xs text-gray-500">Only allow sign-ins from the listed IP addresses (your office network). Leave empty to allow all IPs.</p>
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Allowed IPs (comma-separated)</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={ipInput}
-              onChange={(e) => setIpInput(e.target.value)}
-              placeholder="e.g. 102.89.33.1, 197.210.5.0"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-            />
-            <button
-              type="button"
-              onClick={useMyIp}
-              className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
-            >
-              + Use my IP
-            </button>
-          </div>
-        </div>
-        <EnforceSelect field="enforce_ip" />
-      </div>
-
-      {/* Location Security */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Location (GPS) Security
-        </h3>
-        <p className="text-xs text-gray-500">Set your office GPS coordinates. Employees signing in outside the allowed radius will be flagged or blocked.</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Office Latitude</label>
-            <input
-              type="number" step="0.000001"
-              value={policy.office_latitude ?? ''}
-              onChange={(e) => set('office_latitude', parseFloat(e.target.value))}
-              placeholder="e.g. 6.524379"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Office Longitude</label>
-            <input
-              type="number" step="0.000001"
-              value={policy.office_longitude ?? ''}
-              onChange={(e) => set('office_longitude', parseFloat(e.target.value))}
-              placeholder="e.g. 3.379206"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
-            />
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={useMyLocation}
-          className="px-4 py-2 text-sm border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
-        >
-          📍 Use my current location as office
-        </button>
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">
-            Allowed radius: <strong>{policy.office_radius_meters ?? 200}m</strong>
-          </label>
-          <input
-            type="range" min={50} max={1000} step={50}
-            value={policy.office_radius_meters ?? 200}
-            onChange={(e) => set('office_radius_meters', parseInt(e.target.value))}
-            className="w-full accent-orange-500"
-          />
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>50m (strict)</span><span>500m</span><span>1000m (relaxed)</span>
-          </div>
-        </div>
-        <EnforceSelect field="enforce_location" />
-      </div>
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        {saving ? 'Saving...' : 'Save Policy'}
-      </button>
-    </div>
-  );
-};
-
-
-// ─── Main Admin Page ─────────────────────────────────────────────────────────
 const AdminAttendance: React.FC = () => {
   const [tab, setTab] = useState<Tab>('log');
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'log', label: 'Live Log', icon: <Shield className="w-4 h-4" /> },
-    { id: 'suspicious', label: '⚠️ Suspicious Activity', icon: <AlertTriangle className="w-4 h-4" /> },
-    { id: 'settings', label: 'Attendance Settings', icon: <Settings className="w-4 h-4" /> },
+    { id: 'log', label: 'Surveillance Log', icon: <Shield className="w-4 h-4" /> },
+    { id: 'suspicious', label: 'Anomaly Detection', icon: <AlertTriangle className="w-4 h-4" /> },
+    { id: 'settings', label: 'Security Policy', icon: <Settings className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Attendance Monitoring</h1>
-        <p className="text-gray-500 mt-1">Monitor employee check-ins, suspicious activity, and configure attendance rules.</p>
+    <div className="space-y-8 font-sans animate-fade-in">
+      {/* Header section with rich aesthetics */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight flex items-center gap-3">
+            Attendance Matrix
+            <ChevronRight className="w-6 h-6 text-orange-500" />
+            <span className="text-gray-400 font-medium text-lg tracking-wide">
+                {tabs.find(t => t.id === tab)?.label}
+            </span>
+          </h1>
+          <p className="text-gray-500 mt-2 font-medium max-w-2xl leading-relaxed">
+            Advanced biometric monitoring and network-level security policing for organizational check-in integrity.
+          </p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit shadow-sm">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.id
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-50'
-              }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
+      {/* Modern, glassmorphism-style Tab Switcher */}
+      <div className="inline-flex p-1.5 bg-white/80 backdrop-blur-md border border-gray-100 rounded-lg shadow-xl shadow-gray-200/50">
+        {tabs.map((t) => {
+            const isActive = tab === t.id;
+            return (
+                <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl text-xs font-semibold uppercase text-sm tracking-wide tracking-[0.15em] transition-all duration-300 ${
+                        isActive 
+                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 -translate-y-0.5' 
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                    {t.icon}
+                    {t.label}
+                </button>
+            );
+        })}
       </div>
 
-      {/* Tab content */}
-      {tab === 'log' && <LiveLog />}
-      {tab === 'suspicious' && <SuspiciousActivity />}
-      {tab === 'settings' && <AttendanceSettings />}
+      {/* Content Area - Render sub-components with smooth transitions */}
+      <div className="bg-transparent rounded-3xl min-h-[500px]">
+        {tab === 'log' && <LiveLog />}
+        {tab === 'suspicious' && <SuspiciousActivity />}
+        {tab === 'settings' && <AttendanceSettings />}
+      </div>
     </div>
   );
 };

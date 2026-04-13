@@ -14,7 +14,11 @@ import {
   ChevronRight,
   FileText,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  BarChart3,
+  History,
+  GitBranch,
+  SearchCode
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,34 +28,21 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
   const location = useLocation();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment']);
-  const [companyName, setCompanyName] = useState<string>('Employee Management System');
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Departments', 'Announcements', 'Recruitment', 'Analytics']);
+  const [companyName, setCompanyName] = useState<string>('HireWix');
 
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
-    // Decode the JWT access token to get the tenant_id claim
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.tenant_name) {
-          setCompanyName(payload.tenant_name);
-        }
-        // Platform owner has no tenant — show Host Console link
-        if (!payload.tenant_id) {
-          setIsSuperAdmin(true);
-        }
-      }
-    } catch {
-      // Silent fail — default name stays
-    }
-    // Also try from stored user object as fallback
+    // SECURITY: JWT tokens live in httpOnly cookies — they are never accessible to JS.
+    // Read only the non-sensitive user metadata object stored by authApi.ts on login.
     const stored = localStorage.getItem('user');
     if (stored) {
       try {
         const u = JSON.parse(stored);
         if (u.tenantName) setCompanyName(u.tenantName);
+        // Platform owner (superuser) has no tenant → show Host Console link
+        if (u.isSuperuser) setIsSuperAdmin(true);
       } catch { /* ignore */ }
     }
   }, []);
@@ -99,6 +90,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
         { name: 'Add Announcement', path: '/admin/announcements/new' }
       ]
     },
+    {
+      name: 'Analytics',
+      icon: BarChart3,
+      subItems: [
+        { name: 'Organization Chart', path: '/admin/analytics/org-chart' },
+        { name: 'Workforce Insights', path: '/admin/analytics/surveys' },
+        { name: 'Audit Logs', path: '/admin/analytics/audit-logs' }
+      ]
+    },
+    { name: 'Billing & Subscription', icon: ShieldCheck, path: '/admin/billing' },
   ];
 
   return (

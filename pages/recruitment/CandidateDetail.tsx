@@ -132,7 +132,20 @@ const CandidateDetail: React.FC = () => {
                 <Calendar className="w-4 h-4" /> Applied: {new Date(candidate.created_at).toLocaleDateString()}
               </div>
               <div className="flex items-center gap-3 text-gray-600 text-sm">
-                <FileText className="w-4 h-4" /> {candidate.resume_file_name || 'No Resume'}
+                <FileText className="w-4 h-4" />
+                {candidate.resume ? (
+                  <a 
+                    href={candidate.resume} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-orange-600 hover:text-orange-700 hover:underline font-medium"
+                    title="Click to view full PDF resume"
+                  >
+                    {candidate.resume_file_name || 'View Resume Document'}
+                  </a>
+                ) : (
+                  <span>No Resume Attached</span>
+                )}
               </div>
             </div>
 

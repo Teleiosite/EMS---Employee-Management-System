@@ -36,6 +36,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE', db_index=True)
     is_active = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
     email_verified = models.BooleanField(default=False)
     email_verification_token = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
