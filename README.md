@@ -106,14 +106,31 @@ Copy the `.env.example` to `.env` and fill in your:
 
 ---
 
-## 🔐 Security & Compliance
+## 🔐 Security & Data Privacy
 
-| Measure | Implementation |
-|---|---|
-| **Field-Level Audit Logs** | Every sensitive change is tracked with IP and User metadata |
-| **httpOnly JWT** | Secure token storage preventing XSS-based token theft |
-| **Tenant Isolation** | Data isolation enforced at the middleware/ORM layer |
-| **Hybrid Redundancy** | Critical data on Supabase; Large files & backups on Oracle |
+HireWix is designed with an "Enterprise-First" security mindset, ensuring that sensitive HR data remains isolated, auditable, and private.
+
+### 🛡️ Multi-Tenant Isolation
+The platform uses **Strict Partitioning** to ensure that data from different companies never mixes.
+- **ORM Enforcement**: Every database query is automatically scoped to the current user's `Tenant` via a custom `TenantManager`.
+- **Middleware Guard**: A tenant-resolution middleware ensures that users can only access resources associated with their authenticated Workspace.
+- **Cross-Tenant Safety**: Even with a valid ID, a user from "Company A" cannot view or modify a record belonging to "Company B".
+
+### 🔎 System-Wide Audit Trail
+Accountability is built into the core of the platform through automated mutation tracking.
+- **Automatic Logging**: Every data-modifying action (`CREATE`, `UPDATE`, `DELETE`) is captured by the `AuditLogMiddleware`.
+- **Metadata Capture**: Logs include the User, Tenant, Resource, Action Type, IP Address, User-Agent, and a JSON payload of the changes.
+- **Security Dashboard**: Admins have access to a searchable ledger of all system activity to identify suspicious behavior or track data history.
+
+### 🤫 Privacy-First Analytics
+Workforce sentiment data (Pulse Surveys) is handled with **Anonymized Aggregation**.
+- **Trend Visualization**: Admins see happiness trends, engagement rates, and mood distributions.
+- **Identity Shielding**: The Analytics Dashboard does not display individual employee names alongside their mood ratings, protecting employee privacy while providing actionable insights to leadership.
+
+### 🛂 Access Control & Integrity
+- **RBAC (Role-Based Access Control)**: Granular permissions restrict sensitive modules (Payroll, Audit Logs, AI Settings) to authorized `ADMIN` or `HR_MANAGER` roles.
+- **ID Collision Protection**: Bulk import logic includes integrity checks to prevent duplicate `EmployeeIDs` within a single tenant, ensuring data consistency.
+- **Sensitive Field Filtering**: Audit logs automatically strip sensitive data like passwords or authentication tokens before storage.
 
 ---
 
