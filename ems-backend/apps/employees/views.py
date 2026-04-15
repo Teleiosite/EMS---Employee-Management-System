@@ -183,39 +183,40 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             success_count = 0
             errors = []
 
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    # Each row gets its own savepoint. If it fails, only that row
-                    # is rolled back — the outer transaction stays clean.
-                    sid = transaction.savepoint()
-                    try:
-                        # Check limit per row
+            # Process each row in its own independent transaction.
+            # A failed row is completely isolated — it cannot affect other rows.
+            for index, row in df.iterrows():
+                try:
+                    with transaction.atomic():
+                        # Check plan limit
                         if tenant.current_employee_count >= tenant.employee_limit:
                             errors.append(f"Row {index + 1}: Employee limit reached. Upgrade your plan to import more.")
-                            transaction.savepoint_rollback(sid)
                             continue
 
                         email = str(row[mapped_cols['email']]).strip().lower()
                         if not email or email == 'nan':
-                            transaction.savepoint_rollback(sid)
                             continue
 
-                        # Resolve or Create Department
+                        # Resolve or Create Department (scoped to tenant)
                         dept_obj = None
                         if mapped_cols['department'] and pd.notna(row[mapped_cols['department']]):
                             dept_name = str(row[mapped_cols['department']]).strip()
                             dept_obj, _ = Department.objects.get_or_create(tenant=tenant, name=dept_name)
 
-                        # Resolve or Create Designation
+                        # Resolve or Create Designation.
+                        # NOTE: 'title' is globally unique — we look up by title first, then
+                        # fall back to creating. This avoids UNIQUE constraint errors.
                         desig_obj = None
                         if mapped_cols['designation'] and pd.notna(row[mapped_cols['designation']]):
                             desig_name = str(row[mapped_cols['designation']]).strip()
-                            desig_obj, _ = Designation.objects.get_or_create(tenant=tenant, title=desig_name)
+                            desig_obj = Designation.objects.filter(title=desig_name).first()
+                            if not desig_obj:
+                                desig_obj = Designation.objects.create(tenant=tenant, title=desig_name)
 
                         # Create/Get User
                         first_name = str(row[mapped_cols['first_name']]).strip() if mapped_cols['first_name'] and pd.notna(row[mapped_cols['first_name']]) else "Employee"
                         last_name = str(row[mapped_cols['last_name']]).strip() if mapped_cols['last_name'] and pd.notna(row[mapped_cols['last_name']]) else ""
-                        
+
                         user_obj, created = User.objects.get_or_create(
                             email=email,
                             defaults={
@@ -226,58 +227,50 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 'is_active': True,
                             }
                         )
-                        # If existing user was deactivated (suspended), reactivate them
+                        # Reactivate if suspended
                         if not created and (not user_obj.is_active or getattr(user_obj, 'is_deleted', False)):
                             user_obj.is_active = True
                             user_obj.is_deleted = False
                             user_obj.save(update_fields=['is_active', 'is_deleted'])
 
                         if created:
-                            # SECURITY: generate a unique random password per employee.
                             temp_password = secrets.token_urlsafe(12)
                             user_obj.set_password(temp_password)
                             user_obj.save()
-                            
-                            # Notify the employee of their account (Background Task)
                             try:
                                 from apps.core.tasks import send_email_task
                                 send_email_task.delay(
                                     subject='Welcome to HireWix - Your Account is Ready',
                                     message=(
                                         f"Hello {first_name},\n\n"
-                                        f"Welcome to the team! An HR account has been created for you on the HireWix platform.\n\n"
+                                        f"An HR account has been created for you on the HireWix platform.\n\n"
                                         f"Login Email: {email}\n"
                                         f"Temporary Password: {temp_password}\n\n"
-                                        f"Please log in at your earliest convenience and update your password in the settings.\n\n"
-                                        f"Best Regards,\n"
-                                        f"HR Administration"
+                                        f"Please log in and update your password at your earliest convenience.\n\n"
+                                        f"Best Regards,\nHR Administration"
                                     ),
                                     recipient_list=[email],
                                 )
-                            except Exception as e:
-                                logger.error(f"Failed to enqueue welcome email: {e}")
+                            except Exception as mail_err:
+                                logger.error(f"Failed to enqueue welcome email: {mail_err}")
 
                         # Prepare profile field values
                         base_salary = float(row[mapped_cols['base_salary']]) if mapped_cols['base_salary'] and pd.notna(row[mapped_cols['base_salary']]) else 0.0
                         emp_id = str(row[mapped_cols['employee_id']]).strip() if mapped_cols['employee_id'] and pd.notna(row[mapped_cols['employee_id']]) else f"EMP-{user_obj.id.hex[:6].upper()}"
                         joining_date = pd.to_datetime(row[mapped_cols['joining_date']]).date() if mapped_cols['joining_date'] and pd.notna(row[mapped_cols['joining_date']]) else pd.Timestamp.now().date()
 
-                        # Look up existing profile for this user (including soft-deleted)
+                        # Look up existing profile (including soft-deleted)
                         existing_profile = EmployeeProfile.objects.filter(user=user_obj, tenant=tenant).first()
 
                         if existing_profile:
-                            # The employee already has a profile (active or suspended).
-                            # Only block if they are CHANGING to an emp_id owned by a DIFFERENT active employee.
                             if existing_profile.employee_id != emp_id:
                                 id_conflict = EmployeeProfile.objects.filter(
                                     tenant=tenant, employee_id=emp_id, is_deleted=False
                                 ).exclude(pk=existing_profile.pk).first()
                                 if id_conflict:
                                     errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already in use by {id_conflict.full_name}.")
-                                    transaction.savepoint_rollback(sid)
                                     continue
 
-                            # Update the existing profile directly (works for both active and suspended)
                             existing_profile.department = dept_obj
                             existing_profile.designation = desig_obj
                             existing_profile.employee_id = emp_id
@@ -287,13 +280,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                             existing_profile.is_deleted = False
                             existing_profile.save()
                         else:
-                            # Brand new employee — check for ID collision before creating
                             id_conflict = EmployeeProfile.objects.filter(
                                 tenant=tenant, employee_id=emp_id, is_deleted=False
                             ).first()
                             if id_conflict:
                                 errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {id_conflict.full_name}.")
-                                transaction.savepoint_rollback(sid)
                                 continue
 
                             EmployeeProfile.objects.create(
@@ -307,12 +298,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 status='ACTIVE',
                                 is_deleted=False,
                             )
-                        transaction.savepoint_commit(sid)
                         success_count += 1
-                    except Exception as e:
-                        transaction.savepoint_rollback(sid)
-                        logger.error(f"Row {index + 1} import error: {str(e)}")
-                        errors.append(f"Row {index + 1}: {str(e)}")
+
+                except Exception as e:
+                    logger.error(f"Row {index + 1} import error: {str(e)}")
+                    errors.append(f"Row {index + 1}: {str(e)}")
 
             return Response({
                 'detail': f'Import completed: {success_count} succeeded, {len(errors)} failed.',
