@@ -212,6 +212,12 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 'is_active': True,
                             }
                         )
+                        # If existing user was deactivated (suspended), reactivate them
+                        if not created and (not user_obj.is_active or getattr(user_obj, 'is_deleted', False)):
+                            user_obj.is_active = True
+                            user_obj.is_deleted = False
+                            user_obj.save(update_fields=['is_active', 'is_deleted'])
+
                         if created:
                             # SECURITY: generate a unique random password per employee.
                             temp_password = secrets.token_urlsafe(12)
@@ -242,12 +248,15 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                         emp_id = str(row[mapped_cols['employee_id']]).strip() if mapped_cols['employee_id'] and pd.notna(row[mapped_cols['employee_id']]) else f"EMP-{user_obj.id.hex[:6].upper()}"
                         joining_date = pd.to_datetime(row[mapped_cols['joining_date']]).date() if mapped_cols['joining_date'] and pd.notna(row[mapped_cols['joining_date']]) else pd.Timestamp.now().date()
 
-                        # Check for Employee ID collision within the same tenant
-                        existing_with_id = EmployeeProfile.objects.filter(tenant=tenant, employee_id=emp_id).exclude(user=user_obj).first()
+                        # Check for Employee ID collision — only block ACTIVE employees with a different user
+                        existing_with_id = EmployeeProfile.objects.filter(
+                            tenant=tenant, employee_id=emp_id, is_deleted=False
+                        ).exclude(user=user_obj).first()
                         if existing_with_id:
-                            errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {existing_with_id.full_name}.")
+                            errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to active employee {existing_with_id.full_name}.")
                             continue
 
+                        # Upsert the profile — reactivates suspended employees automatically
                         EmployeeProfile.objects.update_or_create(
                             user=user_obj,
                             tenant=tenant,
@@ -258,6 +267,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 'base_salary': base_salary,
                                 'joining_date': joining_date,
                                 'status': 'ACTIVE',
+                                'is_deleted': False,
                             }
                         )
                         success_count += 1
