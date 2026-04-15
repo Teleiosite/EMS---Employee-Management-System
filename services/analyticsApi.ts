@@ -33,7 +33,7 @@ export interface PulseSurvey {
 
 export const analyticsApi = {
     getAuditLogs: async (): Promise<AuditLogEntry[]> => {
-        return await api.get<AuditLogEntry[]>('/audit-logs/');
+        return await api.get<AuditLogEntry[]>('/core/audit-logs/');
     },
 
     getSurveyAnalytics: async (): Promise<SurveyAnalytics> => {
