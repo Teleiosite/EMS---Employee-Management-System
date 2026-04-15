@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, UserPlus, Upload, ChevronRight } from 'lucide-react';
+import { Search, Loader2, UserPlus, Upload, ChevronRight, AlertTriangle, X } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
 import { employeesApi, ApiError } from '../services/employeesApi';
@@ -28,6 +28,7 @@ const Employees: React.FC = () => {
 
   // State
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   
@@ -36,18 +37,24 @@ const Employees: React.FC = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const error = localError || (queryError instanceof ApiError ? queryError.message : queryError ? 'Failed to load employees' : null);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Permanent Action: Are you sure you want to delete this employee?")) return;
+  // The employee being targeted for confirmation
+  const confirmTarget = employeeList.find(e => e.id === confirmDeleteId);
+
+  const handleDeleteConfirmed = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     setDeletingId(id);
     try {
       await employeesApi.delete(id);
-      refetch();
+      await refetch();
     } catch (err: any) {
       setLocalError(err.message || 'Failed to terminate employee record.');
-      setTimeout(() => setLocalError(null), 5000);
+      setTimeout(() => setLocalError(null), 6000);
     } finally {
       setDeletingId(null);
     }
@@ -56,19 +63,28 @@ const Employees: React.FC = () => {
   const handleStartImport = async () => {
     if (!importFile) return;
     setImporting(true);
+    setImportError(null);
     try {
       const res = await employeesApi.bulkImport(importFile);
       setImportResult({ success: res.success_count, errors: res.errors });
       await refetch();
     } catch (err: any) {
-      alert(err.message || "Bulk migration failed.");
+      // Show the specific error inside the modal instead of a generic alert
+      setImportError(err.message || 'Upload failed. Please check your file and try again.');
     } finally {
       setImporting(false);
     }
   };
 
+  const handleCloseImport = () => {
+    setShowImportModal(false);
+    setImportResult(null);
+    setImportFile(null);
+    setImportError(null);
+  };
+
   const downloadTemplate = () => {
-    // Generate simple CSV
+    // Generate simple CSV with exact column names the backend expects
     const headers = ['First Name', 'Last Name', 'Email', 'Department', 'Designation', 'Base Salary', 'Employee ID', 'Joining Date'];
     const row = ['John', 'Doe', 'john@example.com', 'Engineering', 'Developer', '60000', 'EMP001', '2024-01-15'];
     const csvContent = headers.join(",") + "\n" + row.join(",");
@@ -77,16 +93,13 @@ const Employees: React.FC = () => {
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
-    link.href = url; // Not setAttribute, directly assign
+    link.href = url;
     link.download = "employee_import_template.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Fix: Delay revocation to allow Chrome time to attach the filename metadata
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const filteredEmployees = employeeList.filter(emp =>
@@ -156,24 +169,58 @@ const Employees: React.FC = () => {
             data={filteredEmployees}
             deletingId={deletingId}
             onEdit={(id) => navigate(`/admin/employees/edit/${id}`)}
-            onDelete={handleDelete}
+            onDelete={(id) => setConfirmDeleteId(id)}
             onAddFirst={() => navigate('/admin/employees/new')}
             searchTerm={searchTerm}
           />
         )}
       </div>
 
+      {/* Inline Termination Confirmation Dialog */}
+      {confirmDeleteId && confirmTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in font-sans">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Terminate Access?</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  This will revoke <span className="font-semibold text-gray-700">{confirmTarget.name}</span>'s system access and hide them from the directory. Their historical records are preserved.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+              >
+                Terminate Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Migration Portal Modal */}
       <ImportModal 
         show={showImportModal}
-        onClose={() => { setShowImportModal(false); setImportResult(null); setImportFile(null); }}
+        onClose={handleCloseImport}
         importFile={importFile}
         setImportFile={setImportFile}
         importing={importing}
         importResult={importResult}
+        importError={importError}
         onDownloadTemplate={downloadTemplate}
         onStartImport={handleStartImport}
-        onDone={() => { setShowImportModal(false); setImportResult(null); setImportFile(null); }}
+        onDone={handleCloseImport}
       />
     </div>
   );

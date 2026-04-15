@@ -102,16 +102,21 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         # Instead of destroying the data permanently, we soft-delete it safely
-        # shielding historical leave, payroll, and profile records from CASCADE constraints.
-        instance.is_deleted = True
-        instance.status = 'INACTIVE'
-        instance.save(update_fields=['is_deleted', 'status'])
-        
-        user = instance.user
-        if user:
-            user.is_active = False
-            user.is_deleted = True
-            user.save(update_fields=['is_active', 'is_deleted'])
+        try:
+            instance.is_deleted = True
+            instance.status = 'INACTIVE'
+            instance.save(update_fields=['is_deleted', 'status'])
+            
+            user = instance.user
+            if user:
+                user.is_active = False
+                user.is_deleted = True
+                user.save(update_fields=['is_active', 'is_deleted'])
+                logger.info(f"Soft-deleted employee profile and deactivated user for {instance.pk}")
+        except Exception as e:
+            logger.error(f"Termination failed for {instance.pk}: {str(e)}")
+            from rest_framework.exceptions import APIException
+            raise APIException(f"Failed to terminate employee record: {str(e)}")
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='me')
     def me(self, request):
@@ -140,10 +145,13 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             filename = file.name.lower()
             if filename.endswith('.csv'):
                 df = pd.read_csv(file)
-            elif filename.endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(file)
+            elif filename.endswith('.xlsx'):
+                # Explicitly use openpyxl for xlsx to avoid engine selection issues
+                df = pd.read_excel(file, engine='openpyxl')
+            elif filename.endswith('.xls'):
+                df = pd.read_excel(file, engine='xlrd')
             else:
-                return Response({'detail': 'Unsupported file format.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': f'Unsupported file format: {filename}'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Map columns (flexible mapping or expected names)
             expected_cols = {
@@ -303,5 +311,9 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             })
 
         except Exception as e:
-            return Response({'detail': f'File parsing error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception("Bulk import parsing failure")
+            return Response(
+                {'detail': f'Bulk migration failed: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
