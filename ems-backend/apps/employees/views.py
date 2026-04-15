@@ -185,14 +185,20 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
 
             with transaction.atomic():
                 for index, row in df.iterrows():
-                    # Check limit per row
-                    if tenant.current_employee_count >= tenant.employee_limit:
-                        errors.append(f"Row {index + 1}: Employee limit reached. Upgrade your plan to import more.")
-                        continue
-
+                    # Each row gets its own savepoint. If it fails, only that row
+                    # is rolled back — the outer transaction stays clean.
+                    sid = transaction.savepoint()
                     try:
+                        # Check limit per row
+                        if tenant.current_employee_count >= tenant.employee_limit:
+                            errors.append(f"Row {index + 1}: Employee limit reached. Upgrade your plan to import more.")
+                            transaction.savepoint_rollback(sid)
+                            continue
+
                         email = str(row[mapped_cols['email']]).strip().lower()
-                        if not email or email == 'nan': continue
+                        if not email or email == 'nan':
+                            transaction.savepoint_rollback(sid)
+                            continue
 
                         # Resolve or Create Department
                         dept_obj = None
@@ -268,6 +274,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 ).exclude(pk=existing_profile.pk).first()
                                 if id_conflict:
                                     errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already in use by {id_conflict.full_name}.")
+                                    transaction.savepoint_rollback(sid)
                                     continue
 
                             # Update the existing profile directly (works for both active and suspended)
@@ -286,6 +293,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                             ).first()
                             if id_conflict:
                                 errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {id_conflict.full_name}.")
+                                transaction.savepoint_rollback(sid)
                                 continue
 
                             EmployeeProfile.objects.create(
@@ -299,8 +307,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                                 status='ACTIVE',
                                 is_deleted=False,
                             )
+                        transaction.savepoint_commit(sid)
                         success_count += 1
                     except Exception as e:
+                        transaction.savepoint_rollback(sid)
+                        logger.error(f"Row {index + 1} import error: {str(e)}")
                         errors.append(f"Row {index + 1}: {str(e)}")
 
             return Response({
