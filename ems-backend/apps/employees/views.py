@@ -243,33 +243,54 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                             except Exception as e:
                                 logger.error(f"Failed to enqueue welcome email: {e}")
 
-                        # Create/Update Profile
+                        # Prepare profile field values
                         base_salary = float(row[mapped_cols['base_salary']]) if mapped_cols['base_salary'] and pd.notna(row[mapped_cols['base_salary']]) else 0.0
                         emp_id = str(row[mapped_cols['employee_id']]).strip() if mapped_cols['employee_id'] and pd.notna(row[mapped_cols['employee_id']]) else f"EMP-{user_obj.id.hex[:6].upper()}"
                         joining_date = pd.to_datetime(row[mapped_cols['joining_date']]).date() if mapped_cols['joining_date'] and pd.notna(row[mapped_cols['joining_date']]) else pd.Timestamp.now().date()
 
-                        # Check for Employee ID collision — only block ACTIVE employees with a different user
-                        existing_with_id = EmployeeProfile.objects.filter(
-                            tenant=tenant, employee_id=emp_id, is_deleted=False
-                        ).exclude(user=user_obj).first()
-                        if existing_with_id:
-                            errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to active employee {existing_with_id.full_name}.")
-                            continue
+                        # Look up existing profile for this user (including soft-deleted)
+                        existing_profile = EmployeeProfile.objects.filter(user=user_obj, tenant=tenant).first()
 
-                        # Upsert the profile — reactivates suspended employees automatically
-                        EmployeeProfile.objects.update_or_create(
-                            user=user_obj,
-                            tenant=tenant,
-                            defaults={
-                                'department': dept_obj,
-                                'designation': desig_obj,
-                                'employee_id': emp_id,
-                                'base_salary': base_salary,
-                                'joining_date': joining_date,
-                                'status': 'ACTIVE',
-                                'is_deleted': False,
-                            }
-                        )
+                        if existing_profile:
+                            # The employee already has a profile (active or suspended).
+                            # Only block if they are CHANGING to an emp_id owned by a DIFFERENT active employee.
+                            if existing_profile.employee_id != emp_id:
+                                id_conflict = EmployeeProfile.objects.filter(
+                                    tenant=tenant, employee_id=emp_id, is_deleted=False
+                                ).exclude(pk=existing_profile.pk).first()
+                                if id_conflict:
+                                    errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already in use by {id_conflict.full_name}.")
+                                    continue
+
+                            # Update the existing profile directly (works for both active and suspended)
+                            existing_profile.department = dept_obj
+                            existing_profile.designation = desig_obj
+                            existing_profile.employee_id = emp_id
+                            existing_profile.base_salary = base_salary
+                            existing_profile.joining_date = joining_date
+                            existing_profile.status = 'ACTIVE'
+                            existing_profile.is_deleted = False
+                            existing_profile.save()
+                        else:
+                            # Brand new employee — check for ID collision before creating
+                            id_conflict = EmployeeProfile.objects.filter(
+                                tenant=tenant, employee_id=emp_id, is_deleted=False
+                            ).first()
+                            if id_conflict:
+                                errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {id_conflict.full_name}.")
+                                continue
+
+                            EmployeeProfile.objects.create(
+                                user=user_obj,
+                                tenant=tenant,
+                                department=dept_obj,
+                                designation=desig_obj,
+                                employee_id=emp_id,
+                                base_salary=base_salary,
+                                joining_date=joining_date,
+                                status='ACTIVE',
+                                is_deleted=False,
+                            )
                         success_count += 1
                     except Exception as e:
                         errors.append(f"Row {index + 1}: {str(e)}")
