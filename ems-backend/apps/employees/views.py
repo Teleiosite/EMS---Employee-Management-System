@@ -259,18 +259,22 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                         emp_id = str(row[mapped_cols['employee_id']]).strip() if mapped_cols['employee_id'] and pd.notna(row[mapped_cols['employee_id']]) else f"EMP-{user_obj.id.hex[:6].upper()}"
                         joining_date = pd.to_datetime(row[mapped_cols['joining_date']]).date() if mapped_cols['joining_date'] and pd.notna(row[mapped_cols['joining_date']]) else pd.Timestamp.now().date()
 
-                        # Look up existing profile (including soft-deleted)
+                        # Stage 1: look up profile by user (works for active employees)
                         existing_profile = EmployeeProfile.objects.filter(user=user_obj, tenant=tenant).first()
 
-                        if existing_profile:
-                            if existing_profile.employee_id != emp_id:
-                                id_conflict = EmployeeProfile.objects.filter(
-                                    tenant=tenant, employee_id=emp_id, is_deleted=False
-                                ).exclude(pk=existing_profile.pk).first()
-                                if id_conflict:
-                                    errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already in use by {id_conflict.full_name}.")
-                                    continue
+                        # Stage 2: if not found by user, look up by emp_id (catches soft-deleted
+                        # and orphaned profiles whose user FK points to a stale/different user object)
+                        if not existing_profile:
+                            existing_profile = EmployeeProfile.objects.filter(
+                                tenant=tenant, employee_id=emp_id
+                            ).first()
+                            if existing_profile:
+                                # Re-link this profile to the current user account
+                                existing_profile.user = user_obj
 
+                        if existing_profile:
+                            # Profile exists (active, suspended, or orphaned) — just update it.
+                            # No collision check needed: we already own this profile.
                             existing_profile.department = dept_obj
                             existing_profile.designation = desig_obj
                             existing_profile.employee_id = emp_id
@@ -280,11 +284,12 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                             existing_profile.is_deleted = False
                             existing_profile.save()
                         else:
+                            # Truly new employee — check no other ACTIVE employee has this emp_id
                             id_conflict = EmployeeProfile.objects.filter(
                                 tenant=tenant, employee_id=emp_id, is_deleted=False
-                            ).first()
+                            ).exclude(user=user_obj).first()
                             if id_conflict:
-                                errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to {id_conflict.full_name}.")
+                                errors.append(f"Row {index + 1}: Employee ID '{emp_id}' is already assigned to active employee {id_conflict.full_name}.")
                                 continue
 
                             EmployeeProfile.objects.create(
