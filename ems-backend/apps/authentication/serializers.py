@@ -136,6 +136,17 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not getattr(auth_user, 'email_verified', True):
             raise serializers.ValidationError('EMAIL_NOT_VERIFIED')
 
+        # SECURITY: Check active status BEFORE generating tokens
+        if not auth_user.is_active:
+            from .models import LoginAttempt
+            LoginAttempt.objects.create(user=auth_user, email=email, ip_address=ip, user_agent=agent, status='FAILED')
+            raise serializers.ValidationError('Account is inactive.')
+
+        if auth_user.tenant and not auth_user.tenant.is_active:
+            from .models import LoginAttempt
+            LoginAttempt.objects.create(user=auth_user, email=email, ip_address=ip, user_agent=agent, status='FAILED')
+            raise serializers.ValidationError('Your company account is currently suspended.')
+
         if auth_user.mfa_enabled:
             code = self.initial_data.get('mfa_code')
             if not code or not verify_totp_code(auth_user.mfa_secret, code):
@@ -152,12 +163,6 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         from .models import LoginAttempt
         LoginAttempt.objects.create(user=auth_user, email=email, ip_address=ip, user_agent=agent, status='SUCCESS')
-
-        if not self.user.is_active:
-            raise serializers.ValidationError('Account is inactive.')
-
-        if self.user.tenant and not self.user.tenant.is_active:
-            raise serializers.ValidationError('Your company account is currently suspended.')
 
         data['user'] = UserSerializer(self.user).data
         return data
@@ -207,24 +212,28 @@ class TenantRegistrationSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        tenant = Tenant.objects.create(
-            name=validated_data['company_name'],
-            slug=validated_data['company_slug'],
-            is_active=True,
-        )
-        token = generate_secure_token()
-        user = User.objects.create_user(
-            email=validated_data['admin_email'],
-            password=validated_data['password'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data.get('last_name', ''),
-            role='ADMIN',
-            is_staff=True,
-            is_active=True,
-            email_verified=False,
-            email_verification_token=token,
-            tenant=tenant,
-        )
+        from django.db import transaction
+        
+        with transaction.atomic():
+            tenant = Tenant.objects.create(
+                name=validated_data['company_name'],
+                slug=validated_data['company_slug'],
+                is_active=True,
+            )
+            token = generate_secure_token()
+            user = User.objects.create_user(
+                email=validated_data['admin_email'],
+                password=validated_data['password'],
+                first_name=validated_data['first_name'],
+                last_name=validated_data.get('last_name', ''),
+                role='ADMIN',
+                is_staff=True,
+                is_active=True,
+                email_verified=False,
+                email_verification_token=token,
+                tenant=tenant,
+            )
+
         
         # Get frontend origin from request or use default
         request = self.context.get('request')

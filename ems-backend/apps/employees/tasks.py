@@ -25,10 +25,12 @@ def check_document_expiry():
             "Please ensure that renewal processes are initiated if necessary."
         )
         
-        # In a multi-tenant system, we send to the tenant's admin email or a generic HR address
-        # For now, we'll use a placeholder or the tenant's primary admin if possible
-        # Assuming there is a way to get admin email
-        admin_email = getattr(doc.tenant, 'contact_email', None)
+        # Get the primary contact (ADMIN) for the tenant
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        admin_user = User.objects.filter(tenant=doc.tenant, role='ADMIN', is_active=True).first()
+        admin_email = admin_user.email if admin_user else None
+        
         if admin_email:
             send_tenant_email(
                 tenant=doc.tenant,

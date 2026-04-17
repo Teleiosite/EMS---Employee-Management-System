@@ -6,6 +6,11 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parents[2]
 SECRET_KEY = config('SECRET_KEY', default='unsafe-dev-key')
 DEBUG = config('DEBUG', cast=bool, default=False)
+
+if not DEBUG and SECRET_KEY == 'unsafe-dev-key':
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('SECRET_KEY must be set to a secure value in production.')
+
 ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',') if h.strip()]
 
 INSTALLED_APPS = [
@@ -17,6 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',  # Required for BLACKLIST_AFTER_ROTATION
     'django_filters',
     'drf_spectacular',
     'django_celery_beat',

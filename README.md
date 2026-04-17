@@ -4,14 +4,7 @@
 
 # HireWix — Employee Management System (EMS)
 
-**A production-ready, multi-tenant SaaS HR platform built for fast-growing companies.**
-
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-yourems.duckdns.org-orange?style=for-the-badge)](https://yourems.duckdns.org)
-[![Backend](https://img.shields.io/badge/Backend-Django_4.2-green?style=for-the-badge&logo=django)](https://djangoproject.com)
-[![Frontend](https://img.shields.io/badge/Frontend-React_19_+_TypeScript-blue?style=for-the-badge&logo=react)](https://reactjs.org)
-[![Database](https://img.shields.io/badge/Database-Supabase_Postgres-3ecf8e?style=for-the-badge&logo=supabase)](https://supabase.com)
-[![Storage](https://img.shields.io/badge/Storage-Oracle_Object_Storage-red?style=for-the-badge&logo=oracle)](https://cloud.oracle.com)
-[![AI](https://img.shields.io/badge/AI-Google_Gemini-blueviolet?style=for-the-badge&logo=google)](https://ai.google.dev)
+**A professional, production-ready, multi-tenant SaaS HR platform built for modern companies.**
 
 </div>
 
@@ -19,127 +12,118 @@
 
 ## 🌟 Overview
 
-HireWix is a full-stack, **multi-tenant** Employee Management System that allows any company to **register a workspace**, add employees, manage payroll, track attendance, handle recruitment pipelines, and make company-wide announcements — all from a single, clean interface.
-
-Built with a **Hybrid Cloud Architecture**, HireWix leverages the best-of-breed services for maximum stability and scale:
-- 🏦 **Database**: Supabase PostgreSQL (Production-grade, high concurrency).
-- 📦 **Storage**: Oracle Object Storage (Unlimited scale for heavy files & backups).
-- 🤖 **Intelligence**: Google Gemini (Semantic resume parsing).
+HireWix is a full-stack, multi-tenant Employee Management System engineered to streamline HR operations, simplify recruitment, and empower your workforce. Built natively for scale, this platform handles everything from candidate processing with AI to employee attendance, robust RBAC, and system-wide audits.
 
 ---
 
-## 🆕 What's New — Tier 1 Enterprise Release
+## 🏗️ Architecture & Tech Stack
 
-This release transforms HireWix into a market-leading SaaS with several advanced modules and **Interactive Admin Dashboards**:
+HireWix leverages a robust, Hybrid Cloud Architecture providing extreme stability and maximum scaling potential.
 
-### 📊 Business Intelligence & Transparency (NEW)
-- **Interactive Org Chart**: Visualize your company's reporting lines with a dynamic, zoomable tree (built with `react-flow`).
-- **Audit Log Dashboard**: A searchable security ledger for admins to track every data mutation, complete with JSON diffs and IP metadata.
-- **Workforce Sentiment Insights**: Real-time analytics on employee happiness trends and survey engagement via visual charts (built with `recharts`).
+- **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS.
+- **Backend:** Django 4.2 REST Framework (DRF), Celery, Redis.
+- **Database:** Supabase PostgreSQL (Handling high concurrency operations).
+- **Object Storage:** Oracle Cloud Object Storage (S3-compatible, for passports, resumes, and assets).
+- **Intelligence:** Google Gemini 2.5 Flash AI (Semantic parsing and ML integrations).
+- **Payments:** Paystack / Flutterwave.
 
-### 💼 SaaS Monetization & Billing
-- **Automated Billing**: Integrated **Paystack & Paystack Inline** for secure, automated subscription management.
-- **Subscription Tiers**: Support for `Starter`, `Business`, and `Enterprise` tiers with automatic seat-limit enforcement (e.g., 25/100/Unlimited employees).
-- **Real-time Status**: Dynamic usage tracking that prevents adding employees beyond your current plan limit.
-
-### 🕵️‍♂️ Enterprise Foundation
-- **Activity Tracking**: Every data mutation (`CREATE`, `UPDATE`, `DELETE`) is automatically logged via `AuditLogMiddleware`.
-- **Org Hierarchy**: Recursive reporting lines (`reports_to`) fully supported in both Backend and Frontend forms.
-
-### 📄 Document Management & Expiry Alerts
-- **Secure Storage**: Dedicated module for storing Passports, Visas, and Contracts in **Oracle Object Storage**.
-- **Automated Alerts**: A daily Celery task scans for documents expiring within 30 days and sends automated email alerts to HR admins.
-
----
-
-## 🏗️ Architecture
-
-### Hybrid Cloud Data Flow
-
+### Data Flow Overview
 ```mermaid
 graph TD
     User((User)) --> FE[React Frontend]
-    FE --> Django[Django API - Oracle VM]
+    FE --> Django[Django API Engine]
     Django --> Supabase[(Supabase Postgres)]
     Django --> OCI[Oracle Object Storage]
     Django --> Redis[(Redis)]
     Redis --> Celery[Celery Worker]
     Celery --> Gemini[Google Gemini AI]
-    Celery --> EMAIL[Brevo SMTP]
-    Celery --> OCI_BACKUP[Automated Backups]
+    Celery --> EMAIL[SMTP/Brevo]
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 📂 File Structure
 
-- **Frontend**: React 19, TypeScript, Vite 6, Tailwind CSS.
-- **Backend**: Django 4.2, DRF, Celery, Redis.
-- **Cloud Infrastructure**:
-  - **Compute**: Oracle Cloud Infrastructure (Always Free VM).
-  - **Database**: Supabase (PostgreSQL).
-  - **Storage**: Oracle Object Storage (S3-Compatible).
-  - **Payments**: Paystack / Flutterwave.
-  - **AI**: Google Gemini Flash.
+The project employs a clear separation of concerns between our frontend application and the backend Django engine.
+
+```text
+EMS---Employee-Management-System/
+├── components/          # Reusable React components (UI forms, tables, modals)
+├── context/             # React Context Providers for global state (Auth, Theme)
+├── docs/                # Project documentation and architectural diagrams
+├── ems-backend/         # 🐍 Django Backend API Root
+│   ├── apps/            # Modular Django applications (core domains)
+│   ├── config/          # Project settings, URL routing, and WSGI/ASGI apps
+│   ├── scripts/         # Automated database seeding and migration utilities
+│   └── tests/           # Backend unit and integration test suites
+├── pages/               # React application views (Dashboard, Login, Profiles)
+├── scripts/             # Useful bash/node scripts for automation
+├── services/            # Frontend API clients mapping to Django endpoints
+├── App.tsx              # Main React Application tree
+├── index.html           # HTML Entry point
+├── package.json         # Frontend dependencies and dev scripts
+└── README.md            # You are here!
+```
+
+---
+
+## ✅ What Has Been Achieved
+
+Our platform currently hosts a powerful baseline of Enterprise-grade features:
+
+### 🤖 Advanced ATS & Recruitment
+- **AI Resume Parsing**: PDF analysis powered by Google Gemini, auto-extracting skills, education, and scoring candidates out of 100%.
+- **Interactive Kanban Pipeline**: Drag-and-drop workflow (`Applied` -> `Hired` -> `Rejected`).
+- **Dynamic AI Settings Panel**: Admins can securely hot-swap Gemini prompts and keys natively through the UI.
+
+### 🏢 Core HR & Employee Portal
+- **Self-Serve Dashboard**: Real-time attendance clock-ins, leave applications tracking, and intuitive monthly payslips display.
+- **Multi-Tenant Security & RBAC**: A rigid `TenantManager` prevents cross-tenant data spillage. Roles strictly isolate admins, HR managers, employees, and applicants.
+- **System-Wide Auditing**: A master Audit Log component that tracks every Create/Update/Delete mutation, IP, and diff history.
+
+### 📊 Business Intelligence & Expansion
+- **Interactive Org Chart**: Zoomable hierarchy tree defining reporting lines.
+- **Document Management Engine**: Secure Oracle-backed passport and contract storage with 30-day automated expiration alerts via Celery.
+- **SaaS Monetization**: Integrated billing (Paystack) determining seat-limits and workspace capability.
+- **Rich Email Dispatcher**: Background-processing SMTP system orchestrating applicant welcomes, company announcements, and approval receipts.
+
+---
+
+## 🚧 What Remains (Future Roadmap)
+
+While HireWix is enterprise-ready, we are continuously driving it forward. Highlights from our roadmap include:
+
+1. **Global Payroll & Compliance:** Real-money payout integrations (Stripe Connect/Wise) and automatic tax withholding engines across international regions.
+2. **Advanced Performance Management:** Setting up 360-degree peer appraisals, hierarchical OKRs, and predicting flight-risk attrition through AI analysis.
+3. **Immersive SSO & Tooling:** Adding SAML 2.0/Okta support and deeper integrations allowing employees to request PTO directly through Slack or Microsoft Teams.
+4. **Mobile & Field Work PWA:** Location-fenced clock-ins (geofencing) and an offline-first mobile app for shift and warehouse workers.
+5. **AI-Driven Predictive Staffing:** Leveraging seasonal data against the Gemini model to recommend department hiring sprints before gaps become critical.
+
+*(For full details, please review our [Future Roadmap Document](./FUTURE_ROADMAP.md))*
 
 ---
 
 ## 🚀 Getting Started
 
+To spin up the EMS stack locally:
+
+### 1. Start the Frontend
 ```bash
-# Frontend
 npm install --legacy-peer-deps
 npm run dev
+```
 
-# Backend
+### 2. Start the Backend Engine
+```bash
 cd ems-backend
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
 
-### 🔐 Environment Configuration
-Copy the `.env.example` to `.env` and fill in your:
-- `DB_HOST` (Supabase connection)
-- `AWS_S3_ACCESS_KEY_ID` (Oracle OCI keys)
-- `PAYSTACK_SECRET_KEY` (Billing)
+*(Ensure you copy `.env.example` to `.env` in both the frontend and backend directories and populate your Supabase, Oracle, and Gemini credentials before attempting to start the server).*
 
 ---
-
-## 🔐 Security & Data Privacy
-
-HireWix is designed with an "Enterprise-First" security mindset, ensuring that sensitive HR data remains isolated, auditable, and private.
-
-### 🛡️ Multi-Tenant Isolation
-The platform uses **Strict Partitioning** to ensure that data from different companies never mixes.
-- **ORM Enforcement**: Every database query is automatically scoped to the current user's `Tenant` via a custom `TenantManager`.
-- **Middleware Guard**: A tenant-resolution middleware ensures that users can only access resources associated with their authenticated Workspace.
-- **Cross-Tenant Safety**: Even with a valid ID, a user from "Company A" cannot view or modify a record belonging to "Company B".
-
-### 🔎 System-Wide Audit Trail
-Accountability is built into the core of the platform through automated mutation tracking.
-- **Automatic Logging**: Every data-modifying action (`CREATE`, `UPDATE`, `DELETE`) is captured by the `AuditLogMiddleware`.
-- **Metadata Capture**: Logs include the User, Tenant, Resource, Action Type, IP Address, User-Agent, and a JSON payload of the changes.
-- **Security Dashboard**: Admins have access to a searchable ledger of all system activity to identify suspicious behavior or track data history.
-
-### 🤫 Privacy-First Analytics
-Workforce sentiment data (Pulse Surveys) is handled with **Anonymized Aggregation**.
-- **Trend Visualization**: Admins see happiness trends, engagement rates, and mood distributions.
-- **Identity Shielding**: The Analytics Dashboard does not display individual employee names alongside their mood ratings, protecting employee privacy while providing actionable insights to leadership.
-
-### 🛂 Access Control & Integrity
-- **RBAC (Role-Based Access Control)**: Granular permissions restrict sensitive modules (Payroll, Audit Logs, AI Settings) to authorized `ADMIN` or `HR_MANAGER` roles.
-- **ID Collision Protection**: Bulk import logic includes integrity checks to prevent duplicate `EmployeeIDs` within a single tenant, ensuring data consistency.
-- **Sensitive Field Filtering**: Audit logs automatically strip sensitive data like passwords or authentication tokens before storage.
-
----
-
-## 🔮 Roadmap
-
-Read our **[Future Roadmap & Vision Document](./FUTURE_ROADMAP.md)** for the next 20+ planned features including VR Onboarding and Blockchain Credentialing.
-
----
-
 <div align="center">
-  Built with ❤️ · Powered by Supabase, Oracle, and Google Gemini AI
+  Built with ❤️ · Powered by React, Django, and Google Gemini AI
 </div>

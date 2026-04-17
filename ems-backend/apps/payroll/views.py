@@ -16,87 +16,7 @@ from .serializers import (
 from .pdf_generator import generate_payslip_pdf
 
 
-def _generate_payslips_for_run(payroll_run: PayrollRun, tenant=None, employee_ids=None) -> None:
-    """Auto-generate a Payslip for the given employees (or all active if no IDs provided)."""
-    from apps.employees.models import EmployeeProfile
-    from .models import SalaryStructure, SalaryStructureComponent
-
-    qs = EmployeeProfile.objects.filter(status='ACTIVE', tenant=tenant).select_related('user', 'designation', 'salary_structure')
-    if employee_ids:
-        qs = qs.filter(id__in=employee_ids)
-
-    payslips = []
-    for employee in qs:
-        # Skip if a payslip already exists for this employee/run pair
-        if Payslip.objects.filter(payroll_run=payroll_run, employee=employee).exists():
-            continue
-
-        base_salary = Decimal(str(employee.base_salary))
-        total_earnings = Decimal('0.00')
-        total_deductions = Decimal('0.00')
-        
-        # Check for SalaryStructure
-        structure = None
-        components = []
-        try:
-            structure = employee.salary_structure
-            components = structure.components.select_related('component').all()
-            
-            for struct_comp in components:
-                val = Decimal(str(struct_comp.value))
-                # Use direct fields if available, otherwise fallback to linked component
-                comp_type = struct_comp.component_type or (struct_comp.component.component_type if struct_comp.component else 'EARNING')
-                
-                if comp_type == 'EARNING':
-                    total_earnings += val
-                else:
-                    total_deductions += val
-        except Exception: # Broad catch to ensure payslip generation continues
-            # If no structure is defined or other error, we assume zero additional earnings or deductions
-            # beyond the base salary.
-            pass
-
-        gross = base_salary + total_earnings
-
-        net = gross - total_deductions
-        
-        # Note: In a real system, tax might be a separate component. 
-        # Here we bundle it into deductions unless explicitly split in the structure.
-        
-        ps = Payslip(
-            tenant=tenant,
-            payroll_run=payroll_run,
-            employee=employee,
-            gross_salary=gross,
-            total_deductions=total_deductions,
-            tax_deduction=Decimal('0.00'),
-            net_salary=net,
-        )
-        # Store components to create after saving ps
-        ps._pending_components = []
-        if structure:
-            for struct_comp in components:
-                comp_name = struct_comp.name or (struct_comp.component.name if struct_comp.component else 'Custom Component')
-                comp_type = struct_comp.component_type or (struct_comp.component.component_type if struct_comp.component else 'EARNING')
-                ps._pending_components.append({
-                    'name': comp_name,
-                    'component_type': comp_type,
-                    'value': struct_comp.value
-                })
-        
-        payslips.append(ps)
-
-    if payslips:
-        # We need to save them one by one or get the IDs after bulk_create to link components
-        # Since we need to link PayslipComponents, we'll create Payslips and then their children
-        for ps in payslips:
-            components_to_create = ps._pending_components # Temporary storage
-            ps.save()
-            for comp_data in components_to_create:
-                PayslipComponent.objects.create(payslip=ps, **comp_data)
-
-
-
+from django.db import transaction
 
 class PayrollRunViewSet(viewsets.ModelViewSet):
     queryset = PayrollRun.objects.all()
@@ -113,19 +33,44 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create the PayrollRun and trigger background payslip generation."""
         from .tasks import generate_payslips_task
-        
+
         employee_ids = self.request.data.get('employee_ids', None)
         tenant = resolve_tenant(self.request)
-        
-        # Initial status is DRAFT
+
         payroll_run = serializer.save(tenant=tenant, status='DRAFT')
-        
-        # Trigger background task
-        generate_payslips_task.delay(
-            payroll_run_id=payroll_run.id,
-            tenant_id=tenant.id if tenant else None,
-            employee_ids=employee_ids
-        )
+
+        # Attempt to dispatch to Celery; fall back to background thread if broker is unavailable
+        try:
+            generate_payslips_task.delay(
+                payroll_run_id=payroll_run.id,
+                tenant_id=tenant.id if tenant else None,
+                employee_ids=employee_ids
+            )
+        except Exception as e:
+            import threading
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Celery unavailable ({e}), running payslip generation in background thread.")
+            
+            def run_sync():
+                import time
+                from django.db import connection
+                
+                # Small delay to ensure caller returns their response
+                time.sleep(0.5)
+                try:
+                    from .tasks import generate_payslips_task as task
+                    task(payroll_run_id=payroll_run.id,
+                         tenant_id=tenant.id if tenant else None,
+                         employee_ids=employee_ids)
+                except Exception as sync_err:
+                    logger.error(f"Background thread payslip generation failed: {sync_err}")
+                    from .models import PayrollRun as PR
+                    PR.objects.filter(id=payroll_run.id).update(status='FAILED')
+                finally:
+                    connection.close()
+
+            transaction.on_commit(lambda: threading.Thread(target=run_sync, daemon=True).start())
 
 
 class TaxSlabViewSet(viewsets.ModelViewSet):

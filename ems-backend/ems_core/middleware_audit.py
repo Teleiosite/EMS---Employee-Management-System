@@ -37,8 +37,8 @@ class AuditLogMiddleware(MiddlewareMixin):
             }
             action = action_map.get(request.method, 'UPDATE')
 
-            # Get IP and UA
-            ip_address = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip()
+            # Get IP and UA securely (prevent X-Forwarded-For spoofing)
+            ip_address = request.META.get('REMOTE_ADDR', '')
             user_agent = request.META.get('HTTP_USER_AGENT', '')
 
             # Calculate changes - for now, just store the request body or meaningful payload
@@ -46,7 +46,7 @@ class AuditLogMiddleware(MiddlewareMixin):
             try:
                 if request.method != 'DELETE':
                     raw_data = json.loads(request.body) if request.body else {}
-                    sensitive_fields = ['password', 'token', 'access_token', 'refresh_token']
+                    sensitive_fields = ['password', 'token', 'access_token', 'refresh_token', 'mfa_code', 'backup_codes']
                     changes = {k: v for k, v in raw_data.items() if k not in sensitive_fields}
                 else:
                     changes = {"info": "Resource Deleted"}

@@ -13,10 +13,13 @@ class SalaryComponent(models.Model):
         ('PERCENTAGE', 'Percentage of base salary'),
     )
 
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     component_type = models.CharField(max_length=20, choices=COMPONENT_TYPES)
     calculation_type = models.CharField(max_length=20, choices=CALCULATION_TYPES, default='FIXED')
     is_default = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('tenant', 'name')
 
 
 class TaxSlab(models.Model):

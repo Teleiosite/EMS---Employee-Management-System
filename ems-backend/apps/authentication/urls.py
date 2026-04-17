@@ -12,12 +12,14 @@ from .views import (
     RegisterView,
     TenantRegistrationView,
     ImpersonateTenantView,
+    MeView,
 )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('tenant-register/', TenantRegistrationView.as_view(), name='tenant-register'),
     path('login/', LoginView.as_view(), name='login'),
+    path('me/', MeView.as_view(), name='me'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('refresh/', RefreshView.as_view(), name='refresh'),
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),

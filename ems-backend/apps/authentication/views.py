@@ -118,7 +118,9 @@ class RefreshView(TokenRefreshView):
             )
 
         # Inject the cookie value into request.data for the parent serializer
-        request.data._mutable = True if hasattr(request.data, '_mutable') else None
+        if hasattr(request.data, '_mutable'):
+            request.data._mutable = True
+            
         try:
             request.data['refresh'] = refresh_token
         except AttributeError:
@@ -136,6 +138,15 @@ class RefreshView(TokenRefreshView):
             _set_auth_cookies(response, access_token=new_access)
 
         return response
+
+
+class MeView(APIView):
+    """Return current user metadata. Useful for frontend session verification."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .serializers import UserSerializer
+        return Response({'user': UserSerializer(request.user).data}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):

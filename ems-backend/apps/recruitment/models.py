@@ -140,7 +140,6 @@ class Candidate(models.Model):
 
 
 class ApplicantProfile(models.Model):
-    tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='applicant_profiles')
     """Extended profile for job applicants"""
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

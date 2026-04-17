@@ -78,21 +78,3 @@ class LoginAttempt(models.Model):
         indexes = [
             models.Index(fields=['email', 'timestamp']),
         ]
-
-
-class AuditLog(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
-    action = models.CharField(max_length=100)
-    resource_type = models.CharField(max_length=50)
-    resource_id = models.CharField(max_length=100)
-    old_values = models.JSONField(null=True, blank=True)
-    new_values = models.JSONField(null=True, blank=True)
-    ip_address = models.GenericIPAddressField()
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    description = models.TextField(blank=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=['resource_type', 'resource_id']),
-            models.Index(fields=['action', 'timestamp']),
-        ]

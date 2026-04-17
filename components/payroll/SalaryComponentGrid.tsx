@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlusCircle, Settings, Edit, Trash2, Loader2, Plus } from 'lucide-react';
 
 interface SalaryComponent {
@@ -23,6 +23,8 @@ const SalaryComponentGrid: React.FC<SalaryComponentGridProps> = ({
   onDelete,
   onCreateNew
 }) => {
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -89,7 +91,7 @@ const SalaryComponentGrid: React.FC<SalaryComponentGridProps> = ({
                       <Edit className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => onDelete(comp.id)}
+                      onClick={() => setConfirmDeleteId(comp.id)}
                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -101,6 +103,43 @@ const SalaryComponentGrid: React.FC<SalaryComponentGridProps> = ({
           );
         })}
       </div>
+
+      {/* Inline Delete Confirmation */}
+      {confirmDeleteId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in font-sans">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Delete Component?</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  This will permanently delete the selected salary component. It will be removed from all associated salary structures.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const id = confirmDeleteId;
+                  setConfirmDeleteId(null);
+                  onDelete(id);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

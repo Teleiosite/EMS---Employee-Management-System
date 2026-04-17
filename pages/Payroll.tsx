@@ -85,7 +85,6 @@ const Payroll: React.FC = () => {
   };
 
   const handleDeleteComponent = async (compId: number) => {
-    if (!window.confirm('Permanent Action: Are you sure you want to delete this salary component?')) return;
     try {
       await payrollApi.deleteSalaryComponent(compId);
       showToast('Component removed', 'info');
@@ -96,7 +95,6 @@ const Payroll: React.FC = () => {
   };
 
   const handleDeletePayslip = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this payroll record?")) return;
     try {
       // Mock Data check - if the ID contains letters, it's local offline data, don't ping backend
       if (!isNaN(Number(id))) {

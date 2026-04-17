@@ -160,6 +160,7 @@ const App: React.FC = () => {
                 </Route>
 
                 {/* Announcements */}
+                <Route path="announcements" element={<Announcements />} />
                 <Route path="announcements/new" element={<AddAnnouncement />} />
                 <Route path="announcements/edit/:id" element={<AddAnnouncement />} />
 

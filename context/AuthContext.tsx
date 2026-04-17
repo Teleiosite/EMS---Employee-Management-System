@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '../types';
-import { logoutFromBackend } from '../services/authApi';
+import { logoutFromBackend, verifySessionWithBackend } from '../services/authApi';
 
 interface User {
   id: string;
@@ -34,17 +34,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize user from localStorage on mount
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (err) {
-        console.error('Failed to parse stored user:', err);
-        localStorage.removeItem('user');
+    const initializeAuth = async () => {
+      // Initialize user from localStorage on mount for fast UI rendering
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+          
+          // Verify session in background
+          try {
+            await verifySessionWithBackend();
+          } catch (sessionErr) {
+            console.error('Session invalid or expired:', sessionErr);
+            setUser(null);
+            localStorage.removeItem('user');
+          }
+        } catch (err) {
+          console.error('Failed to parse stored user:', err);
+          setUser(null);
+          localStorage.removeItem('user');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    initializeAuth();
   }, []);
 
   const login = (userData: User) => {

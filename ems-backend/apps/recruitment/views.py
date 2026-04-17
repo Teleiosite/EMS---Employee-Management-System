@@ -182,9 +182,21 @@ class CandidateViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def schedule_interview(self, request, pk=None):
         """Schedule interview for a candidate"""
+        from django.utils.dateparse import parse_datetime
+        from rest_framework.exceptions import ValidationError
+
         candidate = self.get_object()
+        
+        scheduled_at_str = request.data.get('scheduled_at')
+        if scheduled_at_str:
+            scheduled_at = parse_datetime(scheduled_at_str)
+            if not scheduled_at:
+                raise ValidationError({'scheduled_at': 'Invalid datetime format.'})
+        else:
+            scheduled_at = None
+
         candidate.status = 'INTERVIEWING'
-        candidate.interview_scheduled_at = request.data.get('scheduled_at')
+        candidate.interview_scheduled_at = scheduled_at
         candidate.interview_location = request.data.get('location', '')
         candidate.interview_notes = request.data.get('notes', '')
         candidate.status_message = "We'd like to meet you! Check your email for interview details."
@@ -299,13 +311,17 @@ class PublicApplicationViewSet(generics.CreateAPIView):
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # SECURITY: Validate resume before saving to disk
+        resume_file = request.FILES.get('resume')
+        if resume_file:
+            _validate_resume_file(resume_file)
+
         # Link candidate to the job's tenant
         candidate = serializer.save(tenant=job.tenant, status='APPLIED')
         
         if candidate.resume:
              try:
-                 _validate_resume_file(candidate.resume)  # SECURITY: type + size check
-                 
                  # Offload to background task
                  from .tasks import process_resume_parsing_task
                  process_resume_parsing_task.delay(candidate_id=candidate.id)
@@ -369,6 +385,12 @@ class ApplicantApplyView(generics.CreateAPIView):
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        # SECURITY: Validate resume before saving to disk
+        resume_file = request.FILES.get('resume')
+        if resume_file:
+            _validate_resume_file(resume_file)
+
         candidate = serializer.save(tenant=job.tenant)
         
         # Trigger AI resume parsing (Background)
@@ -401,8 +423,7 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         # Get or create profile for the applicant
         profile, created = ApplicantProfile.objects.get_or_create(
-            user=self.request.user,
-            defaults={'tenant': resolve_tenant(self.request)}
+            user=self.request.user
         )
         return profile
     
@@ -436,8 +457,7 @@ class ApplicantResumeUploadView(generics.UpdateAPIView):
     
     def get_object(self):
         profile, created = ApplicantProfile.objects.get_or_create(
-            user=self.request.user,
-            defaults={'tenant': resolve_tenant(self.request)}
+            user=self.request.user
         )
         return profile
     

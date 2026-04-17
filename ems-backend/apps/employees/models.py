@@ -23,11 +23,14 @@ class Department(models.Model):
 
 class Designation(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='designations')
-    title = models.CharField(max_length=100, unique=True)
+    title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     is_deleted = models.BooleanField(default=False)
 
     objects = TenantManager()
+
+    class Meta:
+        unique_together = ('tenant', 'title')
 
 
 class EmployeeProfile(models.Model):

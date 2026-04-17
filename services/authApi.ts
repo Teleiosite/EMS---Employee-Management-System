@@ -155,3 +155,18 @@ export const confirmEmailVerification = async (token: string) => {
   }
   return data;
 };
+
+/**
+ * Verify if the backend session is still active
+ */
+export const verifySessionWithBackend = async () => {
+  const response = await fetch(`${API_BASE_URL}/auth/me/`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || 'Session invalid.');
+  }
+  return mapUser(data.user);
+};
