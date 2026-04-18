@@ -1,7 +1,11 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, ArrowRight, CheckCircle, Briefcase, MapPin, Clock, Users, Shield, Zap } from 'lucide-react';
+import {
+  Building2, ArrowRight, CheckCircle, Briefcase, MapPin, Clock, Users, Shield, Zap,
+  Menu, X, Mail, Phone, Globe, Award, BarChart3, FileText, Bell, GitBranch,
+  Lock, Eye, ChevronDown, Star, TrendingUp, UserCheck, Calendar, DollarSign,
+  HeartHandshake, Send, ExternalLink, ChevronRight, Search, MessageSquare
+} from 'lucide-react';
 import api from '../services/api';
 
 interface PublicJob {
@@ -10,252 +14,1015 @@ interface PublicJob {
   department: string;
   minimum_years_experience: number;
   required_skills: string[];
-  tenant?: {
-    name: string;
-  };
+  status?: string;
+  tenant?: { name: string };
 }
+
+// ─── Color pallette variables ───────────────────────────────────────────────
+// Primary: Orange (#EA580C)  Accent: Deep navy (#0F172A)  Muted: Slate
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-
-  const handlePlaceholderClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
-
-  const scrollToJobs = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const element = document.getElementById('careers-section');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleApplyClick = () => {
-    // Redirect to login with a return URL to the applicant job board
-    navigate('/login?redirect=/applicant/jobs');
-  };
-
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [jobs, setJobs] = useState<PublicJob[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [contactSent, setContactSent] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
+  // Scroll spy
   useEffect(() => {
-    // Fetch all public jobs across all companies
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+      const sections = ['home', 'features', 'about', 'pricing', 'security', 'careers', 'contact'];
+      for (const id of sections.reverse()) {
+        const el = document.getElementById(`${id}-section`);
+        if (el && window.scrollY >= el.offsetTop - 120) {
+          setActiveSection(id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fetch public jobs
+  useEffect(() => {
     const fetchJobs = async () => {
       try {
         const response = await api.get('/recruitment/public/jobs/');
         const results = Array.isArray(response) ? response : (response as any).results || [];
-        // Only show jobs that are OPEN
-        const openJobs = results.filter((job: any) => job.status === 'OPEN' || !job.status);
-        setJobs(openJobs);
-      } catch (err) {
-        console.error('Failed to fetch public jobs:', err);
+        setJobs(results.filter((j: any) => j.status === 'OPEN' || !j.status));
+      } catch {
+        // silent
       } finally {
-        setLoading(false);
+        setJobsLoading(false);
       }
     };
     fetchJobs();
   }, []);
 
-  const scrollToAbout = (e: React.MouseEvent) => {
+  const scrollTo = (id: string) => {
+    setMenuOpen(false);
+    setTimeout(() => {
+      document.getElementById(`${id}-section`)?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const navLinks = [
+    { id: 'home', label: 'Home' },
+    { id: 'features', label: 'Features' },
+    { id: 'about', label: 'About Us' },
+    { id: 'pricing', label: 'Pricing' },
+    { id: 'careers', label: 'Careers' },
+    { id: 'contact', label: 'Contact' },
+  ];
+
+  const modules = [
+    { icon: Users, color: 'orange', title: 'Employee Management', desc: 'Full employee profiles, department assignment, role management, and bulk CSV import for seamless onboarding.' },
+    { icon: Clock, color: 'blue', title: 'Attendance Tracking', desc: 'Clock-in/clock-out records, monthly summaries, and department-level filtering with real-time dashboards.' },
+    { icon: Calendar, color: 'purple', title: 'Leave Management', desc: 'Configurable leave types, balance tracking, approval workflows, and automatic email notifications.' },
+    { icon: DollarSign, color: 'green', title: 'Payroll & Payslips', desc: 'Dynamic salary structures, payroll run generation, and PDF payslip download, in minutes, not hours.' },
+    { icon: Search, color: 'pink', title: 'AI Recruitment Pipeline', desc: 'Job postings, public careers portal, AI-powered CV scoring via Google Gemini, and a Kanban hiring pipeline.' },
+    { icon: Bell, color: 'yellow', title: 'Announcements', desc: 'Company-wide announcements with automatic email broadcast to all employees the moment you publish.' },
+    { icon: Eye, color: 'teal', title: 'Audit Trail', desc: 'Every CREATE, UPDATE, and DELETE action is logged with user, IP address, and full JSON payload of changes.' },
+    { icon: GitBranch, color: 'indigo', title: 'Organisation Chart', desc: 'Interactive visual org chart showing reporting lines and department structures across your entire organisation.' },
+  ];
+
+  const colorMap: Record<string, string> = {
+    orange: 'bg-orange-50 text-orange-600 border-orange-100',
+    blue: 'bg-blue-50 text-blue-600 border-blue-100',
+    purple: 'bg-purple-50 text-purple-600 border-purple-100',
+    green: 'bg-green-50 text-green-600 border-green-100',
+    pink: 'bg-pink-50 text-pink-600 border-pink-100',
+    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-100',
+    teal: 'bg-teal-50 text-teal-600 border-teal-100',
+    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+  };
+
+  const plans = [
+    {
+      name: 'Starter',
+      subtitle: 'For small teams (up to 25 employees)',
+      monthlyNGN: '₦168,000', monthlyGBP: '£105',
+      annualNGN: '₦1,680,000', annualGBP: '£1,050',
+      badge: null,
+      features: [
+        'Full HireWix system access (all core HR modules)',
+        'Up to 25 employees',
+        'Cloud hosting, domain & SSL certificate',
+        'Basic support via email & WhatsApp',
+        'Monthly maintenance & security updates',
+      ],
+      cta: 'Get Started',
+      highlight: false,
+    },
+    {
+      name: 'Business',
+      subtitle: 'For growing organisations (up to 100 employees)',
+      monthlyNGN: '₦350,000', monthlyGBP: '£220',
+      annualNGN: '₦3,500,000', annualGBP: '£2,200',
+      badge: 'MOST POPULAR',
+      features: [
+        'All Starter Plan features',
+        'Up to 100 employees',
+        'Priority support with faster response times',
+        'Performance optimisation & monitoring',
+        'Minor feature adjustments & workflow customisation',
+        'Automated data backup & system monitoring',
+      ],
+      cta: 'Choose Business',
+      highlight: true,
+    },
+    {
+      name: 'Enterprise',
+      subtitle: 'For large organisations (unlimited employees)',
+      monthlyNGN: '₦560,000 – ₦980,000', monthlyGBP: '£350 – £615',
+      annualNGN: 'Negotiable', annualGBP: 'Contact us',
+      badge: null,
+      features: [
+        'All Business Plan features',
+        'Unlimited employees across all departments',
+        'Dedicated system customisation',
+        'Advanced security & compliance support',
+        'API integrations with third-party tools',
+        'Named account manager & SLA-backed uptime',
+      ],
+      cta: 'Contact Us',
+      highlight: false,
+    },
+  ];
+
+  const securityPillars = [
+    {
+      icon: Shield, title: 'Multi-Tenant Isolation',
+      points: [
+        'ORM enforcement: every query scoped to your tenant',
+        'Middleware guard prevents cross-tenant access',
+        'Company A can never see Company B\'s data',
+      ],
+    },
+    {
+      icon: Eye, title: 'System-Wide Audit Trail',
+      points: [
+        'Every CREATE, UPDATE, DELETE is captured',
+        'Logs include User, Tenant, IP, User-Agent, JSON payload',
+        'Searchable security dashboard for admins',
+      ],
+    },
+    {
+      icon: Lock, title: 'Access Control & RBAC',
+      points: [
+        'Role-Based Access Control (ADMIN, HR_MANAGER, EMPLOYEE)',
+        'JWT Authentication with httpOnly cookies',
+        'Optional TOTP-based MFA for admin accounts',
+      ],
+    },
+    {
+      icon: FileText, title: 'Data Integrity',
+      points: [
+        'Sensitive fields (passwords, tokens) stripped from logs',
+        'Encrypted data at rest and in transit',
+        'Regular automated backups included on all plans',
+      ],
+    },
+  ];
+
+  const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const element = document.getElementById('about-section');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    // In production this would POST to an email API
+    setContactSent(true);
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
-      {/* Navbar */}
-      <nav className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-md z-50">
+    <div className="min-h-screen bg-white font-sans text-gray-900" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+
+      {/* ═══════════════════════════════════════════════ NAVBAR */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-100' : 'bg-white/80 backdrop-blur-sm'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
-              <div className="bg-orange-100 p-2 rounded-lg">
-                <Building className="w-6 h-6 text-orange-600" />
+          <div className="flex justify-between h-18 items-center py-4">
+
+            {/* Logo */}
+            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => scrollTo('home')}>
+              <div className="bg-orange-500 p-2 rounded-xl shadow-lg shadow-orange-500/30">
+                <Building2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-orange-600 tracking-tight">HireWix</span>
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Home</a>
-              <a href="#about" onClick={scrollToAbout} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">About Us</a>
-              <a href="#careers" onClick={scrollToJobs} className="text-gray-500 hover:text-orange-600 font-medium transition-colors">Careers</a>
+              <div>
+                <div className="text-lg font-extrabold text-gray-900 leading-none tracking-tight">HireWix</div>
+                <div className="text-[10px] text-orange-500 font-semibold tracking-widest uppercase leading-none">by TeleiocraftSolutions</div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => navigate('/login')}
-                className="text-gray-600 hover:text-orange-600 font-medium transition-colors"
-              >
+            {/* Desktop nav links */}
+            <div className="hidden lg:flex items-center space-x-1">
+              {navLinks.map(link => (
+                <button
+                  key={link.id}
+                  onClick={() => scrollTo(link.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${activeSection === link.id ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'}`}
+                >
+                  {link.label}
+                </button>
+              ))}
+            </div>
+
+            {/* CTA buttons - desktop */}
+            <div className="hidden lg:flex items-center gap-3">
+              <button onClick={() => navigate('/login')} className="text-gray-600 hover:text-orange-600 font-semibold text-sm transition-colors px-3 py-2">
                 Login
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/register')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-orange-500/30"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
               >
-                Sign Up Company
+                Register Company <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Hamburger - mobile */}
+            <button
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Drawer */}
+        <div className={`lg:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="bg-white border-t border-gray-100 px-4 py-4 space-y-1 shadow-lg">
+            {navLinks.map(link => (
+              <button
+                key={link.id}
+                onClick={() => scrollTo(link.id)}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeSection === link.id ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'}`}
+              >
+                {link.label}
+              </button>
+            ))}
+            <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+              <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-full text-center py-3 rounded-xl font-semibold text-gray-700 border border-gray-200 hover:border-orange-400 hover:text-orange-600 transition-all text-sm">
+                Login
+              </button>
+              <button onClick={() => { setMenuOpen(false); navigate('/register'); }} className="w-full text-center py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all text-sm shadow-lg shadow-orange-500/30">
+                Register Company
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight mb-6">
-            Manage Your Team <br/>
-            <span className="text-orange-500">Efficiently & Seamlessly</span>
-          </h1>
-          <p className="text-xl text-gray-500 mb-10 leading-relaxed max-w-2xl mx-auto">
-            The all-in-one platform to streamline your HR processes, from payroll and attendance to leave management and announcements. Empower your workforce and simplify your administration.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button 
-                onClick={() => navigate('/register')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-orange-500/20 flex items-center justify-center gap-2"
-              >
-                Register Company <ArrowRight className="w-5 h-5" />
-              </button>
-             <button 
-               onClick={scrollToJobs}
-               className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
-             >
-               <Briefcase className="w-5 h-5" /> View Openings
-             </button>
-          </div>
+      {/* ═══════════════════════════════════════════════ HERO */}
+      <div id="home-section" className="pt-24 pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-orange-950 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -right-32 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-3xl" />
+        </div>
 
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
-             {[
-               "Automated Payroll Processing",
-               "Real-time Attendance Tracking",
-               "Seamless Leave Management"
-             ].map((feature, i) => (
-               <div key={i} className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                 <span className="font-medium text-gray-700">{feature}</span>
-               </div>
-             ))}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-5xl mx-auto">
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-semibold px-4 py-2 rounded-full mb-8 backdrop-blur-sm">
+              <Star className="w-4 h-4 fill-orange-400" /> Cloud-Based · Multi-Tenant · AI-Powered
+            </div>
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
+              The Complete HR Platform <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
+                for Modern Organisations
+              </span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-slate-300 mb-10 leading-relaxed max-w-3xl mx-auto">
+              HireWix digitises and automates the full spectrum of HR operations, from payroll and attendance to AI-powered recruitment, in one secure, cloud-based platform accessible from anywhere.
+            </p>
+
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+              <button
+                onClick={() => navigate('/register')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-2xl font-bold text-base transition-all shadow-2xl shadow-orange-500/30 flex items-center justify-center gap-2 hover:scale-105"
+              >
+                Register Your Company <ArrowRight className="w-5 h-5" />
+              </button>
+              <a
+                href="http://yourems.duckdns.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-4 rounded-2xl font-bold text-base transition-all backdrop-blur-sm flex items-center justify-center gap-2 hover:scale-105"
+              >
+                <ExternalLink className="w-5 h-5" /> View Live Demo
+              </a>
+            </div>
+
+            {/* Stats bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+              {[
+                { value: '100+', label: 'Companies Served' },
+                { value: '10,000+', label: 'Employees Managed' },
+                { value: '99.9%', label: 'System Uptime' },
+                { value: '2–4 Wks', label: 'To Go Live' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                  <div className="text-2xl font-extrabold text-orange-400">{stat.value}</div>
+                  <div className="text-xs text-slate-400 font-medium mt-1">{stat.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* About Section */}
-      <div id="about-section" className="bg-white py-20 border-t border-gray-100">
+      {/* ═══════════════════════════════════════════════ FEATURES */}
+      <div id="features-section" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose HireWix?</h2>
-            <p className="text-xl text-gray-500 max-w-3xl mx-auto">
-              We provide a complete, multi-tenant solution allowing agencies and businesses to manage their workforce flawlessly.
+            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Core Modules</div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Everything HR, In One Place</h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+              Eight deeply integrated modules covering the entire lifecycle of HR management, from hire to retire.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center p-6 rounded-2xl bg-orange-50 border border-orange-100">
-              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-600">
-                <Users className="w-7 h-7" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Everything in One Place</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Manage employees, attendance, leave requests, and payroll without constantly switching between different apps.
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {modules.map((mod, i) => {
+              const Icon = mod.icon;
+              const classes = colorMap[mod.color] || colorMap.orange;
+              return (
+                <div key={i} className="group border border-gray-100 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 border ${classes}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{mod.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{mod.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════ ABOUT US */}
+      <div id="about-section" className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left: Company story */}
+            <div>
+              <div className="inline-block bg-orange-500/10 text-orange-400 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6 border border-orange-500/20">About Us</div>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6 leading-tight">
+                Built by TeleiocraftSolutions.<br />
+                <span className="text-orange-400">Powered by Expertise.</span>
+              </h2>
+              <p className="text-slate-300 text-base leading-relaxed mb-6">
+                TeleiocraftSolutions is a software solutions provider with offices in <strong className="text-white">Ilishan-Remo, Ogun State, Nigeria</strong> and <strong className="text-white">Greater London, United Kingdom</strong>. We specialise in the design, development, and deployment of practical, scalable, and secure web-based platforms for organisations across various sectors.
               </p>
+              <p className="text-slate-300 text-base leading-relaxed mb-8">
+                Our approach combines modern engineering practices with AI-assisted development workflows, enabling us to deliver reliable, high-quality systems within shorter timelines and at competitive costs. We take full ownership of every solution we build, from initial architecture through to production deployment and ongoing support.
+              </p>
+
+              {/* Offices */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  { icon: MapPin, label: 'Nigeria Office', detail: 'Ilishan-Remo, Ogun State' },
+                  { icon: Globe, label: 'UK Office', detail: 'Greater London, United Kingdom' },
+                  { icon: Mail, label: 'Email', detail: 'TeleiocraftSolutions@gmail.com' },
+                  { icon: Phone, label: 'Phone', detail: '08137592915 | 07534 468836' },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
+                      <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Icon className="w-4 h-4 text-orange-400" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 font-medium">{item.label}</div>
+                        <div className="text-sm text-white font-semibold">{item.detail}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            
-            <div className="text-center p-6 rounded-2xl bg-blue-50 border border-blue-100">
-              <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600">
-                <Shield className="w-7 h-7" />
+
+            {/* Right: Services + Team */}
+            <div>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
+                <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-orange-400" /> Our Services
+                </h3>
+                <ul className="space-y-3">
+                  {[
+                    'Custom SaaS Product Development',
+                    'Software & App Development',
+                    'UX/UI Design',
+                    'Cloud deployment and infrastructure management',
+                    'System integration and third-party API connectivity',
+                    'AI-powered feature development',
+                    'Technical support and system maintenance',
+                    'Staff training and onboarding',
+                    'White-label platform licensing',
+                  ].map((svc, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                      {svc}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Enterprise Security</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Your data is strictly isolated within your organization. We use industry standard security and encryption.
-              </p>
-            </div>
-            
-            <div className="text-center p-6 rounded-2xl bg-green-50 border border-green-100">
-              <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-green-600">
-                <Zap className="w-7 h-7" />
+
+              {/* Founder card */}
+              <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-500/20 rounded-2xl p-6">
+                <div className="flex flex-col gap-2"> <b>Visit Our website to learn more</b>
+                  <a
+                    href="https://teleiocraft.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-orange-400 text-sm font-bold hover:underline flex items-center gap-2"
+                  >
+                    <Globe className="w-4 h-4" /> teleiocraft.com
+                  </a>
+                </div>
+                <p className="mt-4 text-slate-300 text-sm leading-relaxed">
+                  "We stand behind every system we deploy with ongoing support, proactive maintenance, and the flexibility to evolve the platform as your organisation grows."
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">AI-Powered Hiring</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Streamline recruitment with intelligent resume parsing that automatically scores candidates based on your requirements.
-              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Careers Section */}
-      <div id="careers-section" className="bg-gray-50 py-20 border-t border-gray-200">
+      {/* ═══════════════════════════════════════════════ BENEFITS STRIP */}
+      <div className="py-16 bg-orange-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: TrendingUp, title: 'Eliminate Manual HR', desc: 'Reduce admin workload and human error significantly.' },
+              { icon: BarChart3, title: 'Real-Time Insights', desc: 'Dashboard KPIs give management instant HR visibility.' },
+              { icon: UserCheck, title: 'Employee Self-Service', desc: 'Staff handle routine requests independently, reducing HR queries.' },
+              { icon: HeartHandshake, title: 'Long-Term Partnership', desc: "We don't just deliver software: we grow with you." },
+            ].map((b, i) => {
+              const Icon = b.icon;
+              return (
+                <div key={i} className="flex items-start gap-4 text-white">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm mb-1">{b.title}</div>
+                    <div className="text-orange-100 text-xs leading-relaxed">{b.desc}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════ PRICING */}
+      <div id="pricing-section" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Join Our Growing Team</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">
-              We are looking for talented individuals to help us build the future of workforce management. Check out our open positions below.
+            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Transparent Pricing</div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Flexible Plans for Every Organisation</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto mb-8">
+              All plans include full system access, cloud hosting, security maintenance, and technical support. Prices in NGN and GBP.
+            </p>
+
+            {/* Toggle */}
+            <div className="inline-flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm">
+              {(['monthly', 'annual'] as const).map(cycle => (
+                <button
+                  key={cycle}
+                  onClick={() => setBillingCycle(cycle)}
+                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === cycle ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  {cycle === 'monthly' ? 'Monthly' : 'Annual'} {cycle === 'annual' && <span className="text-xs font-normal ml-1">(Save 15%)</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Plan cards */}
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {plans.map((plan, i) => (
+              <div
+                key={i}
+                className={`rounded-2xl p-8 flex flex-col relative transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${plan.highlight
+                  ? 'bg-slate-900 text-white shadow-2xl ring-2 ring-orange-500 scale-105'
+                  : 'bg-white border border-gray-200 text-gray-900'
+                  }`}
+              >
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                    {plan.badge}
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className={`text-xl font-extrabold mb-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                  <p className={`text-sm ${plan.highlight ? 'text-slate-400' : 'text-gray-500'}`}>{plan.subtitle}</p>
+                </div>
+
+                <div className="mb-8">
+                  <div className={`text-3xl font-extrabold ${plan.highlight ? 'text-orange-400' : 'text-gray-900'}`}>
+                    {billingCycle === 'monthly' ? plan.monthlyNGN : plan.annualNGN}
+                  </div>
+                  <div className={`text-sm ${plan.highlight ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {billingCycle === 'monthly' ? plan.monthlyGBP : plan.annualGBP} · {billingCycle === 'monthly' ? '/month' : '/year'}
+                  </div>
+                </div>
+
+                <ul className="space-y-3 flex-1 mb-8">
+                  {plan.features.map((f, fi) => (
+                    <li key={fi} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? 'text-slate-300' : 'text-gray-600'}`}>
+                      <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.highlight ? 'text-orange-400' : 'text-green-500'}`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => plan.cta === 'Contact Us' ? scrollTo('contact') : navigate('/register')}
+                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${plan.highlight
+                    ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/30'
+                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}
+                >
+                  {plan.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* White Label + Setup Costs */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* White Label */}
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white border border-orange-500/30">
+              <div className="inline-block bg-orange-500/10 text-orange-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-orange-500/20 mb-5">
+                White-Label Ownership Plan
+              </div>
+              <h3 className="text-xl font-extrabold text-white mb-2">Launch HireWix as Your Own Brand</h3>
+              <p className="text-slate-400 text-sm mb-5">For governments, parastatals, HR consultancies, and entrepreneurs who want a market-ready HR platform under their own identity.</p>
+              <div className="mb-5">
+                <div className="text-2xl font-extrabold text-orange-400">Custom Pricing</div>
+                <div className="text-slate-400 text-sm">Reach out to us for a tailored quote</div>
+              </div>
+              <ul className="space-y-2 mb-6">
+                {[
+                  'Full rebranding rights — your name, logo, colours',
+                  'Custom domain (hr.yourcompany.com)',
+                  'White-labelled UI (no HireWix/TCS mentions)',
+                  'Custom email templates in your brand',
+                  'Dedicated onboarding by our engineering team',
+                  '6 months post-deployment technical support',
+                ].map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />{f}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={() => scrollTo('contact')} className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30">
+                Enquire About White-Label
+              </button>
+            </div>
+
+            {/* Setup costs + Pilot offer */}
+            <div className="space-y-4">
+
+
+              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 transition-all hover:shadow-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Star className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-orange-900 mb-1">Pilot Offer Available</h4>
+                    <p className="text-orange-700 text-sm leading-relaxed">
+                      Evaluate HireWix in a controlled environment. We offer a <strong>pilot phase pricing arrangement</strong> for initial adoption.
+                    </p>
+                    <button onClick={() => scrollTo('contact')} className="mt-3 text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
+                      Discuss a Pilot <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Support Tiers */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 transition-all hover:shadow-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 mb-3">Technical Support Plans</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500" /> Basic Support
+                        </span>
+                        <span className="font-bold text-gray-900">Included</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-orange-500" /> Premium Support
+                        </span>
+                        <span className="font-bold text-gray-900">₦70k / Mo</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data & Security Stats */}
+              <div className="bg-slate-900 rounded-2xl p-6 text-white border border-white/10 transition-all hover:shadow-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Uptime SLA</div>
+                    <div className="text-2xl font-extrabold text-orange-400">99.9%</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Backups</div>
+                    <div className="text-2xl font-extrabold text-blue-400">Daily</div>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-slate-400">
+                  <Shield className="w-4 h-4 text-green-400" /> Enterprise-grade data encryption at rest
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Implementation timeline */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">6-Stage Implementation Process</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              {[
+                { n: '01', title: 'Requirements', desc: 'Detailed discussion to document workflows and roles' },
+                { n: '02', title: 'Configuration', desc: 'Customise to your org structure and branding' },
+                { n: '03', title: 'Deployment', desc: 'Cloud server, SSL, domain, and production setup' },
+                { n: '04', title: 'Testing', desc: 'Full module testing with your team before go-live' },
+                { n: '05', title: 'Training', desc: 'Training sessions for admins, HR, and employees' },
+                { n: '06', title: 'Go-Live', desc: 'Launch with 30-day close monitoring period' },
+              ].map((step, i) => (
+                <div key={i} className="text-center">
+                  <div className="w-10 h-10 bg-orange-500 text-white rounded-xl font-extrabold text-sm flex items-center justify-center mx-auto mb-3 shadow-lg shadow-orange-500/30">
+                    {step.n}
+                  </div>
+                  <div className="font-bold text-gray-900 text-sm mb-1">{step.title}</div>
+                  <div className="text-gray-500 text-xs leading-relaxed">{step.desc}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-sm text-gray-500 mt-6 font-medium">
+              ⏱ Estimated timeline: <strong className="text-gray-900">2–4 weeks</strong> from contract signing to go-live
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════ SECURITY */}
+      <div id="security-section" className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-20 left-1/4 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 right-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-orange-500/10 text-orange-400 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4 border border-orange-500/20">Enterprise Security</div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">Enterprise-First Security Mindset</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Your sensitive HR data remains isolated, auditable, and private. Built with the same security standards trusted by enterprise organisations.
             </p>
           </div>
 
-          <div className="grid gap-6 max-w-4xl mx-auto">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 border-2 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading open positions...</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {securityPillars.map((pillar, i) => {
+              const Icon = pillar.icon;
+              return (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300">
+                  <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center mb-5 border border-orange-500/20">
+                    <Icon className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <h3 className="font-bold text-white text-base mb-4">{pillar.title}</h3>
+                  <ul className="space-y-2.5">
+                    {pillar.points.map((point, pi) => (
+                      <li key={pi} className="flex items-start gap-2 text-sm text-slate-300">
+                        <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════ CAREERS */}
+      <div id="careers-section" className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Open Positions</div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Careers at HireWix Companies</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              Live job openings from organisations powered by HireWix. Create an applicant account to apply directly.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto space-y-4">
+            {jobsLoading ? (
+              <div className="text-center py-16">
+                <div className="w-10 h-10 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-500 text-sm">Loading open positions…</p>
               </div>
             ) : jobs.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-200">
-                <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No Open Positions</h3>
-                <p className="text-gray-500">Check back later for new opportunities across our companies.</p>
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <Briefcase className="w-14 h-14 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">No Open Positions Right Now</h3>
+                <p className="text-gray-500 text-sm">Check back later for new opportunities. New roles are posted regularly.</p>
               </div>
             ) : (
-              jobs.map((job) => (
-                <div key={job.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-6">
+              jobs.map(job => (
+                <div key={job.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {job.tenant && (
-                         <span className="text-sm font-semibold text-gray-900 border-r border-gray-300 pr-3 mr-1">
-                           {job.tenant.name}
-                         </span>
-                      )}
-                      <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide">
-                        {job.department}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      {job.tenant && <span className="text-sm font-bold text-gray-900">{job.tenant.name}</span>}
+                      <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase">{job.department}</span>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{job.role_name}</h3>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4" /> Remote / Hybrid
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" /> Full-time
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Briefcase className="w-4 h-4" /> {job.minimum_years_experience}+ Years Exp
-                      </div>
+                    <h3 className="text-lg font-extrabold text-gray-900 mb-2">{job.role_name}</h3>
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Remote / Hybrid</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Full-time</span>
+                      <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {job.minimum_years_experience}+ yrs exp</span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {job.required_skills && job.required_skills.slice(0, 4).map(skill => (
-                        <span key={skill} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs border border-gray-200">
-                          {skill}
-                        </span>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {job.required_skills?.slice(0, 5).map(skill => (
+                        <span key={skill} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium border border-gray-200">{skill}</span>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <button 
-                      onClick={handleApplyClick}
-                      className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                      Apply Now <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => navigate('/login?redirect=/applicant/jobs')}
+                    className="flex-shrink-0 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
+                  >
+                    Apply Now <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════ CONTACT */}
+      <div id="contact-section" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Contact Us</div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Let's Talk About Your Organisation</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              Ready to digitise your HR operations? Interested in a pilot? Have questions? Reach out, we typically respond within 24 hours.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            {/* Left: Contact details */}
+            <div>
+              <div className="space-y-5 mb-10">
+                {[
+                  { icon: Mail, label: 'Email', value: 'TeleiocraftSolutions@gmail.com', href: 'mailto:TeleiocraftSolutions@gmail.com' },
+                  { icon: Phone, label: 'Nigeria', value: '08137592915', href: 'tel:+2348137592915' },
+                  { icon: Phone, label: 'United Kingdom', value: '07534 468836', href: 'tel:+447534468836' },
+                  { icon: Globe, label: 'Website', value: 'https://teleiocraft.com', href: 'https://teleiocraft.com' },
+                  { icon: ExternalLink, label: 'Live Demo', value: 'yourems.duckdns.org', href: 'http://yourems.duckdns.org' },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <a key={i} href={item.href} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-all group">
+                      <div className="w-10 h-10 bg-orange-50 group-hover:bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                        <Icon className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400 font-medium">{item.label}</div>
+                        <div className="text-sm font-bold text-gray-800 group-hover:text-orange-600 transition-colors">{item.value}</div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+
+              {/* Office addresses */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  { country: '🇳🇬 Nigeria', address: 'Ilishan-Remo, Ogun State, Nigeria' },
+                  { country: '🇬🇧 United Kingdom', address: 'Greater London, United Kingdom' },
+                ].map((office, i) => (
+                  <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                    <div className="font-bold text-gray-900 text-sm mb-2">{office.country}</div>
+                    <div className="text-gray-500 text-sm">{office.address}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Contact form */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-lg">
+              {contactSent ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-gray-900 mb-2">Message Sent!</h3>
+                  <p className="text-gray-500 text-sm">Thank you for reaching out. We'll get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="space-y-5">
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name *</label>
+                      <input
+                        type="text" required
+                        value={contactForm.name}
+                        onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))}
+                        placeholder="Your full name"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address *</label>
+                      <input
+                        type="email" required
+                        value={contactForm.email}
+                        onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))}
+                        placeholder="you@company.com"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={contactForm.phone}
+                        onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))}
+                        placeholder="+234 or +44..."
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Organisation Name</label>
+                      <input
+                        type="text"
+                        value={contactForm.company}
+                        onChange={e => setContactForm(p => ({ ...p, company: e.target.value }))}
+                        placeholder="Your company"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Message *</label>
+                    <textarea
+                      rows={5} required
+                      value={contactForm.message}
+                      onChange={e => setContactForm(p => ({ ...p, message: e.target.value }))}
+                      placeholder="Tell us about your organisation and what you're looking for…"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all resize-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 hover:scale-105"
+                  >
+                    <Send className="w-4 h-4" /> Send Message
+                  </button>
+                  <p className="text-center text-xs text-gray-400">We respond within 24 hours on business days.</p>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════ FOOTER */}
+      <footer className="bg-slate-900 text-white pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+            {/* Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="bg-orange-500 p-2 rounded-xl shadow-lg shadow-orange-500/30">
+                  <Building2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <div className="text-base font-extrabold text-white">HireWix</div>
+                  <div className="text-[10px] text-orange-400 font-semibold tracking-widest uppercase">by TeleiocraftSolutions</div>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                A cloud-based, multi-tenant Employee Management System designed to digitise and automate the full spectrum of HR operations.
+              </p>
+              <a
+                href="https://teleiocraft.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-orange-400 hover:underline flex items-center gap-1 mt-2"
+              >
+                <Globe className="w-3 h-3" /> Website: https://teleiocraft.com
+              </a>
+            </div>
+
+            {/* Platform links */}
+            <div>
+              <h4 className="font-bold text-white text-sm mb-4 uppercase tracking-widest">Platform</h4>
+              <ul className="space-y-2.5">
+                {[
+                  { label: 'Features', onClick: () => scrollTo('features') },
+                  { label: 'Pricing', onClick: () => scrollTo('pricing') },
+                  { label: 'Security', onClick: () => scrollTo('security') },
+                  { label: 'Live Demo', onClick: () => window.open('http://yourems.duckdns.org', '_blank') },
+                  { label: 'Register Company', onClick: () => navigate('/register') },
+                ].map((link, i) => (
+                  <li key={i}>
+                    <button onClick={link.onClick} className="text-slate-400 hover:text-orange-400 text-sm transition-colors">
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Company links */}
+            <div>
+              <h4 className="font-bold text-white text-sm mb-4 uppercase tracking-widest">Company</h4>
+              <ul className="space-y-2.5">
+                {[
+                  { label: 'About Us', onClick: () => scrollTo('about') },
+                  { label: 'Careers', onClick: () => scrollTo('careers') },
+                  { label: 'Contact', onClick: () => scrollTo('contact') },
+                  { label: 'teleiocraft.com', onClick: () => window.open('https://teleiocraft.com', '_blank') },
+                ].map((link, i) => (
+                  <li key={i}>
+                    <button onClick={link.onClick} className="text-slate-400 hover:text-orange-400 text-sm transition-colors">
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="font-bold text-white text-sm mb-4 uppercase tracking-widest">Contact</h4>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-2 text-slate-400 text-sm">
+                  <Mail className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                  <a href="mailto:TeleiocraftSolutions@gmail.com" className="hover:text-orange-400 transition-colors break-all">
+                    TeleiocraftSolutions@gmail.com
+                  </a>
+                </li>
+                <li className="flex items-center gap-2 text-slate-400 text-sm">
+                  <Phone className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                  <a href="tel:+2348137592915" className="hover:text-orange-400 transition-colors">08137592915</a>
+                </li>
+                <li className="flex items-center gap-2 text-slate-400 text-sm">
+                  <Phone className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                  <a href="tel:+447534468836" className="hover:text-orange-400 transition-colors">07534 468836</a>
+                </li>
+                <li className="flex items-start gap-2 text-slate-400 text-sm">
+                  <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+                  <span>Ilishan-Remo, Nigeria &amp; Greater London, UK</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-slate-500 text-sm">
+              © 2025 TeleiocraftSolutions. All rights reserved. · HireWix EMS
+            </p>
+            <div className="flex items-center gap-4">
+              <button onClick={() => navigate('/login')} className="text-slate-500 hover:text-orange-400 text-sm transition-colors">Login</button>
+              <button onClick={() => navigate('/register')} className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-orange-500/30">
+                Get Started
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 };
