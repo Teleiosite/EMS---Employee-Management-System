@@ -8,8 +8,9 @@ from rest_framework.views import APIView
 
 from .models import Announcement, Tenant, InviteCode, AuditLog
 from .tenancy import resolve_tenant
-from .permissions import IsAdminOrHRManager
+from .permissions import IsAdminOrHRManager, HasEnterpriseTier
 from .serializers import AnnouncementSerializer, TenantSerializer, AuditLogSerializer
+from .utils import increment_feature_usage
 
 User = get_user_model()
 
@@ -135,12 +136,15 @@ class HostInviteCodeViewSet(viewsets.GenericViewSet):
 
 class AuditLogListView(APIView):
     """Admin-only view to see mutation history for the current tenant."""
-    permission_classes = [IsAdminOrHRManager]
+    permission_classes = [IsAdminOrHRManager, HasEnterpriseTier]
+    feature_key = 'audit_logs'
 
     def get(self, request):
         tenant = resolve_tenant(request)
         if not tenant:
             return Response({'detail': 'Tenant context required.'}, status=400)
+            
+        increment_feature_usage(self.request, self.feature_key)
             
         logs = AuditLog.objects.filter(tenant=tenant).select_related('user').order_by('-created_at')[:500] 
         serializer = AuditLogSerializer(logs, many=True)

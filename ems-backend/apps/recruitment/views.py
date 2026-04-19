@@ -6,8 +6,9 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
 from django.db.models import Q
 
-from apps.core.permissions import IsAdminOrHRManager, IsApplicant, IsApplicantOwner
+from apps.core.permissions import IsAdminOrHRManager, IsApplicant, IsApplicantOwner, HasBusinessTier
 from apps.core.tenancy import resolve_tenant
+from apps.core.utils import increment_feature_usage
 from .models import Candidate, JobPosting, ApplicantProfile, AISettings, CandidateStatusHistory
 from .serializers import (
     CandidateSerializer,
@@ -122,7 +123,8 @@ class AISettingsView(generics.RetrieveUpdateAPIView):
 class CandidateViewSet(viewsets.ModelViewSet):
     """Admin/HR management of candidates - includes AI analysis"""
     queryset = Candidate.objects.select_related('job', 'user').all()
-    permission_classes = [IsAdminOrHRManager]
+    permission_classes = [IsAdminOrHRManager, HasBusinessTier]
+    feature_key = 'ai_resumes'
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -256,6 +258,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
         try:
              parsed_data = parse_resume(candidate.resume, tenant=candidate.tenant)
              candidate.parsed_resume_data = parsed_data
+             increment_feature_usage(self.request, self.feature_key)
              
              # Calculate Fit Score
              analysis_results = analyze_candidate(candidate, candidate.job)

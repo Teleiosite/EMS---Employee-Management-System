@@ -20,13 +20,14 @@ class UserSerializer(serializers.ModelSerializer):
     subscription_tier = serializers.CharField(source='tenant.subscription_tier', read_only=True)
     employee_limit = serializers.IntegerField(source='tenant.employee_limit', read_only=True)
     employee_count = serializers.IntegerField(source='tenant.current_employee_count', read_only=True)
+    feature_usage = serializers.JSONField(source='tenant.feature_usage', read_only=True)
     
     class Meta:
         model = User
         fields = (
             'id', 'email', 'first_name', 'last_name', 'role', 
             'tenant', 'tenant_slug', 'subscription_tier', 
-            'employee_limit', 'employee_count',
+            'employee_limit', 'employee_count', 'feature_usage',
             'is_active', 'email_verified', 'mfa_enabled', 'is_superuser'
         )
 

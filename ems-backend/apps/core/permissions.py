@@ -92,3 +92,53 @@ class IsSelfOrAdminOrHR(BasePermission):
         employee_user = getattr(employee, 'user', None)
         return employee_user == user
 
+class HasBusinessTier(BasePermission):
+    """Only tenants on BUSINESS or ENTERPRISE tier can access, unless in trial"""
+    message = 'This feature requires a Business or Enterprise subscription.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        tenant = getattr(user, 'tenant', None)
+        if not tenant:
+            return False
+        
+        # Superusers and Business/Enterprise tiers always have access
+        if user.is_superuser or tenant.subscription_tier in {'BUSINESS', 'ENTERPRISE'}:
+            return True
+            
+        # Starter/Free tiers allow access IF they have trial uses left
+        usage = tenant.feature_usage or {}
+        # We check the view's specific feature key (to be defined in the view)
+        feature_key = getattr(view, 'feature_key', None)
+        if feature_key and usage.get(feature_key, 0) < 10:
+            return True
+            
+        return False
+
+
+class HasEnterpriseTier(BasePermission):
+    """Only tenants on ENTERPRISE tier can access, unless in trial"""
+    message = 'This feature requires an Enterprise subscription.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        tenant = getattr(user, 'tenant', None)
+        if not tenant:
+            return False
+        
+        # Superusers and Enterprise tier always have access
+        if user.is_superuser or tenant.subscription_tier == 'ENTERPRISE':
+            return True
+            
+        # Business/Starter tiers allow access IF they have trial uses left
+        usage = tenant.feature_usage or {}
+        feature_key = getattr(view, 'feature_key', None)
+        if feature_key and usage.get(feature_key, 0) < 10:
+            return True
+            
+        return False
+

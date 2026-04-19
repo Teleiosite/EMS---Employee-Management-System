@@ -6,7 +6,8 @@ from django.db.models import Count, Avg
 from .models import PulseSurvey, SurveyResponse
 from .serializers import PulseSurveySerializer, SurveyResponseSerializer
 from apps.core.tenancy import resolve_tenant
-from apps.core.permissions import IsAdminOrHRManager
+from apps.core.permissions import IsAdminOrHRManager, HasEnterpriseTier
+from apps.core.utils import increment_feature_usage
 
 class PulseSurveyViewSet(viewsets.ModelViewSet):
     queryset = PulseSurvey.objects.all()
@@ -41,12 +42,15 @@ class SurveyResponseViewSet(viewsets.ModelViewSet):
 
 class SurveyAnalyticsView(APIView):
     """Admin-only view for workforce sentiment analytics."""
-    permission_classes = [IsAdminOrHRManager]
+    permission_classes = [IsAdminOrHRManager, HasEnterpriseTier]
+    feature_key = 'workforce_analytics'
 
     def get(self, request):
         tenant = resolve_tenant(request)
         if not tenant:
             return Response({'detail': 'Tenant context required.'}, status=400)
+
+        increment_feature_usage(self.request, self.feature_key)
 
         # Aggregate sentiment counts across all responses in this tenant
         responses = SurveyResponse.objects.filter(survey__tenant=tenant)

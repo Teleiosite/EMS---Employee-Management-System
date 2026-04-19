@@ -30,6 +30,7 @@ class Tenant(TimeStampedModel, SoftDeleteModel):
     slug = models.SlugField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
     subscription_tier = models.CharField(max_length=20, choices=SUBSCRIPTION_CHOICES, default='FREE')
+    feature_usage = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['name']

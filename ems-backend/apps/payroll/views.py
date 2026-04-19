@@ -4,8 +4,9 @@ from django.http import HttpResponse
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
-from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR
+from apps.core.permissions import IsAdminOrHRManager, IsSelfOrAdminOrHR, HasBusinessTier
 from apps.core.tenancy import resolve_tenant
+from apps.core.utils import increment_feature_usage
 from .models import PayrollRun, Payslip, TaxSlab, SalaryComponent, SalaryStructure, PayslipComponent
 from .serializers import (
 
@@ -21,7 +22,8 @@ from django.db import transaction
 class PayrollRunViewSet(viewsets.ModelViewSet):
     queryset = PayrollRun.objects.all()
     serializer_class = PayrollRunSerializer
-    permission_classes = [IsAdminOrHRManager]
+    permission_classes = [IsAdminOrHRManager, HasBusinessTier]
+    feature_key = 'payroll_runs'
 
     def get_queryset(self):
         user = self.request.user
@@ -38,6 +40,7 @@ class PayrollRunViewSet(viewsets.ModelViewSet):
         tenant = resolve_tenant(self.request)
 
         payroll_run = serializer.save(tenant=tenant, status='DRAFT')
+        increment_feature_usage(self.request, self.feature_key)
 
         # Attempt to dispatch to Celery; fall back to background thread if broker is unavailable
         try:
