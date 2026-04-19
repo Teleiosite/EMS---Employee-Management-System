@@ -39,7 +39,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
 
   useEffect(() => {
     if (user?.tenantName) setCompanyName(user.tenantName);
-    if (user?.isSuperuser) setIsSuperAdmin(true);
   }, [user]);
 
   const toggleMenu = (name: string) => {
@@ -216,7 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, closeMobileSidebar }) => {
       </div>
 
       {/* Platform Owner Section - only visible for super admin (no tenant) */}
-      {isSuperAdmin && (
+      {user?.isSuperuser && (
         <div className="px-4 py-4 border-t border-gray-100">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-4">Platform</p>
           <a
