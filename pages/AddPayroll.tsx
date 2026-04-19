@@ -193,7 +193,7 @@ const AddPayroll: React.FC = () => {
               <span className="font-medium">{selectedIds.size} / {employees.length}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
-              <span>Total gross salary</span>
+              <span>Total base salary</span>
               <span className="font-medium">${totalPayroll.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
@@ -203,6 +203,10 @@ const AddPayroll: React.FC = () => {
             <div className="flex justify-between text-sm text-gray-600">
               <span>Total deductions</span>
               <span className="font-medium text-red-600">-${totalDeductions.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm font-semibold text-gray-700 border-t border-orange-100 pt-2">
+              <span>Gross Payroll</span>
+              <span>${(totalPayroll + totalEarnings).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm font-bold text-gray-800 border-t border-orange-200 pt-2 mt-2">
               <span>Estimated net payout</span>
@@ -289,9 +293,21 @@ const AddPayroll: React.FC = () => {
                       </p>
                       <p className="text-xs text-gray-400">{emp.employeeId}</p>
                     </div>
-                    <span className={`text-sm font-semibold shrink-0 ${isChecked ? 'text-gray-800' : 'text-gray-400'}`}>
-                      ${emp.baseSalary.toLocaleString()}
-                    </span>
+                    {/* Calculate total monthly pay (Base + Earnings - Deductions) */}
+                    {(() => {
+                      const earnings = (emp.salaryStructure?.components || [])
+                        .filter((c: any) => (c.component_type || c.type || '').toUpperCase() === 'EARNING')
+                        .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
+                      const deductions = (emp.salaryStructure?.components || [])
+                        .filter((c: any) => (c.component_type || c.type || '').toUpperCase() === 'DEDUCTION')
+                        .reduce((s: number, c: any) => s + (parseFloat(c.value) || 0), 0);
+                      const totalPay = emp.baseSalary + earnings - deductions;
+                      return (
+                        <span className={`text-sm font-semibold shrink-0 ${isChecked ? 'text-gray-800' : 'text-gray-400'}`}>
+                          ${totalPay.toLocaleString()}
+                        </span>
+                      );
+                    })()}
                   </label>
                 );
               })}
