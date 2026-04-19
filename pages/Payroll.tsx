@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, CreditCard, PlusCircle, Settings, ChevronRight } from 'lucide-react';
+import { Plus, CreditCard, PlusCircle, Settings, ChevronRight, Loader2 } from 'lucide-react';
 
 import { payrollApi } from '../services/payrollApi';
 import { payrolls as mockPayrolls } from '../services/mockData';
@@ -22,6 +22,7 @@ const Payroll: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   // Components State
   const [components, setComponents] = useState<any[]>([]);
@@ -31,18 +32,29 @@ const Payroll: React.FC = () => {
   const [compFormData, setCompFormData] = useState({ name: '', component_type: 'EARNING' as 'EARNING' | 'DEDUCTION', description: '' });
 
   // Data Fetching
-  const fetchPayrolls = async () => {
-    setLoading(true);
+  const fetchPayrolls = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
-      const data = await payrollApi.listPayslips();
-      setPayrollData(data);
+      const [payslips, runs] = await Promise.all([
+        payrollApi.listPayslips(),
+        payrollApi.listRuns()
+      ]);
+      
+      setPayrollData(payslips);
+      
+      // Check if any run is still processing
+      const activeRun = runs.find(r => r.status === 'DRAFT' || r.status === 'PROCESSING');
+      setIsPolling(!!activeRun);
+      
     } catch (err) {
       console.warn('Failed to fetch from API, using mock data:', err);
-      setPayrollData([...mockPayrolls]);
-      setError('Using offline data');
+      if (!silent) {
+        setPayrollData([...mockPayrolls]);
+        setError('Using offline data');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -63,8 +75,20 @@ const Payroll: React.FC = () => {
       fetchPayrolls();
     } else {
       fetchComponents();
+      setIsPolling(false);
     }
   }, [activeTab]);
+
+  // Handle auto-polling when a run is processing
+  useEffect(() => {
+    let interval: any;
+    if (isPolling && activeTab === 'payslips') {
+      interval = setInterval(() => {
+        fetchPayrolls(true);
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isPolling, activeTab]);
 
   // Handlers
   const handleSaveComponent = async (e: React.FormEvent) => {
@@ -178,6 +202,12 @@ const Payroll: React.FC = () => {
             </span>
           </h1>
           {error && <p className="text-amber-600 text-xs font-bold mt-2 uppercase tracking-wide">Mode: {error}</p>}
+          {isPolling && (
+            <div className="flex items-center gap-2 mt-2 animate-pulse">
+              <Loader2 className="w-3 h-3 text-orange-500 animate-spin" />
+              <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Generating Payslips... List will update automatically.</span>
+            </div>
+          )}
         </div>
         
         <div className="flex gap-3">

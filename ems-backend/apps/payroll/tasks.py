@@ -121,7 +121,7 @@ def generate_payslips_task(self, payroll_run_id, tenant_id=None, employee_ids=No
                     PayslipComponent.objects.bulk_create(all_payslip_components)
 
             # Finalize the run
-            payroll_run.status = 'PROCESSING'
+            payroll_run.status = 'COMPLETED'
             payroll_run.save(update_fields=['status'])
             
             count = len(payslips_to_create)

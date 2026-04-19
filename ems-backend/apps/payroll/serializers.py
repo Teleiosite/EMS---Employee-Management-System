@@ -86,7 +86,7 @@ class PayslipComponentSerializer(serializers.ModelSerializer):
 class PayslipSerializer(serializers.ModelSerializer):
     employee_name = serializers.ReadOnlyField(source='employee.user.get_full_name')
     employee_id_str = serializers.ReadOnlyField(source='employee.employee_id')
-    designation = serializers.ReadOnlyField(source='employee.designation.title')
+    employee_designation = serializers.ReadOnlyField(source='employee.designation.title')
     breakdown = PayslipComponentSerializer(many=True, read_only=True)
     payroll_month = serializers.SerializerMethodField()
     payroll_status = serializers.SerializerMethodField()
@@ -95,7 +95,7 @@ class PayslipSerializer(serializers.ModelSerializer):
         model = Payslip
         fields = [
             'id', 'payroll_run', 'employee', 'employee_name', 'employee_id_str',
-            'designation', 'gross_salary', 'total_deductions', 'tax_deduction',
+            'employee_designation', 'gross_salary', 'total_deductions', 'tax_deduction',
             'net_salary', 'breakdown', 'payroll_month', 'payroll_status'
         ]
 
