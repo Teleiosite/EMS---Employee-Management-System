@@ -37,6 +37,22 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     designation = DesignationSerializer(read_only=True)
     salary_structure = SalaryStructureSerializer(read_only=True)
     reports_to = serializers.SerializerMethodField()
+    gross_pay = serializers.SerializerMethodField()
+    net_pay = serializers.SerializerMethodField()
+
+    def get_gross_pay(self, obj):
+        try:
+            struct = obj.salary_structure
+            return float(obj.base_salary) + float(struct.total_earnings)
+        except:
+            return float(obj.base_salary)
+
+    def get_net_pay(self, obj):
+        try:
+            struct = obj.salary_structure
+            return float(obj.base_salary) + float(struct.total_earnings) - float(struct.total_deductions)
+        except:
+            return float(obj.base_salary)
 
     def get_reports_to(self, obj):
         if obj.reports_to:

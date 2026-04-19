@@ -33,6 +33,8 @@ export interface EmployeeProfile {
   status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
   baseSalary: number;
   experience: number;
+  grossPay?: number;
+  netPay?: number;
   salaryStructure?: SalaryStructure;
 }
 

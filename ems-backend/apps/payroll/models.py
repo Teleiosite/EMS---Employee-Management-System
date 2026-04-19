@@ -36,7 +36,16 @@ class SalaryStructure(models.Model):
     tenant = models.ForeignKey('core.Tenant', on_delete=models.CASCADE, null=True, blank=True, related_name='salary_structures')
     employee = models.OneToOneField('employees.EmployeeProfile', on_delete=models.CASCADE, related_name='salary_structure')
     effective_date = models.DateField()
+    def __str__(self):
+        return f"Salary Structure - {self.employee.full_name}"
 
+    @property
+    def total_earnings(self):
+        return sum(c.value for c in self.components.filter(component_type='EARNING'))
+
+    @property
+    def total_deductions(self):
+        return sum(c.value for c in self.components.filter(component_type='DEDUCTION'))
 
 class SalaryStructureComponent(models.Model):
     salary_structure = models.ForeignKey(SalaryStructure, on_delete=models.CASCADE, related_name='components')

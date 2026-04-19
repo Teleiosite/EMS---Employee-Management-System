@@ -39,6 +39,8 @@ interface BackendEmployeeProfile {
     address: string;
     status: string;
     salary_structure: any | null;
+    gross_pay?: number;
+    net_pay?: number;
     reports_to: { id: number; name: string; designation: string } | null;
 }
 
@@ -70,6 +72,8 @@ const transformEmployee = (emp: BackendEmployeeProfile): EmployeeProfile & { nam
     name: `${emp.user.first_name} ${emp.user.last_name}`.trim(),
     email: emp.user.email,
     salaryStructure: emp.salary_structure || undefined,
+    grossPay: emp.gross_pay,
+    netPay: emp.net_pay,
     reportsTo: emp.reports_to ? {
         id: String(emp.reports_to.id),
         name: emp.reports_to.name,

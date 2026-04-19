@@ -36,7 +36,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
             <th className="px-6 py-5 whitespace-nowrap">Staff ID</th>
             <th className="px-6 py-5 whitespace-nowrap">Department</th>
             <th className="px-6 py-5 whitespace-nowrap">Designation</th>
-            <th className="px-6 py-5 whitespace-nowrap">Base Salary</th>
+            <th className="px-6 py-5 whitespace-nowrap">Monthly Pay</th>
             <th className="px-6 py-5 whitespace-nowrap text-center">Lifecycle</th>
             <th className="px-6 py-5 text-right whitespace-nowrap">Actions</th>
           </tr>
@@ -62,7 +62,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
               </td>
               <td className="px-6 py-5 text-sm text-gray-600 font-bold">{emp.department}</td>
               <td className="px-6 py-5 text-sm text-gray-500 font-medium">{emp.designation}</td>
-              <td className="px-6 py-5 text-sm font-semibold text-gray-900">${emp.baseSalary.toLocaleString()}</td>
+              <td className="px-6 py-5 text-sm font-semibold text-gray-900">${(emp.grossPay || emp.baseSalary).toLocaleString()}</td>
               <td className="px-6 py-5 text-center">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-semibold text-sm tracking-wide shadow-sm border ${
                     emp.status === 'ACTIVE' ? 'bg-green-100 text-green-800 border-green-200 shadow-green-500/10' : 'bg-gray-100 text-gray-600 border-gray-200'
