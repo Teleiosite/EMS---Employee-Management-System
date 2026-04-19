@@ -24,26 +24,46 @@ class PlanInfoView(APIView):
             {
                 'id': 'STARTER',
                 'name': 'Starter',
-                'price': 120000,
-                'annual_price': 1200000,
+                'price': 168000,
+                'annual_price': 1680000,
                 'limit': 25,
-                'features': ['Up to 25 employees', 'Core HR Modules', 'Email Support', 'Cloud Hosting']
+                'features': [
+                    'Full Core HR Suite (Employees, Leaves, Attendance)',
+                    'Up to 25 Active Employee Profiles',
+                    'Basic Recruitment (1 Active Job Posting)',
+                    'Self-Service Employee Dashboard',
+                    'Cloud Hosting & SSL Included'
+                ]
             },
             {
                 'id': 'BUSINESS',
                 'name': 'Business',
-                'price': 250000,
-                'annual_price': 2500000,
+                'price': 350000,
+                'annual_price': 3500000,
                 'limit': 100,
-                'features': ['Up to 100 employees', 'Priority Support', 'Audit Logs', 'Automated Backups']
+                'features': [
+                    'All Starter features included',
+                    'Up to 100 Active Employee Profiles',
+                    'Advanced Payroll Management (Auto-Payslips)',
+                    'Unlimited Recruitment & AI Parsing',
+                    'Workforce Insights & Analytics',
+                    'Priority Technical Support'
+                ]
             },
             {
                 'id': 'ENTERPRISE',
                 'name': 'Enterprise',
-                'price': 400000,
-                'annual_price': 4000000,
+                'price': 560000,
+                'annual_price': 5600000,
                 'limit': 999999,
-                'features': ['Unlimited employees', 'Custom Workflows', 'SLA Guarantee', 'Dedicated Manager']
+                'features': [
+                    'All Business features included',
+                    'Unlimited Employees & Multi-Entity Scale',
+                    'Full White-Label Rebranding',
+                    'Custom Workflow & API Integration',
+                    'Engagement Surveys & Sentiment Dashboard',
+                    'Dedicated Manager & 24/7 Support'
+                ]
             }
         ]
         return Response(plans)
