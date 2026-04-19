@@ -18,6 +18,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import PublicCareers from './pages/PublicCareers';
+import PlatformCareers from './pages/PlatformCareers';
+import PlatformPricing from './pages/PlatformPricing';
 
 // Host (Super Admin) Pages
 import HostDashboard from './pages/host/HostDashboard';
@@ -83,6 +85,8 @@ const App: React.FC = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/careers" element={<PlatformCareers />} />
+              <Route path="/pricing" element={<PlatformPricing />} />
               <Route path="/careers/:tenantSlug" element={<PublicCareers />} />
               <Route path="/jobs/:jobId/:tenantSlug" element={<PublicCareers />} />
 

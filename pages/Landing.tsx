@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import PlatformNavbar from '../components/PlatformNavbar';
 import {
   Building2, ArrowRight, CheckCircle, Briefcase, MapPin, Clock, Users, Shield, Zap,
   Menu, X, Mail, Phone, Globe, Award, BarChart3, FileText, Bell, GitBranch,
@@ -8,78 +9,32 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 
-interface PublicJob {
-  id: string;
-  role_name: string;
-  department: string;
-  minimum_years_experience: number;
-  required_skills: string[];
-  status?: string;
-  tenant?: { name: string };
-}
-
 // ─── Color pallette variables ───────────────────────────────────────────────
+
 // Primary: Orange (#EA580C)  Accent: Deep navy (#0F172A)  Muted: Slate
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [jobs, setJobs] = useState<PublicJob[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const scrollTarget = searchParams.get('scrollTo');
+    if (scrollTarget) {
+      setTimeout(() => {
+        document.getElementById(`${scrollTarget}-section`)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [location]);
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
 
-  // Scroll spy
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-      const sections = ['home', 'features', 'about', 'pricing', 'security', 'careers', 'contact'];
-      for (const id of sections.reverse()) {
-        const el = document.getElementById(`${id}-section`);
-        if (el && window.scrollY >= el.offsetTop - 120) {
-          setActiveSection(id);
-          break;
-        }
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
-  // Fetch public jobs
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const response = await api.get('/recruitment/public/jobs/');
-        const results = Array.isArray(response) ? response : (response as any).results || [];
-        setJobs(results.filter((j: any) => j.status === 'OPEN' || !j.status));
-      } catch {
-        // silent
-      } finally {
-        setJobsLoading(false);
-      }
-    };
-    fetchJobs();
-  }, []);
 
-  const scrollTo = (id: string) => {
-    setMenuOpen(false);
-    setTimeout(() => {
-      document.getElementById(`${id}-section`)?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+
+  const scrollToInternal = (id: string) => {
+    document.getElementById(`${id}-section`)?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const navLinks = [
-    { id: 'home', label: 'Home' },
-    { id: 'features', label: 'Features' },
-    { id: 'about', label: 'About Us' },
-    { id: 'pricing', label: 'Pricing' },
-    { id: 'careers', label: 'Careers' },
-    { id: 'contact', label: 'Contact' },
-  ];
 
   const modules = [
     { icon: Users, color: 'orange', title: 'Employee Management', desc: 'Full employee profiles, department assignment, role management, and bulk CSV import for seamless onboarding.' },
@@ -102,59 +57,6 @@ const Landing: React.FC = () => {
     teal: 'bg-teal-50 text-teal-600 border-teal-100',
     indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
   };
-
-  const plans = [
-    {
-      name: 'Starter',
-      subtitle: 'For small teams (up to 25 employees)',
-      monthlyNGN: '₦168,000', monthlyGBP: '£105',
-      annualNGN: '₦1,680,000', annualGBP: '£1,050',
-      badge: null,
-      features: [
-        'Full HireWix system access (all core HR modules)',
-        'Up to 25 employees',
-        'Cloud hosting, domain & SSL certificate',
-        'Basic support via email & WhatsApp',
-        'Monthly maintenance & security updates',
-      ],
-      cta: 'Get Started',
-      highlight: false,
-    },
-    {
-      name: 'Business',
-      subtitle: 'For growing organisations (up to 100 employees)',
-      monthlyNGN: '₦350,000', monthlyGBP: '£220',
-      annualNGN: '₦3,500,000', annualGBP: '£2,200',
-      badge: 'MOST POPULAR',
-      features: [
-        'All Starter Plan features',
-        'Up to 100 employees',
-        'Priority support with faster response times',
-        'Performance optimisation & monitoring',
-        'Minor feature adjustments & workflow customisation',
-        'Automated data backup & system monitoring',
-      ],
-      cta: 'Choose Business',
-      highlight: true,
-    },
-    {
-      name: 'Enterprise',
-      subtitle: 'For large organisations (unlimited employees)',
-      monthlyNGN: '₦560,000 – ₦980,000', monthlyGBP: '£350 – £615',
-      annualNGN: 'Negotiable', annualGBP: 'Contact us',
-      badge: null,
-      features: [
-        'All Business Plan features',
-        'Unlimited employees across all departments',
-        'Dedicated system customisation',
-        'Advanced security & compliance support',
-        'API integrations with third-party tools',
-        'Named account manager & SLA-backed uptime',
-      ],
-      cta: 'Contact Us',
-      highlight: false,
-    },
-  ];
 
   const securityPillars = [
     {
@@ -201,81 +103,7 @@ const Landing: React.FC = () => {
     <div className="min-h-screen bg-white font-sans text-gray-900" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
       {/* ═══════════════════════════════════════════════ NAVBAR */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-100' : 'bg-white/80 backdrop-blur-sm'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-18 items-center py-4">
-
-            {/* Logo */}
-            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => scrollTo('home')}>
-              <div className="bg-orange-500 p-2 rounded-xl shadow-lg shadow-orange-500/30">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="text-lg font-extrabold text-gray-900 leading-none tracking-tight">HireWix</div>
-                <div className="text-[10px] text-orange-500 font-semibold tracking-widest uppercase leading-none">by TeleiocraftSolutions</div>
-              </div>
-            </div>
-
-            {/* Desktop nav links */}
-            <div className="hidden lg:flex items-center space-x-1">
-              {navLinks.map(link => (
-                <button
-                  key={link.id}
-                  onClick={() => scrollTo(link.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${activeSection === link.id ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'}`}
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-
-            {/* CTA buttons - desktop */}
-            <div className="hidden lg:flex items-center gap-3">
-              <button onClick={() => navigate('/login')} className="text-gray-600 hover:text-orange-600 font-semibold text-sm transition-colors px-3 py-2">
-                Login
-              </button>
-              <button
-                onClick={() => navigate('/register')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
-              >
-                Register Company <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Hamburger - mobile */}
-            <button
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Drawer */}
-        <div className={`lg:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="bg-white border-t border-gray-100 px-4 py-4 space-y-1 shadow-lg">
-            {navLinks.map(link => (
-              <button
-                key={link.id}
-                onClick={() => scrollTo(link.id)}
-                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeSection === link.id ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'}`}
-              >
-                {link.label}
-              </button>
-            ))}
-            <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-full text-center py-3 rounded-xl font-semibold text-gray-700 border border-gray-200 hover:border-orange-400 hover:text-orange-600 transition-all text-sm">
-                Login
-              </button>
-              <button onClick={() => { setMenuOpen(false); navigate('/register'); }} className="w-full text-center py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all text-sm shadow-lg shadow-orange-500/30">
-                Register Company
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <PlatformNavbar />
 
       {/* ═══════════════════════════════════════════════ HERO */}
       <div id="home-section" className="pt-24 pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-orange-950 relative overflow-hidden">
@@ -487,208 +315,6 @@ const Landing: React.FC = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════ PRICING */}
-      <div id="pricing-section" className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Transparent Pricing</div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Flexible Plans for Every Organisation</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto mb-8">
-              All plans include full system access, cloud hosting, security maintenance, and technical support. Prices in NGN and GBP.
-            </p>
-
-            {/* Toggle */}
-            <div className="inline-flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm">
-              {(['monthly', 'annual'] as const).map(cycle => (
-                <button
-                  key={cycle}
-                  onClick={() => setBillingCycle(cycle)}
-                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === cycle ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  {cycle === 'monthly' ? 'Monthly' : 'Annual'} {cycle === 'annual' && <span className="text-xs font-normal ml-1">(Save 15%)</span>}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Plan cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
-            {plans.map((plan, i) => (
-              <div
-                key={i}
-                className={`rounded-2xl p-8 flex flex-col relative transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${plan.highlight
-                  ? 'bg-slate-900 text-white shadow-2xl ring-2 ring-orange-500 scale-105'
-                  : 'bg-white border border-gray-200 text-gray-900'
-                  }`}
-              >
-                {plan.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
-                    {plan.badge}
-                  </div>
-                )}
-
-                <div className="mb-6">
-                  <h3 className={`text-xl font-extrabold mb-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                  <p className={`text-sm ${plan.highlight ? 'text-slate-400' : 'text-gray-500'}`}>{plan.subtitle}</p>
-                </div>
-
-                <div className="mb-8">
-                  <div className={`text-3xl font-extrabold ${plan.highlight ? 'text-orange-400' : 'text-gray-900'}`}>
-                    {billingCycle === 'monthly' ? plan.monthlyNGN : plan.annualNGN}
-                  </div>
-                  <div className={`text-sm ${plan.highlight ? 'text-slate-400' : 'text-gray-500'}`}>
-                    {billingCycle === 'monthly' ? plan.monthlyGBP : plan.annualGBP} · {billingCycle === 'monthly' ? '/month' : '/year'}
-                  </div>
-                </div>
-
-                <ul className="space-y-3 flex-1 mb-8">
-                  {plan.features.map((f, fi) => (
-                    <li key={fi} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? 'text-slate-300' : 'text-gray-600'}`}>
-                      <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.highlight ? 'text-orange-400' : 'text-green-500'}`} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => plan.cta === 'Contact Us' ? scrollTo('contact') : navigate('/register')}
-                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${plan.highlight
-                    ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/30'
-                    : 'bg-gray-900 text-white hover:bg-gray-800'
-                    }`}
-                >
-                  {plan.cta}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* White Label + Setup Costs */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {/* White Label */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white border border-orange-500/30">
-              <div className="inline-block bg-orange-500/10 text-orange-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-orange-500/20 mb-5">
-                White-Label Ownership Plan
-              </div>
-              <h3 className="text-xl font-extrabold text-white mb-2">Launch HireWix as Your Own Brand</h3>
-              <p className="text-slate-400 text-sm mb-5">For governments, parastatals, HR consultancies, and entrepreneurs who want a market-ready HR platform under their own identity.</p>
-              <div className="mb-5">
-                <div className="text-2xl font-extrabold text-orange-400">Custom Pricing</div>
-                <div className="text-slate-400 text-sm">Reach out to us for a tailored quote</div>
-              </div>
-              <ul className="space-y-2 mb-6">
-                {[
-                  'Full rebranding rights — your name, logo, colours',
-                  'Custom domain (hr.yourcompany.com)',
-                  'White-labelled UI (no HireWix/TCS mentions)',
-                  'Custom email templates in your brand',
-                  'Dedicated onboarding by our engineering team',
-                  '6 months post-deployment technical support',
-                ].map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />{f}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => scrollTo('contact')} className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30">
-                Enquire About White-Label
-              </button>
-            </div>
-
-            {/* Setup costs + Pilot offer */}
-            <div className="space-y-4">
-
-
-              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 transition-all hover:shadow-lg">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Star className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-orange-900 mb-1">Pilot Offer Available</h4>
-                    <p className="text-orange-700 text-sm leading-relaxed">
-                      Evaluate HireWix in a controlled environment. We offer a <strong>pilot phase pricing arrangement</strong> for initial adoption.
-                    </p>
-                    <button onClick={() => scrollTo('contact')} className="mt-3 text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
-                      Discuss a Pilot <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Support Tiers */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 transition-all hover:shadow-lg">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 mb-3">Technical Support Plans</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-500" /> Basic Support
-                        </span>
-                        <span className="font-bold text-gray-900">Included</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-orange-500" /> Premium Support
-                        </span>
-                        <span className="font-bold text-gray-900">₦70k / Mo</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Data & Security Stats */}
-              <div className="bg-slate-900 rounded-2xl p-6 text-white border border-white/10 transition-all hover:shadow-lg">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Uptime SLA</div>
-                    <div className="text-2xl font-extrabold text-orange-400">99.9%</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Backups</div>
-                    <div className="text-2xl font-extrabold text-blue-400">Daily</div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-slate-400">
-                  <Shield className="w-4 h-4 text-green-400" /> Enterprise-grade data encryption at rest
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Implementation timeline */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">6-Stage Implementation Process</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-4">
-              {[
-                { n: '01', title: 'Requirements', desc: 'Detailed discussion to document workflows and roles' },
-                { n: '02', title: 'Configuration', desc: 'Customise to your org structure and branding' },
-                { n: '03', title: 'Deployment', desc: 'Cloud server, SSL, domain, and production setup' },
-                { n: '04', title: 'Testing', desc: 'Full module testing with your team before go-live' },
-                { n: '05', title: 'Training', desc: 'Training sessions for admins, HR, and employees' },
-                { n: '06', title: 'Go-Live', desc: 'Launch with 30-day close monitoring period' },
-              ].map((step, i) => (
-                <div key={i} className="text-center">
-                  <div className="w-10 h-10 bg-orange-500 text-white rounded-xl font-extrabold text-sm flex items-center justify-center mx-auto mb-3 shadow-lg shadow-orange-500/30">
-                    {step.n}
-                  </div>
-                  <div className="font-bold text-gray-900 text-sm mb-1">{step.title}</div>
-                  <div className="text-gray-500 text-xs leading-relaxed">{step.desc}</div>
-                </div>
-              ))}
-            </div>
-            <p className="text-center text-sm text-gray-500 mt-6 font-medium">
-              ⏱ Estimated timeline: <strong className="text-gray-900">2–4 weeks</strong> from contract signing to go-live
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* ═══════════════════════════════════════════════ SECURITY */}
       <div id="security-section" className="py-24 bg-slate-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
@@ -724,62 +350,6 @@ const Landing: React.FC = () => {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════ CAREERS */}
-      <div id="careers-section" className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-block bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">Open Positions</div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Careers at HireWix Companies</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">
-              Live job openings from organisations powered by HireWix. Create an applicant account to apply directly.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto space-y-4">
-            {jobsLoading ? (
-              <div className="text-center py-16">
-                <div className="w-10 h-10 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-500 text-sm">Loading open positions…</p>
-              </div>
-            ) : jobs.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-sm">
-                <Briefcase className="w-14 h-14 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">No Open Positions Right Now</h3>
-                <p className="text-gray-500 text-sm">Check back later for new opportunities. New roles are posted regularly.</p>
-              </div>
-            ) : (
-              jobs.map(job => (
-                <div key={job.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      {job.tenant && <span className="text-sm font-bold text-gray-900">{job.tenant.name}</span>}
-                      <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase">{job.department}</span>
-                    </div>
-                    <h3 className="text-lg font-extrabold text-gray-900 mb-2">{job.role_name}</h3>
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Remote / Hybrid</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Full-time</span>
-                      <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {job.minimum_years_experience}+ yrs exp</span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {job.required_skills?.slice(0, 5).map(skill => (
-                        <span key={skill} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium border border-gray-200">{skill}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate('/login?redirect=/applicant/jobs')}
-                    className="flex-shrink-0 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
-                  >
-                    Apply Now <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
           </div>
         </div>
       </div>
@@ -949,9 +519,9 @@ const Landing: React.FC = () => {
               <h4 className="font-bold text-white text-sm mb-4 uppercase tracking-widest">Platform</h4>
               <ul className="space-y-2.5">
                 {[
-                  { label: 'Features', onClick: () => scrollTo('features') },
-                  { label: 'Pricing', onClick: () => scrollTo('pricing') },
-                  { label: 'Security', onClick: () => scrollTo('security') },
+                  { label: 'Features', onClick: () => scrollToInternal('features') },
+                  { label: 'Pricing', onClick: () => scrollToInternal('pricing') },
+                  { label: 'Security', onClick: () => scrollToInternal('security') },
                   { label: 'Live Demo', onClick: () => window.open('http://yourems.duckdns.org', '_blank') },
                   { label: 'Register Company', onClick: () => navigate('/register') },
                 ].map((link, i) => (
@@ -969,9 +539,9 @@ const Landing: React.FC = () => {
               <h4 className="font-bold text-white text-sm mb-4 uppercase tracking-widest">Company</h4>
               <ul className="space-y-2.5">
                 {[
-                  { label: 'About Us', onClick: () => scrollTo('about') },
-                  { label: 'Careers', onClick: () => scrollTo('careers') },
-                  { label: 'Contact', onClick: () => scrollTo('contact') },
+                  { label: 'About Us', onClick: () => scrollToInternal('about') },
+                  { label: 'Careers', onClick: () => scrollToInternal('careers') },
+                  { label: 'Contact', onClick: () => scrollToInternal('contact') },
                   { label: 'teleiocraft.com', onClick: () => window.open('https://teleiocraft.com', '_blank') },
                 ].map((link, i) => (
                   <li key={i}>
