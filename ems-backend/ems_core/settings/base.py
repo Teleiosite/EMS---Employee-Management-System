@@ -1,5 +1,11 @@
 from datetime import timedelta
 from pathlib import Path
+import oracledb
+import sys
+
+# Oracle Cloud compatibility: Make the app think oracledb is the old cx_Oracle driver
+oracledb.version = "8.3.0"
+sys.modules["cx_Oracle"] = oracledb
 
 from decouple import config
 
@@ -68,16 +74,30 @@ TEMPLATES = [{
     ]},
 }]
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='postgres'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default=''),  # Supabase Host
-        'PORT': config('DB_PORT', default='5432'),
+DB_ENGINE_VAL = config('DB_ENGINE', default='postgresql')
+
+if DB_ENGINE_VAL == 'oracle':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.oracle',
+            'NAME': config('DB_HOST'),  # For Autonomous DB, the full connection string goes here
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': '',
+            'PORT': '',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql' if DB_ENGINE_VAL == 'postgresql' else 'django.db.backends.sqlite3',
+            'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3' if DB_ENGINE_VAL == 'sqlite' else 'postgres'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default=''),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
@@ -160,7 +180,9 @@ if USE_S3:
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
     
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.objectstorage.{AWS_S3_REGION_NAME}.oraclecloud.com/media/'
+    # Oracle Object Storage URL format: https://<namespace>.objectstorage.<region>.oraclecloud.com/n/<namespace>/b/<bucket>/o/
+    OCI_NAMESPACE = config('OCI_NAMESPACE', default='')
+    MEDIA_URL = f'https://{OCI_NAMESPACE}.objectstorage.{AWS_S3_REGION_NAME}.oraclecloud.com/n/{OCI_NAMESPACE}/b/{AWS_STORAGE_BUCKET_NAME}/o/'
 else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'

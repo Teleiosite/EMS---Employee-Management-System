@@ -4,13 +4,14 @@ from pathlib import Path
 
 DEBUG = True
 
-# Use SQLite for local development (no PostgreSQL required)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': Path(__file__).resolve().parents[2] / 'db.sqlite3',
+# Use SQLite for local development only if no engine is specified in .env
+if 'DATABASES' not in globals() or config('DB_ENGINE', default=None) is None:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': Path(__file__).resolve().parents[2] / 'db.sqlite3',
+        }
     }
-}
 
 # Allow all hosts in development
 ALLOWED_HOSTS = ['*']
