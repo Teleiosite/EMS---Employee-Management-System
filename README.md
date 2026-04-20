@@ -22,22 +22,24 @@ HireWix leverages a robust, Hybrid Cloud Architecture providing extreme stabilit
 
 - **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS.
 - **Backend:** Django 4.2 REST Framework (DRF), Celery, Redis.
-- **Database:** Supabase PostgreSQL (Handling high concurrency operations).
+- **Database:** Oracle Autonomous Database 23ai (Fully managed, scalable cloud DB).
 - **Object Storage:** Oracle Cloud Object Storage (S3-compatible, for passports, resumes, and assets).
+- **Production Server:** Nginx Reverse Proxy \u0026 Gunicorn running on Oracle Cloud Infrastructure (Ubuntu VM).
 - **Intelligence:** Google Gemini 2.5 Flash AI (Semantic parsing and ML integrations).
 - **Payments:** Paystack / Flutterwave.
 
 ### Data Flow Overview
 ```mermaid
 graph TD
-    User((User)) --> FE[React Frontend]
-    FE --> Django[Django API Engine]
-    Django --> Supabase[(Supabase Postgres)]
-    Django --> OCI[Oracle Object Storage]
-    Django --> Redis[(Redis)]
+    User((User)) --> Nginx[Nginx Reverse Proxy]
+    Nginx --> FE[React Frontend]
+    Nginx --> Gunicorn[Gunicorn / Django API Engine]
+    Gunicorn --> OracleDB[(Oracle Autonomous DB 23ai)]
+    Gunicorn --> OCI[Oracle Object Storage]
+    Gunicorn --> Redis[(Redis)]
     Redis --> Celery[Celery Worker]
     Celery --> Gemini[Google Gemini AI]
-    Celery --> EMAIL[SMTP/Brevo]
+    Celery --> EMAIL[Gmail SMTP Backend]
 ```
 
 ---
@@ -87,6 +89,11 @@ Our platform currently hosts a powerful baseline of Enterprise-grade features:
 - **SaaS Monetization**: Integrated billing (Paystack) determining seat-limits and workspace capability.
 - **Rich Email Dispatcher**: Background-processing SMTP system orchestrating applicant welcomes, company announcements, and approval receipts.
 
+### ☁️ Cloud & Infrastructure
+- **Enterprise Database**: Fully migrated from local SQLite to Oracle Autonomous Database 23ai in the Johannesburg region, heavily optimized with custom JSONField compatibility patches.
+- **Production Server Deployment**: Live deployment running on an Oracle Cloud Ubuntu VM, served via Nginx Reverse Proxy with Gunicorn handling the Django WSGI requests.
+- **Background Task Processing**: Redis-backed Celery workers executing async events such as Google Gemini parsing and Gmail SMTP communications.
+
 ---
 
 ## 🚧 What Remains (Future Roadmap)
@@ -121,9 +128,9 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-*(Ensure you copy `.env.example` to `.env` in both the frontend and backend directories and populate your Supabase, Oracle, and Gemini credentials before attempting to start the server).*
+*(Ensure you copy `.env.example` to `.env` in both the frontend and backend directories and populate your Oracle Cloud Database, Oracle Object Storage, Gmail SMTP, and Gemini credentials before attempting to start the server).*
 
 ---
 <div align="center">
-  Built with ❤️ · Powered by React, Django, and Google Gemini AI
+  Built with ❤️ · Powered by React, Django, Oracle Cloud, and Google Gemini AI
 </div>
