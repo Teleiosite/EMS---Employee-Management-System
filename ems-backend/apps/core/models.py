@@ -142,3 +142,18 @@ class AuditLog(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user} {self.action} {self.resource} ({self.resource_id})"
+
+
+class ContactMessage(TimeStampedModel):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    company = models.CharField(max_length=255, blank=True, null=True)
+    message = models.TextField()
+    is_processed = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Message from {self.name} ({self.email})"

@@ -5,7 +5,7 @@ import {
   Building2, ArrowRight, CheckCircle, Briefcase, MapPin, Clock, Users, Shield, Zap,
   Menu, X, Mail, Phone, Globe, Award, BarChart3, FileText, Bell, GitBranch,
   Lock, Eye, ChevronDown, Star, TrendingUp, UserCheck, Calendar, DollarSign,
-  HeartHandshake, Send, ExternalLink, ChevronRight, Search, MessageSquare
+  HeartHandshake, Send, ExternalLink, ChevronRight, Search, MessageSquare, Loader2
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -28,6 +28,8 @@ const Landing: React.FC = () => {
   }, [location]);
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
 
 
@@ -93,10 +95,24 @@ const Landing: React.FC = () => {
     },
   ];
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production this would POST to an email API
-    setContactSent(true);
+    setSubmitting(true);
+    setError(null);
+    
+    try {
+      // Direct POST to the core/contact/ endpoint
+      await api.post('/core/contact/', contactForm);
+      setContactSent(true);
+      // Reset form
+      setContactForm({ name: '', email: '', phone: '', company: '', message: '' });
+    } catch (err: any) {
+      console.error('Contact submission error:', err);
+      const detail = err.response?.data?.detail || 'Failed to send message. Please try again later.';
+      setError(detail);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -472,11 +488,27 @@ const Landing: React.FC = () => {
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-all resize-none"
                     />
                   </div>
+                  
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
+                      {error}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 hover:scale-105"
+                    disabled={submitting}
+                    className={`w-full ${submitting ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'} text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 ${!submitting && 'hover:scale-105'}`}
                   >
-                    <Send className="w-4 h-4" /> Send Message
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" /> Send Message
+                      </>
+                    )}
                   </button>
                   <p className="text-center text-xs text-gray-400">We respond within 24 hours on business days.</p>
                 </form>

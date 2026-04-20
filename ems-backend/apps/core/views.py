@@ -6,11 +6,16 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermiss
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Announcement, Tenant, InviteCode, AuditLog
+from .models import Announcement, Tenant, InviteCode, AuditLog, ContactMessage
 from .tenancy import resolve_tenant
 from .permissions import IsAdminOrHRManager, HasEnterpriseTier
-from .serializers import AnnouncementSerializer, TenantSerializer, AuditLogSerializer
+from .serializers import (
+    AnnouncementSerializer, TenantSerializer, AuditLogSerializer, 
+    ContactMessageSerializer
+)
 from .utils import increment_feature_usage
+from rest_framework import generics, throttling
+from ems_core.utils_email import send_email_in_background
 
 User = get_user_model()
 
@@ -149,3 +154,39 @@ class AuditLogListView(APIView):
         logs = AuditLog.objects.filter(tenant=tenant).select_related('user').order_by('-created_at')[:500] 
         serializer = AuditLogSerializer(logs, many=True)
         return Response(serializer.data)
+
+
+class ContactMessageThrottle(throttling.AnonRateThrottle):
+    rate = '5/hour'
+
+
+class ContactMessageCreateView(generics.CreateAPIView):
+    """Public view to accept contact form submissions."""
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [ContactMessageThrottle]
+
+    def perform_create(self, serializer):
+        msg = serializer.save()
+        
+        # Send email notification to admin
+        subject = f"New Contact Form Submission: {msg.name}"
+        body = (
+            f"You have a new message from the HireWix Landing Page:\n\n"
+            f"Name: {msg.name}\n"
+            f"Email: {msg.email}\n"
+            f"Phone: {msg.phone or 'N/A'}\n"
+            f"Company: {msg.company or 'N/A'}\n\n"
+            f"Message:\n{msg.message}\n\n"
+            f"This message has been saved to the database."
+        )
+        # In a real scenario, we might want to send this to a specific admin list.
+        # For now, we'll send it to the DEFAULT_FROM_EMAIL which acts as the system admin.
+        from django.conf import settings
+        send_email_in_background(
+            subject=subject,
+            message=body,
+            recipient_list=[settings.DEFAULT_FROM_EMAIL]
+        )

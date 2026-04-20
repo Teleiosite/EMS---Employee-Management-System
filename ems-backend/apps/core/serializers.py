@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Announcement, Tenant, AuditLog
+from .models import Announcement, Tenant, AuditLog, ContactMessage
 
 
 class TenantSerializer(serializers.ModelSerializer):
@@ -57,3 +57,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
         if obj.user:
             return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
         return "System / Unknown"
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = '__all__'
+        read_only_fields = ('created_at',)
