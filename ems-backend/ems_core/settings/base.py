@@ -7,6 +7,16 @@ import sys
 oracledb.version = "8.3.0"
 sys.modules["cx_Oracle"] = oracledb
 
+# Oracle 23ai returns JSON fields as native Python objects (list/dict) instead of
+# strings. Patch Django's JSONField.from_db_value to handle either case.
+from django.db.models.fields.json import JSONField as _JSONField
+_original_from_db = _JSONField.from_db_value
+def _patched_from_db(self, value, expression, connection):
+    if isinstance(value, (list, dict)):
+        return value  # Already parsed natively by Oracle driver
+    return _original_from_db(self, value, expression, connection)
+_JSONField.from_db_value = _patched_from_db
+
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parents[2]
