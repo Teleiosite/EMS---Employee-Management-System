@@ -89,10 +89,16 @@ Our platform currently hosts a powerful baseline of Enterprise-grade features:
 - **SaaS Monetization**: Integrated billing (Paystack) determining seat-limits and workspace capability.
 - **Rich Email Dispatcher**: Background-processing SMTP system orchestrating applicant welcomes, company announcements, and approval receipts.
 
-### ☁️ Cloud & Infrastructure
-- **Enterprise Database**: Fully migrated from local SQLite to Oracle Autonomous Database 23ai in the Johannesburg region, heavily optimized with custom JSONField compatibility patches.
-- **Production Server Deployment**: Live deployment running on an Oracle Cloud Ubuntu VM, served via Nginx Reverse Proxy with Gunicorn handling the Django WSGI requests.
-- **Background Task Processing**: Redis-backed Celery workers executing async events such as Google Gemini parsing and Gmail SMTP communications.
+### ☁️ Cloud & Enterprise Infrastructure
+- **Enterprise Database Optimization**: Fully migrated from local environments to a highly secured **Oracle Autonomous Database 23ai** deployed in the `af-johannesburg-1` region.
+- **Advanced Network & Security Overrides**: Engineered direct TLS 1-way connection strings natively dropping complex Oracle Wallets, integrated custom Access Control Lists (ACL) on the OCI console, and dynamically whitelisted VM traffic.
+- **Custom Oracle Database Patches**: Hand-wrote monkey-patches intercepting Django's native `JSONField` logic to seamlessly resolve parsing conflicts where Oracle 23ai returns `dict/list` elements instead of standard strings. 
+- **High-Performance Production Deploy**: Architecture runs securely behind an **Nginx Reverse Proxy**. The static React Vite build was compiled off-site due to VM RAM constraints, injected cleanly via SCP, and `gunicorn` orchestrates the backend WSGI. 
+- **Asynchronous Task Architecture**: Instantiated persistent, daemonized Celery Workers running on an internal Redis broker, reliably dispatching real-time transactional Gmail SMTP communications and background applicant parsing tasks.
+
+
+
+
 
 ---
 
